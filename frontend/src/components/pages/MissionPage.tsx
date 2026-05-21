@@ -15,7 +15,7 @@ const executeItems = [
 const teamMembers = [
   {
     name: "Shizhen",
-    role: "QUANTITATIVE RESEARCH",
+    role: "Software Engineer",
     roleTone: "text-secondary-container",
     icon: "terminal",
     accent: "border-l-primary-container",
@@ -25,7 +25,7 @@ const teamMembers = [
   },
   {
     name: "Jia Jun",
-    role: "SYSTEMS ENGINEERING",
+    role: "Software Engineer",
     roleTone: "text-primary-container",
     icon: "dns",
     accent: "border-l-secondary-container",
@@ -45,7 +45,7 @@ export function MissionPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-gutter items-center min-h-[614px]">
             <div className="flex flex-col gap-6 z-10">
               <div className="font-label-caps text-label-caps text-primary-container uppercase tracking-widest">
-                Orbital 2026 Pitch
+                Orbital 2026
               </div>
               <h1 className="font-headline-xl text-headline-xl text-on-background leading-tight">
                 Eliminating Emotion <br />
@@ -87,7 +87,7 @@ export function MissionPage() {
         <section className="max-w-[1440px] mx-auto px-margin-mobile md:px-margin-desktop mb-32">
           <div className="mb-16">
             <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background">
-              The Orbital Vision
+              Our Vision 
             </h2>
             <p className="font-body-md text-body-md text-on-surface-variant max-w-2xl mt-4">
               A seamless translation layer between human intent and algorithmic

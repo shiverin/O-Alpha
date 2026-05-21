@@ -29,8 +29,8 @@ export function ExecutionFlow() {
   return (
     <section className="px-margin-desktop max-w-[1440px] mx-auto w-full relative">
       <SectionHeader label="SYSTEMATIC EXECUTION FLOW" tone="primary" />
-      <div className="flex flex-col lg:flex-row items-center justify-between bg-surface-container/40 border border-outline-variant/30 rounded-xl p-8 relative overflow-hidden backdrop-blur-sm">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary-container/10 via-background to-background pointer-events-none"></div>
+      <div className="flex flex-col lg:flex-row items-center justify-between bg-surface-container-high/80 border border-outline-variant/40 rounded-xl p-8 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary-container/5 via-transparent to-transparent pointer-events-none"></div>
 
         <div className="flex flex-col items-start w-full lg:w-1/4 z-10">
           <h4 className="font-label-caps text-label-caps text-secondary-container mb-6">
@@ -53,20 +53,20 @@ export function ExecutionFlow() {
 
         <div className="hidden lg:flex w-1/6 items-center justify-center relative h-32 z-10">
           <div className="w-full h-px bg-outline-variant/60 relative">
-            <div className="absolute top-1/2 left-0 w-2 h-2 bg-primary-container rounded-full -translate-y-1/2 -translate-x-1/2 glow-cyan"></div>
-            <div className="absolute top-1/2 right-0 w-2 h-2 bg-primary-container rounded-full -translate-y-1/2 translate-x-1/2 glow-cyan"></div>
+            <div className="absolute top-1/2 left-0 w-2 h-2 bg-primary-container rounded-full -translate-y-1/2 -translate-x-1/2"></div>
+            <div className="absolute top-1/2 right-0 w-2 h-2 bg-primary-container rounded-full -translate-y-1/2 translate-x-1/2"></div>
             <div className="h-px bg-primary-container data-stream w-full absolute top-0 left-0"></div>
           </div>
         </div>
 
         <div className="flex flex-col items-center justify-center w-full lg:w-1/3 py-12 lg:py-0 z-10 relative">
-          <div className="absolute w-64 h-64 border border-outline-variant/30 rounded-full flex items-center justify-center bg-surface-container-low/20">
-            <div className="w-48 h-48 border border-primary-container/30 rounded-full flex items-center justify-center bg-primary-container/5">
-              <div className="w-32 h-32 border border-secondary-container/40 rounded-full absolute bg-secondary-container/5"></div>
+          <div className="absolute w-64 h-64 border border-outline-variant/30 rounded-full flex items-center justify-center bg-surface-container-low/10">
+            <div className="w-48 h-48 border border-primary-container/20 rounded-full flex items-center justify-center bg-primary-container/5">
+              <div className="w-32 h-32 border border-secondary-container/30 rounded-full absolute bg-secondary-container/5"></div>
             </div>
           </div>
-          <div className="w-24 h-24 bg-surface-container-highest border-2 border-primary-container rounded-full flex items-center justify-center z-20 glow-cyan shadow-xl">
-            <span className="font-headline-xl text-headline-xl text-secondary-container text-glow-gold">
+          <div className="w-24 h-24 bg-surface-container-highest border-2 border-primary-container rounded-full flex items-center justify-center z-20 shadow-lg">
+            <span className="font-headline-xl text-headline-xl text-secondary-container">
               α
             </span>
           </div>
@@ -82,8 +82,8 @@ export function ExecutionFlow() {
 
         <div className="hidden lg:flex w-1/6 items-center justify-center relative h-32 z-10">
           <div className="w-full h-px bg-outline-variant/60 relative">
-            <div className="absolute top-1/2 left-0 w-2 h-2 bg-primary-container rounded-full -translate-y-1/2 -translate-x-1/2 glow-cyan"></div>
-            <div className="absolute top-1/2 right-0 w-2 h-2 bg-primary-container rounded-full -translate-y-1/2 translate-x-1/2 glow-cyan"></div>
+            <div className="absolute top-1/2 left-0 w-2 h-2 bg-primary-container rounded-full -translate-y-1/2 -translate-x-1/2"></div>
+            <div className="absolute top-1/2 right-0 w-2 h-2 bg-primary-container rounded-full -translate-y-1/2 translate-x-1/2"></div>
             <div
               className="h-px bg-primary-container data-stream w-full absolute top-0 left-0"
               style={{ animationDelay: "1.5s" }}

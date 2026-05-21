@@ -1,6 +1,30 @@
 import { LandingShell } from "../layout/LandingShell";
 
-const tiers = [
+type TierFeature = {
+  icon: string;
+  text: string;
+  filled?: boolean;
+};
+
+type TierCard = {
+  tier: string;
+  title: string;
+  subtitle: string;
+  accent: "base" | "primary" | "secondary";
+  badge?: string;
+  features: TierFeature[];
+  cta: string;
+};
+
+type SpecRow = {
+  label: string;
+  basic: string;
+  pro: string;
+  institutional: string;
+  iconOnly?: boolean;
+};
+
+const tiers: TierCard[] = [
   {
     tier: "Tier 01",
     title: "Basic",
@@ -38,9 +62,9 @@ const tiers = [
     ],
     cta: "Contact Sales",
   },
-] as const;
+];
 
-const specs = [
+const specs: SpecRow[] = [
   {
     label: "Asset Universe",
     basic: "Top 100 Equities",
@@ -73,14 +97,14 @@ const specs = [
     institutional: "check",
     iconOnly: true,
   },
-] as const;
+];
 
 export function PricingPage() {
   return (
     <LandingShell activePath="/pricing" className="bg-scanline">
       <main className="flex-grow pt-32 pb-24">
         <section className="text-center px-margin-mobile md:px-margin-desktop max-w-[1440px] mx-auto mb-20 relative">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary-container/5 rounded-full blur-[100px] -z-10 pointer-events-none"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] bg-primary-container/10 rounded-full blur-3xl -z-10 pointer-events-none"></div>
           <h1 className="font-headline-xl text-headline-xl text-on-background mb-6">
             Scale Your Sophistication.
           </h1>
@@ -97,10 +121,10 @@ export function PricingPage() {
               key={tier.title}
               className={
                 tier.accent === "primary"
-                  ? "bg-surface-container/80 backdrop-blur-xl border border-primary-container/50 rounded p-8 flex flex-col relative transform md:-translate-y-4 glow-primary"
+                  ? "bg-surface-container-high/90 border border-primary-container/40 rounded-lg p-8 flex flex-col relative transform md:-translate-y-3"
                   : tier.accent === "secondary"
-                    ? "bg-surface-container-low/60 backdrop-blur-md border border-secondary-fixed/30 rounded p-8 flex flex-col relative hover:border-secondary-fixed/60 transition-colors"
-                    : "bg-surface-container-low/60 backdrop-blur-md border border-outline-variant/30 rounded p-8 flex flex-col hover:border-outline-variant/60 transition-colors"
+                    ? "bg-surface-container-high/80 border border-secondary-fixed/30 rounded-lg p-8 flex flex-col relative hover:border-secondary-fixed/50 transition-colors"
+                    : "bg-surface-container-high/70 border border-outline-variant/40 rounded-lg p-8 flex flex-col hover:border-outline-variant/60 transition-colors"
               }
             >
               {tier.accent === "primary" && (
@@ -140,7 +164,7 @@ export function PricingPage() {
                 {tier.subtitle}
               </div>
               <div className="flex-grow space-y-4 mb-8">
-                {tier.features.map((feature) => (
+                {tier.features.map((feature: TierFeature) => (
                   <div key={feature.text} className="flex items-start gap-3">
                     <span
                       className={
