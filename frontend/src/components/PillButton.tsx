@@ -12,9 +12,9 @@ const sizeClasses: Record<NonNullable<PillButtonProps["size"]>, string> = {
 
 const variantClasses: Record<NonNullable<PillButtonProps["variant"]>, string> = {
   solid:
-    "bg-primary-container text-on-primary-container shadow-[0_10px_24px_-14px_rgba(0,229,255,0.9)] hover:bg-primary-fixed hover:shadow-[0_12px_28px_-14px_rgba(0,229,255,0.95)]",
+    "bg-primary-container text-on-primary-container shadow-[0_8px_20px_-12px_rgba(0,213,255,0.6)] hover:bg-primary-fixed hover:shadow-[0_10px_24px_-12px_rgba(0,213,255,0.7)]",
   outline:
-    "border border-outline-variant/60 text-on-surface bg-transparent hover:border-primary-container/70 hover:text-primary-container hover:bg-primary-container/10",
+    "border border-outline-variant/70 text-on-surface bg-transparent hover:border-primary-container/70 hover:text-primary-container hover:bg-primary-container/10",
 };
 
 export function PillButton({

@@ -69,7 +69,7 @@ function FeatureCardView({ card }: { card: FeatureCard }) {
   const accent = accentStyles[card.accent];
 
   return (
-    <div className={`bg-surface-container/60 backdrop-blur-md border border-outline-variant/40 p-8 rounded relative overflow-hidden group transition-colors duration-500 hover:bg-surface-container/80 ${accent.hoverBorder}`}>
+    <div className={`bg-surface-container-high/80 border border-outline-variant/50 p-8 rounded-lg relative overflow-hidden group transition-colors duration-300 hover:bg-surface-container-highest/80 ${accent.hoverBorder}`}>
       <div className="absolute top-0 right-0 p-4 opacity-15 group-hover:opacity-25 transition-opacity">
         <span className={`material-symbols-outlined text-[120px] ${accent.text}`}>
           {card.iconLarge}

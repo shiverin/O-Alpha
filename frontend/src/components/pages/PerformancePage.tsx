@@ -7,15 +7,9 @@ export function PerformancePage() {
     <LandingShell activePath="/performance" className="bg-performance-grid">
       <main className="pt-32 px-margin-mobile md:px-margin-desktop max-w-[1440px] mx-auto flex flex-col gap-16 md:gap-24">
         <section className="flex flex-col items-start max-w-4xl">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="pulse-dot"></div>
-            <span className="font-label-caps text-label-caps text-primary-container uppercase tracking-widest">
-              Live Alpha Generation
-            </span>
-          </div>
           <h1 className="font-headline-xl text-headline-xl text-on-surface mb-6">
             Institutional-Grade <br className="hidden md:block" />
-            <span className="text-secondary-container gold-glow">Performance.</span>
+            <span className="text-secondary-container">Performance.</span>
           </h1>
           <p className="font-body-md text-body-md text-on-surface-variant max-w-2xl">
             Continuous market scanning. Convex optimization. Regime-aware
@@ -36,7 +30,7 @@ export function PerformancePage() {
                   <span className="font-data-sm text-data-sm text-on-surface-variant block mb-1">
                     CUMULATIVE P&L (YTD)
                   </span>
-                  <span className="font-data-lg text-[32px] font-medium text-primary-container neon-text">
+                  <span className="font-data-lg text-[32px] font-medium text-primary-container">
                     +24.8%
                   </span>
                 </div>

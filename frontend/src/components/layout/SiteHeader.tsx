@@ -25,7 +25,7 @@ export function SiteHeader({ activePath }: SiteHeaderProps) {
   }));
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-xl border-b border-outline-variant/30">
+    <nav className="fixed top-0 w-full z-50 bg-background/95 backdrop-blur-sm border-b border-outline-variant/30">
       <div className="flex justify-between items-center px-margin-desktop py-4 max-w-[1440px] mx-auto">
         <div className="flex items-center gap-12">
           <a className="flex items-center gap-3" href="/">

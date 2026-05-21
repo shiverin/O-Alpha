@@ -15,7 +15,7 @@ const executeItems = [
 const teamMembers = [
   {
     name: "Shizhen",
-    role: "QUANTITATIVE RESEARCH",
+    role: "Software Engineer",
     roleTone: "text-secondary-container",
     icon: "terminal",
     accent: "border-l-primary-container",
@@ -25,7 +25,7 @@ const teamMembers = [
   },
   {
     name: "Jia Jun",
-    role: "SYSTEMS ENGINEERING",
+    role: "Software Engineer",
     roleTone: "text-primary-container",
     icon: "dns",
     accent: "border-l-secondary-container",
