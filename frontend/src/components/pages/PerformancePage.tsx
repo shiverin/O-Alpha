@@ -77,11 +77,12 @@ export function PerformancePage() {
                     strokeDasharray="1 2"
                   ></line>
                   <path
-                    className="chart-area"
+                    className="chart-area chart-area-animate"
                     d="M0,40 C10,38 20,45 30,30 C40,15 50,25 60,10 C70,-5 80,15 90,5 L100,0 L100,50 L0,50 Z"
                   ></path>
                   <path
-                    className="chart-line"
+                    className="chart-line chart-line-animate"
+                    pathLength={100}
                     d="M0,40 C10,38 20,45 30,30 C40,15 50,25 60,10 C70,-5 80,15 90,5 L100,0"
                   ></path>
                 </svg>
