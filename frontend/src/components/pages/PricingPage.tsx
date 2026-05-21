@@ -164,7 +164,7 @@ export function PricingPage() {
                 {tier.subtitle}
               </div>
               <div className="flex-grow space-y-4 mb-8">
-                {tier.features.map((feature) => (
+                {tier.features.map((feature: TierFeature) => (
                   <div key={feature.text} className="flex items-start gap-3">
                     <span
                       className={
