@@ -1,3 +1,5 @@
+import { forwardRef } from "react";
+
 import type { ButtonHTMLAttributes } from "react";
 
 export type PillButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -17,14 +19,10 @@ const variantClasses: Record<NonNullable<PillButtonProps["variant"]>, string> = 
     "border border-outline-variant/70 text-on-surface bg-transparent hover:border-primary-container/70 hover:text-primary-container hover:bg-primary-container/10",
 };
 
-export function PillButton({
-  className = "",
-  variant = "solid",
-  size = "md",
-  ...props
-}: PillButtonProps) {
-  return (
+export const PillButton = forwardRef<HTMLButtonElement, PillButtonProps>(
+  ({ className = "", variant = "solid", size = "md", ...props }, ref) => (
     <button
+      ref={ref}
       className={[
         "relative inline-flex items-center justify-center gap-2 rounded-full font-body-md font-medium transition-all duration-200",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
@@ -35,5 +33,7 @@ export function PillButton({
       ].join(" ")}
       {...props}
     />
-  );
-}
+  )
+);
+
+PillButton.displayName = "PillButton";
