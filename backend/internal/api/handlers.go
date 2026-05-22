@@ -28,7 +28,7 @@ func (h *Handler) Health(c *gin.Context) {
 	})
 }
 
-// RunBacktest executes a MA crossover backtest for the requested symbol.
+// RunBacktest executes a backtest for the requested symbol using the specified strategy.
 func (h *Handler) RunBacktest(c *gin.Context) {
 	var req models.BacktestRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -65,7 +65,10 @@ func (h *Handler) RunBacktest(c *gin.Context) {
 		initialCash = 100_000
 	}
 
-	result, err := backtest.RunMACrossover(bars, req.FastPeriod, req.SlowPeriod, initialCash)
+	// Create MA crossover strategy (maintains backward compatibility)
+	strat := backtest.NewMACrossoverStrategy(req.FastPeriod, req.SlowPeriod)
+
+	result, err := backtest.RunBacktest(c.Request.Context(), bars, strat, initialCash)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

@@ -13,6 +13,15 @@ type Bar struct {
 	Volume int64     `json:"volume"`
 }
 
+// Signal is a trading action.
+type Signal int
+
+const (
+	SignalHold Signal = iota
+	SignalBuy
+	SignalSell
+)
+
 // BacktestRequest configures a MA crossover backtest run.
 type BacktestRequest struct {
 	Symbol      string     `json:"symbol" binding:"required"`
