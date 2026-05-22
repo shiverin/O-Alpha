@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/solid";
 
 import { BrandMark } from "../BrandMark";
+import { LoginModal } from "../auth/LoginModal";
 import { PillButton } from "../PillButton";
 
 type NavLink = {
@@ -26,6 +28,8 @@ const navLinks: NavLink[] = [
 
 export function SiteHeader({ activePath }: SiteHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const router = useRouter();
   const links = navLinks.map((link) => ({
     ...link,
     active: activePath ? link.href === activePath : link.active,
@@ -36,7 +40,7 @@ export function SiteHeader({ activePath }: SiteHeaderProps) {
       <div className="flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4 max-w-[1440px] mx-auto">
         <div className="flex items-center gap-2 md:gap-12">
           <a className="flex items-center gap-2 md:gap-3" href="/">
-            <BrandMark className="-ml-0.5" />
+            <BrandMark className="-ml-0.5" showText={false} />
           </a>
           <div className="hidden md:flex gap-8 items-center pt-1">
             {links.map((link) => (
@@ -67,10 +71,18 @@ export function SiteHeader({ activePath }: SiteHeaderProps) {
           )}
         </button>
         <div className="hidden md:flex items-center gap-3">
-          <PillButton variant="outline" size="sm">
+          <PillButton
+            variant="outline"
+            size="sm"
+            onClick={() => setLoginOpen(true)}
+          >
             Login
           </PillButton>
-          <PillButton className="scale-95 active:scale-90" size="sm">
+          <PillButton
+            className="scale-95 active:scale-90"
+            size="sm"
+            onClick={() => router.push("/app/dashboard")}
+          >
             Launch App
           </PillButton>
         </div>
@@ -106,13 +118,29 @@ export function SiteHeader({ activePath }: SiteHeaderProps) {
             </a>
           ))}
           <div className="pt-2 border-t border-outline-variant/30 flex flex-col gap-3">
-            <PillButton variant="outline" size="sm">
+            <PillButton
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setMenuOpen(false);
+                setLoginOpen(true);
+              }}
+            >
               Login
             </PillButton>
-            <PillButton size="sm">Launch App</PillButton>
+            <PillButton
+              size="sm"
+              onClick={() => {
+                setMenuOpen(false);
+                router.push("/app/dashboard");
+              }}
+            >
+              Launch App
+            </PillButton>
           </div>
         </div>
       </div>
+      <LoginModal isOpen={loginOpen} onClose={() => setLoginOpen(false)} />
     </nav>
   );
 }

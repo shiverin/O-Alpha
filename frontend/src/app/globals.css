@@ -6,15 +6,16 @@
 
 :root {
   color-scheme: dark;
+  --app-background:
+    radial-gradient(circle at 15% 10%, rgba(0, 213, 255, 0.08), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(255, 211, 77, 0.06), transparent 45%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(11, 17, 23, 0) 40%);
 }
 
 body {
   @apply bg-background text-on-background antialiased;
   font-family: var(--font-inter), system-ui, sans-serif;
-  background-image:
-    radial-gradient(circle at 15% 10%, rgba(0, 213, 255, 0.08), transparent 40%),
-    radial-gradient(circle at 80% 80%, rgba(255, 211, 77, 0.06), transparent 45%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(11, 17, 23, 0) 40%);
+  background-image: var(--app-background);
   background-attachment: fixed;
 }
 
@@ -56,17 +57,12 @@ body {
 }
 
 .bg-scanline {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.02),
-    rgba(11, 17, 23, 0)
-  );
+  background-image: var(--app-background);
+  background-attachment: fixed;
 }
 
 .bg-mission-grid {
-  background-image:
-    radial-gradient(circle at 20% 15%, rgba(0, 213, 255, 0.08), transparent 42%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(11, 17, 23, 0));
+  background-image: var(--app-background);
   background-attachment: fixed;
 }
 
@@ -86,9 +82,8 @@ body {
 }
 
 .bg-performance-grid {
-  background-image:
-    radial-gradient(circle at 80% 20%, rgba(0, 213, 255, 0.08), transparent 40%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(11, 17, 23, 0));
+  background-image: var(--app-background);
+  background-attachment: fixed;
 }
 
 .glass-card {

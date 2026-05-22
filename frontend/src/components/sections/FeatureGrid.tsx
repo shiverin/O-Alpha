@@ -1,67 +1,42 @@
-import { SectionHeader } from "./SectionHeader";
-
-type FeatureStat = {
-  label: string;
-  value: string;
-  valueClassName?: string;
-};
-
 type FeatureCard = {
   title: string;
   description: string;
-  iconLarge: string;
-  iconSmall: string;
+  icon: string;
   accent: "primary" | "secondary";
-  stats: FeatureStat[];
 };
 
 const accentStyles = {
   primary: {
     text: "text-primary-container",
-    hoverBorder: "hover:border-primary-container/60",
+    ring: "group-hover:border-primary-container/60",
   },
   secondary: {
-    text: "text-secondary-container",
-    hoverBorder: "hover:border-secondary-container/60",
+    text: "text-secondary-fixed",
+    ring: "group-hover:border-secondary-fixed/60",
   },
 } as const;
 
 const features: FeatureCard[] = [
   {
-    title: "Kalman Filtering",
+    title: "Intent Engine",
     description:
-      "Continuous state estimation algorithm that extracts true underlying asset trends from noisy market micro-structure, enabling precise entry and exit timing.",
-    iconLarge: "filter_alt",
-    iconSmall: "timeline",
+      "Define your parameters in plain English or precise metrics. The agent understands risk tolerance, sector focus, and temporal horizons natively.",
+    icon: "psychology",
     accent: "primary",
-    stats: [
-      { label: "INPUT", value: "NOISY_TICK_DATA" },
-      { label: "OUTPUT", value: "SMOOTHED_STATE_VECTOR", valueClassName: "text-secondary-container" },
-    ],
   },
   {
-    title: "HMM Regime Overlays",
+    title: "Continuous Learning",
     description:
-      "Hidden Markov Models continuously classify current market states (e.g., Bull Volatile, Bear Stable) to dynamically adjust the agent's risk posture and strategy selection.",
-    iconLarge: "multiline_chart",
-    iconSmall: "donut_large",
+      "Your agent evolves. It backtests theoretical strategies against live market data, suggesting optimizations to your core mandate without emotional bias.",
+    icon: "model_training",
     accent: "secondary",
-    stats: [
-      { label: "STATE_1", value: "RISK_ON_TRENDING" },
-      { label: "STATE_2", value: "CAPITAL_PRESERVATION", valueClassName: "text-error" },
-    ],
   },
   {
-    title: "Convex Optimization",
+    title: "Micro-second Execution",
     description:
-      "Solves multi-variable portfolio construction problems in real-time, maximizing expected Sharpe ratio while strictly adhering to user-defined constraints.",
-    iconLarge: "functions",
-    iconSmall: "calculate",
+      "When conditions align, hesitation is eliminated. Direct exchange connectivity ensures your agent acts instantly on predefined triggers.",
+    icon: "speed",
     accent: "primary",
-    stats: [
-      { label: "OBJECTIVE", value: "MAX(SHARPE)" },
-      { label: "CONSTRAINT", value: "USER_RISK_LIMITS", valueClassName: "text-secondary-container" },
-    ],
   },
 ];
 
@@ -69,34 +44,18 @@ function FeatureCardView({ card }: { card: FeatureCard }) {
   const accent = accentStyles[card.accent];
 
   return (
-    <div className={`bg-surface-container-high/80 border border-outline-variant/50 p-8 rounded-lg relative overflow-hidden group transition-colors duration-300 hover:bg-surface-container-highest/80 ${accent.hoverBorder}`}>
-      <div className="absolute top-0 right-0 p-4 opacity-15 group-hover:opacity-25 transition-opacity">
-        <span className={`material-symbols-outlined text-[120px] ${accent.text}`}>
-          {card.iconLarge}
+    <div className="bg-surface-container-high/80 border border-outline-variant/50 p-8 rounded-2xl relative overflow-hidden group transition-colors duration-300 hover:bg-surface-container-highest/80">
+      <div className={`w-12 h-12 rounded-full border border-outline-variant/40 flex items-center justify-center mb-6 transition-colors ${accent.ring}`}>
+        <span className={`material-symbols-outlined ${accent.text}`}>
+          {card.icon}
         </span>
       </div>
-      <span className={`material-symbols-outlined ${accent.text} mb-4 block`}>
-        {card.iconSmall}
-      </span>
-      <h3 className="font-headline-lg text-headline-lg text-on-background mb-3 text-2xl">
+      <h3 className="font-headline-lg text-headline-lg text-on-background mb-4">
         {card.title}
       </h3>
-      <p className="font-body-md text-body-md text-on-surface-variant mb-6">
+      <p className="font-body-md text-body-md text-on-surface-variant">
         {card.description}
       </p>
-      <div className="flex flex-col gap-2 font-data-sm text-data-sm">
-        {card.stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="flex justify-between border-b border-outline-variant/30 pb-1"
-          >
-            <span className="text-outline">{stat.label}</span>
-            <span className={stat.valueClassName ?? accent.text}>
-              {stat.value}
-            </span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
@@ -104,7 +63,16 @@ function FeatureCardView({ card }: { card: FeatureCard }) {
 export function FeatureGrid() {
   return (
     <section className="px-margin-desktop max-w-[1440px] mx-auto w-full">
-      <SectionHeader label="AGENT BEHAVIOUR LOGIC" tone="secondary" />
+      <div className="text-center mb-12">
+        <h2 className="font-headline-xl text-headline-xl text-on-background mb-4">
+          The Product
+        </h2>
+        <p className="font-body-md text-body-md text-on-surface-variant max-w-2xl mx-auto">
+          Converting your unique market preferences into ruthless, continuous
+          decisions. A seamless bridge between human intuition and machine
+          execution.
+        </p>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter">
         {features.map((card) => (
           <FeatureCardView key={card.title} card={card} />

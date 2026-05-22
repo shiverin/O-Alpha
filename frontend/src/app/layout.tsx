@@ -32,6 +32,12 @@ export default function RootLayout({
       lang="en"
       className={`dark ${inter.variable} ${jetBrainsMono.variable}`}
     >
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400&display=swap"
+        />
+      </head>
       <body>{children}</body>
     </html>
   );
