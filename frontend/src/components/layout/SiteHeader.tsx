@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/solid";
 
+import Link from "next/link";
 import { BrandMark } from "../BrandMark";
 import { LoginModal } from "../auth/LoginModal";
 import { PillButton } from "../PillButton";
@@ -39,22 +40,25 @@ export function SiteHeader({ activePath }: SiteHeaderProps) {
     <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-xl border-b border-outline-variant/30">
       <div className="flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4 max-w-[1440px] mx-auto">
         <div className="flex items-center gap-2 md:gap-12">
-          <a className="flex items-center gap-2 md:gap-3" href="/">
-            <BrandMark className="-ml-0.5" showText={false} />
-          </a>
+          <Link href="/" className="flex items-center gap-2 md:gap-3">
+            <a className="flex items-center gap-2 md:gap-3">
+              <BrandMark className="-ml-0.5" showText={false} />
+            </a>
+          </Link>
           <div className="hidden md:flex gap-8 items-center pt-1">
             {links.map((link) => (
-              <a
+              <Link
                 key={link.label}
-                className={
-                  link.active
-                    ? "font-body-md text-body-md text-primary-container border-b-2 border-primary-container pb-1 transition-colors duration-300"
-                    : "font-body-md text-body-md text-on-surface hover:text-primary-container transition-colors duration-300"
-                }
                 href={link.href}
+                className={`
+                  ${link.active
+                    ? "font-body-md text-body-md text-primary-container border-b-2 border-primary-container pb-1"
+                    : "font-body-md text-body-md text-on-surface hover:text-primary-container"}
+                  transition-colors duration-300
+                `}
               >
-                {link.label}
-              </a>
+                <a>{link.label}</a>
+              </Link>
             ))}
           </div>
         </div>
@@ -104,18 +108,18 @@ export function SiteHeader({ activePath }: SiteHeaderProps) {
           }
         >
           {links.map((link) => (
-            <a
+            <Link
               key={link.label}
-              className={
-                link.active
-                  ? "font-body-md text-body-md text-primary-container"
-                  : "font-body-md text-body-md text-on-surface-variant"
-              }
               href={link.href}
               onClick={() => setMenuOpen(false)}
+              className={`
+                ${link.active
+                  ? "font-body-md text-body-md text-primary-container"
+                  : "font-body-md text-body-md text-on-surface-variant"}
+              `}
             >
-              {link.label}
-            </a>
+              <a>{link.label}</a>
+            </Link>
           ))}
           <div className="pt-2 border-t border-outline-variant/30 flex flex-col gap-3">
             <PillButton

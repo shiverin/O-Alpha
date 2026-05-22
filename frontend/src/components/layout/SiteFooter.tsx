@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { BrandMark } from "../BrandMark";
 
 type FooterLink = {
@@ -17,9 +18,11 @@ export function SiteFooter() {
     <footer className="w-full py-16 bg-surface-container border-t border-outline-variant/40 relative z-10">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-gutter px-margin-desktop max-w-[1440px] mx-auto">
         <div className="col-span-1 md:col-span-1">
-          <a className="flex items-center gap-4 mb-4" href="#">
-            <BrandMark />
-          </a>
+          <Link href="/" className="flex items-center gap-4 mb-4">
+            <a className="flex items-center gap-4 mb-4">
+              <BrandMark />
+            </a>
+          </Link>
           <span className="font-data-sm text-data-sm text-on-surface-variant block mt-8">
             © 2026 Orbital. All rights reserved.
           </span>
