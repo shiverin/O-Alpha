@@ -1,119 +1,111 @@
-import { SectionHeader } from "./SectionHeader";
-
-type FlowItem = {
+type ProfileCard = {
   label: string;
-  icon: string;
+  title: string;
+  summary: string;
+  accent: "primary" | "secondary" | "neutral";
+  items: string[];
+  badge?: string;
 };
 
-type FooterNote = {
-  text: string;
-};
-
-const configureItems: FlowItem[] = [
-  { label: "Risk Profile", icon: "tune" },
-  { label: "Return Target", icon: "track_changes" },
-  { label: "Asset Universe", icon: "layers" },
+const profiles: ProfileCard[] = [
+  {
+    label: "PROFILE 01",
+    title: "Conservative",
+    summary: "Capital preservation focus.",
+    accent: "neutral",
+    items: ["Low volatility targeting", "Blue-chip preference", "Strict trailing stop-loss"],
+  },
+  {
+    label: "PROFILE 02",
+    title: "Opportunist",
+    summary: "Agile momentum capture.",
+    accent: "primary",
+    badge: "POPULAR",
+    items: ["Trend identification algorithms", "Mid-cap sector rotation", "Dynamic position sizing"],
+  },
+  {
+    label: "PROFILE 03",
+    title: "Quant",
+    summary: "Statistical arbitrage.",
+    accent: "secondary",
+    items: ["Mean reversion modeling", "High-frequency capability", "Complex multi-leg options"],
+  },
 ];
-
-const executeItems: FlowItem[] = [
-  { label: "Portfolio Rebalancing", icon: "sync" },
-  { label: "Risk-Adjusted Orders", icon: "gavel" },
-  { label: "Live P&L Reporting", icon: "monitoring" },
-];
-
-const footerNote: FooterNote = {
-  text: "No trading experience required. Just preferences — converted into alpha-seeking execution.",
-};
 
 export function ExecutionFlow() {
   return (
-    <section className="px-margin-desktop max-w-[1440px] mx-auto w-full relative">
-      <SectionHeader label="SYSTEMATIC EXECUTION FLOW" tone="primary" />
-      <div className="flex flex-col lg:flex-row items-center justify-between bg-surface-container-high/80 border border-outline-variant/40 rounded-xl p-8 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary-container/5 via-transparent to-transparent pointer-events-none"></div>
-
-        <div className="flex flex-col items-start w-full lg:w-1/4 z-10">
-          <h4 className="font-label-caps text-label-caps text-secondary-container mb-6">
-            YOU CONFIGURE
-          </h4>
-          <ul className="flex flex-col gap-4 w-full font-body-md text-body-md">
-            {configureItems.map((item) => (
-              <li
-                key={item.label}
-                className="flex items-center gap-3 bg-surface-container-high border border-outline-variant/40 p-3 rounded"
-              >
-                <span className="material-symbols-outlined text-primary-container text-sm">
-                  {item.icon}
-                </span>
-                {item.label}
-              </li>
-            ))}
-          </ul>
+    <section className="px-margin-desktop max-w-[1440px] mx-auto w-full">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
+        <div>
+          <h2 className="font-headline-xl text-headline-xl text-on-background mb-4">
+            Customisable Profiles
+          </h2>
+          <p className="font-body-md text-body-md text-on-surface-variant max-w-xl">
+            Deploy specialized agents tailored to distinct market environments.
+            Switch profiles with a single command.
+          </p>
         </div>
-
-        <div className="hidden lg:flex w-1/6 items-center justify-center relative h-32 z-10">
-          <div className="w-full h-px bg-outline-variant/60 relative">
-            <div className="absolute top-1/2 left-0 w-2 h-2 bg-primary-container rounded-full -translate-y-1/2 -translate-x-1/2"></div>
-            <div className="absolute top-1/2 right-0 w-2 h-2 bg-primary-container rounded-full -translate-y-1/2 translate-x-1/2"></div>
-            <div className="h-px bg-primary-container data-stream w-full absolute top-0 left-0"></div>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-center justify-center w-full lg:w-1/3 py-12 lg:py-0 z-10 relative">
-          <div className="absolute w-64 h-64 border border-outline-variant/30 rounded-full flex items-center justify-center bg-surface-container-low/10">
-            <div className="w-48 h-48 border border-primary-container/20 rounded-full flex items-center justify-center bg-primary-container/5">
-              <div className="w-32 h-32 border border-secondary-container/30 rounded-full absolute bg-secondary-container/5"></div>
-            </div>
-          </div>
-          <div className="w-24 h-24 bg-surface-container-highest border-2 border-primary-container rounded-full flex items-center justify-center z-20 shadow-lg">
-            <span className="font-headline-xl text-headline-xl text-secondary-container">
-              α
-            </span>
-          </div>
-          <div className="text-center mt-6 z-20">
-            <h3 className="font-headline-lg text-headline-lg text-on-background">
-              O(Alpha)
-            </h3>
-            <p className="font-data-sm text-data-sm text-on-surface-variant mt-2 max-w-[200px] text-center">
-              Continuous Logic Processing
-            </p>
-          </div>
-        </div>
-
-        <div className="hidden lg:flex w-1/6 items-center justify-center relative h-32 z-10">
-          <div className="w-full h-px bg-outline-variant/60 relative">
-            <div className="absolute top-1/2 left-0 w-2 h-2 bg-primary-container rounded-full -translate-y-1/2 -translate-x-1/2"></div>
-            <div className="absolute top-1/2 right-0 w-2 h-2 bg-primary-container rounded-full -translate-y-1/2 translate-x-1/2"></div>
-            <div
-              className="h-px bg-primary-container data-stream w-full absolute top-0 left-0"
-              style={{ animationDelay: "1.5s" }}
-            ></div>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-end w-full lg:w-1/4 z-10">
-          <h4 className="font-label-caps text-label-caps text-secondary-container mb-6">
-            AGENT EXECUTES
-          </h4>
-          <ul className="flex flex-col gap-4 w-full font-body-md text-body-md">
-            {executeItems.map((item) => (
-              <li
-                key={item.label}
-                className="flex items-center justify-end gap-3 bg-surface-container-high border border-outline-variant/40 p-3 rounded"
-              >
-                {item.label}
-                <span className="material-symbols-outlined text-primary-container text-sm">
-                  {item.icon}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <button className="px-6 py-2 rounded-full border border-outline-variant text-on-background font-body-md hover:bg-surface-container-high transition-colors">
+          Compare Strategies
+        </button>
       </div>
-      <div className="text-center mt-8">
-        <p className="font-data-sm text-data-sm text-secondary-container">
-          {footerNote.text}
-        </p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+        {profiles.map((profile) => (
+          <div
+            key={profile.title}
+            className={
+              profile.accent === "primary"
+                ? "bg-surface-container-high/80 border border-primary-container/40 rounded-2xl overflow-hidden relative transform lg:scale-105 shadow-[0_16px_32px_rgba(0,0,0,0.25)] transition-transform duration-300 ease-out hover:-translate-y-2"
+                : "bg-surface-container-high/70 border border-outline-variant/40 rounded-2xl overflow-hidden transition-transform duration-300 ease-out hover:-translate-y-2"
+            }
+          >
+            {profile.badge && (
+              <div className="absolute top-4 right-4 bg-primary-container text-on-primary-container font-data-sm text-data-sm px-3 py-1 rounded-full">
+                {profile.badge}
+              </div>
+            )}
+            <div className="p-8 border-b border-outline-variant/30">
+              <span
+                className={
+                  profile.accent === "secondary"
+                    ? "font-data-sm text-data-sm text-secondary-fixed"
+                    : profile.accent === "primary"
+                      ? "font-data-sm text-data-sm text-primary-container"
+                      : "font-data-sm text-data-sm text-on-surface-variant"
+                }
+              >
+                {profile.label}
+              </span>
+              <h3 className="font-headline-lg text-headline-lg text-on-background mt-2 mb-2">
+                {profile.title}
+              </h3>
+              <p className="font-body-md text-body-md text-on-surface-variant">
+                {profile.summary}
+              </p>
+            </div>
+            <ul className="p-8 space-y-4">
+              {profile.items.map((item) => (
+                <li
+                  key={item}
+                  className="flex items-center gap-3 text-on-surface font-body-md border-b border-outline-variant/20 pb-4 last:border-b-0 last:pb-0"
+                >
+                  <span
+                    className={
+                      profile.accent === "secondary"
+                        ? "material-symbols-outlined text-secondary-fixed text-sm"
+                        : profile.accent === "primary"
+                          ? "material-symbols-outlined text-primary-container text-sm"
+                          : "material-symbols-outlined text-on-surface-variant text-sm"
+                    }
+                  >
+                    check
+                  </span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
     </section>
   );

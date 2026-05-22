@@ -121,10 +121,10 @@ export function PricingPage() {
               key={tier.title}
               className={
                 tier.accent === "primary"
-                  ? "bg-surface-container-high/90 border border-primary-container/40 rounded-lg p-8 flex flex-col relative transform md:-translate-y-3"
+                  ? "bg-surface-container-high/90 border border-primary-container/40 rounded-lg p-8 flex flex-col relative transition-transform duration-300 ease-out hover:-translate-y-2"
                   : tier.accent === "secondary"
-                    ? "bg-surface-container-high/80 border border-secondary-fixed/30 rounded-lg p-8 flex flex-col relative hover:border-secondary-fixed/50 transition-colors"
-                    : "bg-surface-container-high/70 border border-outline-variant/40 rounded-lg p-8 flex flex-col hover:border-outline-variant/60 transition-colors"
+                    ? "bg-surface-container-high/80 border border-secondary-fixed/30 rounded-lg p-8 flex flex-col relative hover:border-secondary-fixed/50 transition-colors transition-transform duration-300 ease-out hover:-translate-y-2"
+                    : "bg-surface-container-high/70 border border-outline-variant/40 rounded-lg p-8 flex flex-col hover:border-outline-variant/60 transition-colors transition-transform duration-300 ease-out hover:-translate-y-2"
               }
             >
               {tier.accent === "primary" && (

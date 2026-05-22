@@ -3,6 +3,7 @@ import Image from "next/image";
 type BrandMarkProps = {
   className?: string;
   logoSize?: "sm" | "md";
+  showText?: boolean;
 };
 
 const logoSizeClasses: Record<NonNullable<BrandMarkProps["logoSize"]>, string> = {
@@ -15,7 +16,11 @@ const logoSizePixels: Record<NonNullable<BrandMarkProps["logoSize"]>, number> = 
   md: 44,
 };
 
-export function BrandMark({ className = "", logoSize = "md" }: BrandMarkProps) {
+export function BrandMark({
+  className = "",
+  logoSize = "md",
+  showText = true,
+}: BrandMarkProps) {
   return (
     <span
       className={`inline-flex items-center gap-1 ${className}`}
@@ -28,10 +33,12 @@ export function BrandMark({ className = "", logoSize = "md" }: BrandMarkProps) {
         src="/brand-mark.png"
         width={logoSizePixels[logoSize]}
       />
-      <span className="font-headline-lg text-headline-lg font-semibold tracking-tight leading-none">
-        <span className="text-secondary-container">O</span>
-        <span className="text-primary-container">(Alpha)</span>
-      </span>
+      {showText && (
+        <span className="font-headline-lg text-headline-lg font-semibold tracking-tight leading-none">
+          <span className="text-secondary-container">O</span>
+          <span className="text-primary-container">(Alpha)</span>
+        </span>
+      )}
     </span>
   );
 }
