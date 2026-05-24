@@ -2,9 +2,12 @@ package api
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/oalpha/internal/auth"
 	"github.com/oalpha/internal/backtest"
 	"github.com/oalpha/internal/db"
 	"github.com/oalpha/pkg/models"
@@ -12,12 +15,14 @@ import (
 
 // Handler holds HTTP dependencies.
 type Handler struct {
-	repo *db.Repository
+	repo     *db.Repository
+	authSvc  *auth.AuthService
 }
 
 // NewHandler creates API handlers.
-func NewHandler(repo *db.Repository) *Handler {
-	return &Handler{repo: repo}
+func NewHandler(repo *db.Repository, jwtSecret string) *Handler {
+	authSvc := auth.NewAuthService(db.NewUserRepository(repo.db), jwtSecret, time.Hour*24)
+	return &Handler{repo: repo, authSvc: authSvc}
 }
 
 // Health returns service status.

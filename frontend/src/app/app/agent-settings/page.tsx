@@ -1,3 +1,5 @@
+"use client";
+
 import { AppShell } from "@/components/app/AppShell";
 import { PillButton } from "@/components/PillButton";
 import { Container } from "@/components/ui/Container";
