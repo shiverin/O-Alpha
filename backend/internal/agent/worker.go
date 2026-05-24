@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/oalpha/internal/alpaca"
+	"github.com/oalpha/internal/backtest"
 	"github.com/oalpha/internal/db"
 	"github.com/oalpha/pkg/models"
 )
@@ -173,7 +174,7 @@ func (w *AgentWorker) processTick() error {
 	latestBar := bars[len(bars)-1]
 
 	// Execute trade based on signal (only act on new signals to avoid overtrading)
-	if latestSignal.Action != models.Hold {
+	if latestSignal != models.SignalHold {
 		// In a real implementation, we would check if we've already acted on this signal
 		// For simplicity, we'll act on every signal (in production, you'd track signal IDs)
 		err := w.executeTrade(latestSignal, latestBar.Close)
@@ -184,11 +185,11 @@ func (w *AgentWorker) processTick() error {
 
 	// Log status
 	if w.paperTrade {
-		log.Printf("Paper trade - Symbol: %s, Signal: %s, Price: %.2f, Cash: %.2f, Positions: %v",
-			w.symbol, latestSignal.Action, latestBar.Close, w.account.Cash, w.account.Positions)
+		log.Printf("Paper trade - Symbol: %s, Signal: %v, Price: %.2f, Cash: %.2f, Positions: %v",
+			w.symbol, latestSignal, latestBar.Close, w.account.Cash, w.account.Positions)
 	} else {
-		log.Printf("Live trade - Symbol: %s, Signal: %s, Price: %.2f",
-			w.symbol, latestSignal.Action, latestBar.Close)
+		log.Printf("Live trade - Symbol: %s, Signal: %v, Price: %.2f",
+			w.symbol, latestSignal, latestBar.Close)
 	}
 
 	return nil
@@ -207,8 +208,8 @@ func (w *AgentWorker) executePaperTrade(signal models.Signal, price float64) err
 	var amount float64
 	var err error
 
-	switch signal.Action {
-	case models.Buy:
+	switch signal {
+	case models.SignalBuy:
 		// Use 10% of available cash for each trade
 		cashToUse := w.account.Cash * 0.1
 		if cashToUse < price {
@@ -219,7 +220,7 @@ func (w *AgentWorker) executePaperTrade(signal models.Signal, price float64) err
 		if err != nil {
 			return fmt.Errorf("paper buy failed: %w", err)
 		}
-	case models.Sell:
+	case models.SignalSell:
 		// Sell 50% of current position
 		currentPos := w.account.Positions[w.symbol]
 		if currentPos <= 0 {
@@ -234,7 +235,7 @@ func (w *AgentWorker) executePaperTrade(signal models.Signal, price float64) err
 			return fmt.Errorf("paper sell failed: %w", err)
 		}
 	default:
-		return fmt.Errorf("unsupported signal action: %v", signal.Action)
+		return fmt.Errorf("unsupported signal action: %v", signal)
 	}
 
 	return nil
@@ -244,8 +245,8 @@ func (w *AgentWorker) executePaperTrade(signal models.Signal, price float64) err
 func (w *AgentWorker) executeLiveTrade(signal models.Signal, price float64) error {
 	// In a real implementation, this would use the Alpaca Trading API
 	// For now, we'll just log the intended action
-	log.Printf("Would execute live trade: %s %f shares of %s at $%.2f",
-		signal.Action, 0.0, w.symbol, price) // amount calculation omitted for brevity
+	log.Printf("Would execute live trade: %v %f shares of %s at $%.2f",
+		signal, 0.0, w.symbol, price) // amount calculation omitted for brevity
 	return nil
 }
 

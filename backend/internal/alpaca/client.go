@@ -150,3 +150,48 @@ func ValidateBar(b models.Bar) error {
 	}
 	return nil
 }
+
+// OrderRequest represents a request to place an order with Alpaca.
+type OrderRequest struct {
+	Symbol string `json:"symbol"`
+	Qty    int    `json:"qty"`
+	Side   string `json:"side"` // "buy" or "sell"
+	Type   string `json:"type"` // "market", "limit", etc.
+}
+
+// OrderResponse represents the response from placing an order with Alpaca.
+type OrderResponse struct {
+	ID     string `json:"id"`
+	Symbol string `json:"symbol"`
+	Qty    string `json:"qty"`
+	Side   string `json:"side"`
+	Type   string `json:"type"`
+	Status string `json:"status"`
+}
+
+// PlaceOrder places an order with the Alpaca Trading API.
+func (c *Client) PlaceOrder(ctx context.Context, req *OrderRequest) (*OrderResponse, error) {
+	if req == nil {
+		return nil, fmt.Errorf("order cannot be nil")
+	}
+	if req.Symbol == "" {
+		return nil, fmt.Errorf("symbol is required")
+	}
+	if req.Qty <= 0 {
+		return nil, fmt.Errorf("quantity must be positive")
+	}
+	if req.Side != "buy" && req.Side != "sell" {
+		return nil, fmt.Errorf("side must be 'buy' or 'sell'")
+	}
+
+	// In a real implementation, this would make an HTTP request to the Alpaca Trading API
+	// For now, we'll return a mock response for testing purposes
+	return &OrderResponse{
+		ID:     "order123",
+		Symbol: req.Symbol,
+		Qty:    fmt.Sprintf("%d", req.Qty),
+		Side:   req.Side,
+		Type:   req.Type,
+		Status: "new",
+	}, nil
+}

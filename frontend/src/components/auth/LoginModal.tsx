@@ -9,9 +9,11 @@ import { Icon } from '@/components/ui/Icon';
 type LoginModalProps = {
   isOpen: boolean;
   onClose: () => void;
+  // FIXED: Added redirectPath as an optional string
+  redirectPath?: string; 
 };
 
-export function LoginModal({ isOpen, onClose }: LoginModalProps) {
+export function LoginModal({ isOpen, onClose, redirectPath = "/app/dashboard" }: LoginModalProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -56,13 +58,13 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
     localStorage.setItem("oa-auth", "true");
     onClose();
-    router.push("/app/dashboard");
+    router.push(redirectPath);
   };
 
   const handleBypass = () => {
     localStorage.setItem("oa-auth", "true");
     onClose();
-    router.push("/app/dashboard");
+    router.push(redirectPath);
   };
 
   return createPortal(

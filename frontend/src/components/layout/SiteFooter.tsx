@@ -19,9 +19,7 @@ export function SiteFooter() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-gutter px-margin-desktop max-w-[1440px] mx-auto">
         <div className="col-span-1 md:col-span-1">
           <Link href="/" className="flex items-center gap-4 mb-4">
-            <a className="flex items-center gap-4 mb-4">
-              <BrandMark />
-            </a>
+            <BrandMark />
           </Link>
           <span className="font-data-sm text-data-sm text-on-surface-variant block mt-8">
             © 2026 Orbital. All rights reserved.

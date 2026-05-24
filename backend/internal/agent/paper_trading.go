@@ -3,8 +3,6 @@ package agent
 import (
 	"context"
 	"fmt"
-
-	"github.com/oalpha/pkg/models"
 )
 
 // PaperAccount simulates a trading account for paper trading.

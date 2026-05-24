@@ -2,20 +2,21 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/oalpha/pkg/models"
 )
 
 // Repository provides data access for OHLCV bars.
 type Repository struct {
-	db *sql.DB
+	db *pgxpool.Pool
 }
 
 // NewRepository returns a Repository backed by db.
-func NewRepository(db *sql.DB) *Repository {
+func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}
 }
 
@@ -25,11 +26,11 @@ func (r *Repository) InsertBars(ctx context.Context, bars []models.Bar) (int64, 
 		return 0, nil
 	}
 
-	tx, err := r.db.BeginTx(ctx, nil)
+	tx, err := r.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return 0, fmt.Errorf("begin tx: %w", err)
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	const q = `
 		INSERT INTO bars (time, symbol, open, high, low, close, volume)
@@ -41,23 +42,16 @@ func (r *Repository) InsertBars(ctx context.Context, bars []models.Bar) (int64, 
 			close = EXCLUDED.close,
 			volume = EXCLUDED.volume`
 
-	stmt, err := tx.PrepareContext(ctx, q)
-	if err != nil {
-		return 0, fmt.Errorf("prepare insert: %w", err)
-	}
-	defer stmt.Close()
-
 	var inserted int64
 	for _, b := range bars {
-		res, err := stmt.ExecContext(ctx, b.Time, b.Symbol, b.Open, b.High, b.Low, b.Close, b.Volume)
+		_, err := tx.Exec(ctx, q, b.Time, b.Symbol, b.Open, b.High, b.Low, b.Close, b.Volume)
 		if err != nil {
 			return inserted, fmt.Errorf("insert bar %s %s: %w", b.Symbol, b.Time, err)
 		}
-		n, _ := res.RowsAffected()
-		inserted += n
+		inserted++
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return inserted, fmt.Errorf("commit: %w", err)
 	}
 	return inserted, nil
@@ -71,7 +65,7 @@ func (r *Repository) GetBars(ctx context.Context, symbol string, start, end time
 		WHERE symbol = $1 AND time >= $2 AND time <= $3
 		ORDER BY time ASC`
 
-	rows, err := r.db.QueryContext(ctx, q, symbol, start, end)
+	rows, err := r.db.Query(ctx, q, symbol, start, end)
 	if err != nil {
 		return nil, fmt.Errorf("query bars: %w", err)
 	}
@@ -92,7 +86,7 @@ func (r *Repository) GetBars(ctx context.Context, symbol string, start, end time
 func (r *Repository) CountBars(ctx context.Context, symbol string, start, end time.Time) (int64, error) {
 	const q = `SELECT COUNT(*) FROM bars WHERE symbol = $1 AND time >= $2 AND time <= $3`
 	var n int64
-	err := r.db.QueryRowContext(ctx, q, symbol, start, end).Scan(&n)
+	err := r.db.QueryRow(ctx, q, symbol, start, end).Scan(&n)
 	if err != nil {
 		return 0, fmt.Errorf("count bars: %w", err)
 	}

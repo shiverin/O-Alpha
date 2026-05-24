@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+// FIXED: Imported usePathname alongside useRouter
+import { useRouter, usePathname } from "next/navigation";
 
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/solid";
 
@@ -30,7 +31,11 @@ const navLinks: NavLink[] = [
 export function SiteHeader({ activePath }: SiteHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  
   const router = useRouter();
+  // FIXED: Initialized the usePathname hook
+  const pathname = usePathname(); 
+
   const links = navLinks.map((link) => ({
     ...link,
     active: activePath ? link.href === activePath : link.active,
@@ -40,10 +45,9 @@ export function SiteHeader({ activePath }: SiteHeaderProps) {
     <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-xl border-b border-outline-variant/30">
       <div className="flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4 max-w-[1440px] mx-auto">
         <div className="flex items-center gap-2 md:gap-12">
+          {/* FIXED: Removed nested <a> tag */}
           <Link href="/" className="flex items-center gap-2 md:gap-3">
-            <a className="flex items-center gap-2 md:gap-3">
-              <BrandMark className="-ml-0.5" showText={false} />
-            </a>
+            <BrandMark className="-ml-0.5" showText={false} />
           </Link>
           <div className="hidden md:flex gap-8 items-center pt-1">
             {links.map((link) => (
@@ -57,7 +61,8 @@ export function SiteHeader({ activePath }: SiteHeaderProps) {
                   transition-colors duration-300
                 `}
               >
-                <a>{link.label}</a>
+                {/* FIXED: Removed nested <a> tag */}
+                {link.label}
               </Link>
             ))}
           </div>
@@ -118,7 +123,8 @@ export function SiteHeader({ activePath }: SiteHeaderProps) {
                   : "font-body-md text-body-md text-on-surface-variant"}
               `}
             >
-              <a>{link.label}</a>
+              {/* FIXED: Removed nested <a> tag */}
+              {link.label}
             </Link>
           ))}
           <div className="pt-2 border-t border-outline-variant/30 flex flex-col gap-3">
@@ -144,7 +150,7 @@ export function SiteHeader({ activePath }: SiteHeaderProps) {
           </div>
         </div>
       </div>
-      <LoginModal isOpen={loginOpen} onClose={() => setLoginOpen(false)} />
+      <LoginModal isOpen={loginOpen} onClose={() => setLoginOpen(false)} redirectPath={pathname} />
     </nav>
   );
 }
