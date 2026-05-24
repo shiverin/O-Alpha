@@ -1,0 +1,72 @@
+package agent
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/oalpha/pkg/models"
+)
+
+// PaperAccount simulates a trading account for paper trading.
+type PaperAccount struct {
+	Cash      float64
+	Positions map[string]float64 // symbol -> number of shares
+}
+
+// NewPaperAccount creates a new paper trading account with initial cash.
+func NewPaperAccount(initialCash float64) *PaperAccount {
+	return &PaperAccount{
+		Cash:      initialCash,
+		Positions: make(map[string]float64),
+	}
+}
+
+// Buy buys shares of a symbol at the given price.
+// Returns the number of shares bought and the cost, or an error if insufficient funds.
+func (a *PaperAccount) Buy(ctx context.Context, symbol string, price float64, amount float64) (float64, float64, error) {
+	if price <= 0 {
+		return 0, 0, fmt.Errorf("price must be positive")
+	}
+	if amount <= 0 {
+		return 0, 0, fmt.Errorf("amount must be positive")
+	}
+	cost := price * amount
+	if a.Cash < cost {
+		return 0, 0, fmt.Errorf("insufficient funds: need %.2f, have %.2f", cost, a.Cash)
+	}
+	a.Positions[symbol] += amount
+	a.Cash -= cost
+	return amount, cost, nil
+}
+
+// Sell sells shares of a symbol at the given price.
+// Returns the number of shares sold and the proceeds, or an error if insufficient shares.
+func (a *PaperAccount) Sell(ctx context.Context, symbol string, price float64, amount float64) (float64, float64, error) {
+	if price <= 0 {
+		return 0, 0, fmt.Errorf("price must be positive")
+	}
+	if amount <= 0 {
+		return 0, 0, fmt.Errorf("amount must be positive")
+	}
+	if a.Positions[symbol] < amount {
+		return 0, 0, fmt.Errorf("insufficient position: have %.2f, need %.2f", a.Positions[symbol], amount)
+	}
+	a.Positions[symbol] -= amount
+	if a.Positions[symbol] == 0 {
+		delete(a.Positions[symbol])
+	}
+	proceeds := price * amount
+	a.Cash += proceeds
+	return amount, proceeds, nil
+}
+
+// Equity returns the total equity (cash + market value of positions) based on current prices.
+func (a *PaperAccount) Equity(ctx context.Context, prices map[string]float64) float64 {
+	equity := a.Cash
+	for symbol, shares := range a.Positions {
+		if price, ok := prices[symbol]; ok {
+			equity += price * shares
+		}
+	}
+	return equity
+}
