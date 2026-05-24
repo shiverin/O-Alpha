@@ -1,36 +1,32 @@
 package backtest
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/oalpha/pkg/models"
 )
 
-// RunMACrossover simulates a long-only MA crossover strategy.
+// RunBacktest simulates a strategy on historical data.
 // Signals generated at bar t execute at bar t+1 open (no look-ahead).
-func RunMACrossover(bars []models.Bar, fast, slow int, initialCash float64) (*models.BacktestResult, error) {
-	if fast <= 0 || slow <= 0 {
-		return nil, fmt.Errorf("periods must be positive")
-	}
-	if fast >= slow {
-		return nil, fmt.Errorf("fast period must be less than slow period")
-	}
-	if len(bars) < slow+1 {
-		return nil, fmt.Errorf("not enough bars: need at least %d", slow+1)
+func RunBacktest(ctx context.Context, bars []models.Bar, strat Strategy, initialCash float64) (*models.BacktestResult, error) {
+	if len(bars) < 1 {
+		return nil, fmt.Errorf("need at least one bar")
 	}
 	if initialCash <= 0 {
 		initialCash = 100_000
 	}
 
-	closes := make([]float64, len(bars))
-	opens := make([]float64, len(bars))
-	for i, b := range bars {
-		closes[i] = b.Close
-		opens[i] = b.Open
+	// Generate signals using the strategy
+	signals, err := strat.GenerateSignal(ctx, bars)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate signals: %w", err)
 	}
 
-	strategy := &MACrossover{FastPeriod: fast, SlowPeriod: slow}
-	signals := strategy.Signals(closes)
+	// Validate signals length matches bars length
+	if len(signals) != len(bars) {
+		return nil, fmt.Errorf("signals length (%d) does not match bars length (%d)", len(signals), len(bars))
+	}
 
 	cash := initialCash
 	shares := 0.0
@@ -41,15 +37,15 @@ func RunMACrossover(bars []models.Bar, fast, slow int, initialCash float64) (*mo
 		// Execute pending signal from previous bar at this bar's open.
 		if i > 0 {
 			switch signals[i-1] {
-			case SignalBuy:
-				if shares == 0 && opens[i] > 0 {
-					shares = cash / opens[i]
+			case models.SignalBuy:
+				if shares == 0 && bars[i].Open > 0 {
+					shares = cash / bars[i].Open
 					cash = 0
 					numTrades++
 				}
-			case SignalSell:
+			case models.SignalSell:
 				if shares > 0 {
-					cash = shares * opens[i]
+					cash = shares * bars[i].Open
 					shares = 0
 					numTrades++
 				}
@@ -58,7 +54,7 @@ func RunMACrossover(bars []models.Bar, fast, slow int, initialCash float64) (*mo
 
 		equity := cash
 		if shares > 0 {
-			equity = shares * closes[i]
+			equity = shares * bars[i].Close
 		}
 		equityCurve = append(equityCurve, models.EquityPoint{
 			Time:   bars[i].Time,
@@ -68,7 +64,7 @@ func RunMACrossover(bars []models.Bar, fast, slow int, initialCash float64) (*mo
 
 	// Mark to market at last close if still holding.
 	if shares > 0 {
-		cash = shares * closes[len(closes)-1]
+		cash = shares * bars[len(bars)-1].Close
 		shares = 0
 	}
 

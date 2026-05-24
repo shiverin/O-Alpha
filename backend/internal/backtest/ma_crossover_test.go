@@ -1,6 +1,7 @@
 package backtest
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -30,10 +31,10 @@ func TestMACrossoverSignals(t *testing.T) {
 	hasBuy := false
 	hasSell := false
 	for _, sig := range signals {
-		if sig == SignalBuy {
+		if sig == models.SignalBuy {
 			hasBuy = true
 		}
-		if sig == SignalSell {
+		if sig == models.SignalSell {
 			hasSell = true
 		}
 	}
@@ -61,9 +62,10 @@ func TestRunMACrossover(t *testing.T) {
 		}
 	}
 
-	result, err := RunMACrossover(bars, 3, 5, 10_000)
+	strat := NewMACrossoverStrategy(3, 5)
+	result, err := RunBacktest(context.Background(), bars, strat, 10_000)
 	if err != nil {
-		t.Fatalf("RunMACrossover: %v", err)
+		t.Fatalf("RunBacktest: %v", err)
 	}
 	if len(result.EquityCurve) != len(bars) {
 		t.Fatalf("equity curve len %d, want %d", len(result.EquityCurve), len(bars))
