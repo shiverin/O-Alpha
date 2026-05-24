@@ -2,7 +2,6 @@ package agent
 
 import (
 	"context"
-	"math"
 
 	"github.com/oalpha/pkg/models"
 )
@@ -68,11 +67,8 @@ func (s *RegimeDetectorStrategy) GenerateSignal(ctx context.Context, bars []mode
 	signals := make([]models.Signal, len(bars))
 
 	for i := range bars {
-		var signal models.Signal
-
 		// Default to hold
-		signal.Action = models.Hold
-		signal.Confidence = 0.5
+		var signal models.Signal = models.SignalHold
 
 		if i >= s.slowMA-1 { // We have enough data for both MAs
 			fastMA := fastMAValues[i]
@@ -96,27 +92,22 @@ func (s *RegimeDetectorStrategy) GenerateSignal(ctx context.Context, bars []mode
 			case RegimeBull:
 				if fastMA > slowMA && fastMAValues[i-1] <= slowMAValues[i-1] {
 					// Golden cross - bullish signal
-					signal.Action = models.Buy
-					signal.Confidence = 0.8
+					signal = models.SignalBuy
 				}
 			case RegimeBear:
 				if fastMA < slowMA && fastMAValues[i-1] >= slowMAValues[i-1] {
 					// Death cross - bearish signal
-					signal.Action = models.Sell
-					signal.Confidence = 0.8
+					signal = models.SignalSell
 				}
 			case RegimeVolatile:
 				// In volatile regime, reduce position sizes or stay neutral
-				signal.Action = models.Hold
-				signal.Confidence = 0.3
+				signal = models.SignalHold
 			case RegimeNeutral:
 				// In neutral regime, follow the trend if any
 				if fastMA > slowMA {
-					signal.Action = models.Buy
-					signal.Confidence = 0.6
+					signal = models.SignalBuy
 				} else if fastMA < slowMA {
-					signal.Action = models.Sell
-					signal.Confidence = 0.6
+					signal = models.SignalSell
 				}
 			}
 		}

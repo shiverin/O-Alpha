@@ -34,7 +34,7 @@ const profiles: ProfileCard[] = [
 
 import { Panel } from '@/components/ui/Panel';
 import { Icon } from '@/components/ui/Icon';
-import { getAccentStyle, getBorderStyle } from '@/lib/ui';
+import { getBorderStyle } from '@/lib/ui';
 import { Container } from '@/components/ui/Container';
 
 export function ExecutionFlow() {

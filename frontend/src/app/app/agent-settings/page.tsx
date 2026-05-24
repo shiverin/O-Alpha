@@ -1,3 +1,5 @@
+"use client";
+
 import { AppShell } from "@/components/app/AppShell";
 import { PillButton } from "@/components/PillButton";
 import { Container } from "@/components/ui/Container";
@@ -42,21 +44,21 @@ export default function AgentSettingsPage() {
             </h3>
             <div className="flex flex-wrap gap-2">
               <PillButton
-                variant={riskProfile === "conservative" ? "fill" : "outline"}
+                variant={riskProfile === "conservative" ? "solid" : "outline"}
                 size="sm"
                 onClick={() => setRiskProfile("conservative")}
               >
                 Conservative
               </PillButton>
               <PillButton
-                variant={riskProfile === "moderate" ? "fill" : "outline"}
+                variant={riskProfile === "moderate" ? "solid" : "outline"}
                 size="sm"
                 onClick={() => setRiskProfile("moderate")}
               >
                 Moderate
               </PillButton>
               <PillButton
-                variant={riskProfile === "aggressive" ? "fill" : "outline"}
+                variant={riskProfile === "aggressive" ? "solid" : "outline"}
                 size="sm"
                 onClick={() => setRiskProfile("aggressive")}
               >
@@ -161,21 +163,21 @@ export default function AgentSettingsPage() {
             </p>
             <div className="flex flex-wrap gap-2">
               <PillButton
-                variant={rebalanceFreq === "hourly" ? "fill" : "outline"}
+                variant={rebalanceFreq === "hourly" ? "solid" : "outline"}
                 size="sm"
                 onClick={() => setRebalanceFreq("hourly")}
               >
                 Hourly
               </PillButton>
               <PillButton
-                variant={rebalanceFreq === "daily" ? "fill" : "outline"}
+                variant={rebalanceFreq === "daily" ? "solid" : "outline"}
                 size="sm"
                 onClick={() => setRebalanceFreq("daily")}
               >
                 Daily
               </PillButton>
               <PillButton
-                variant={rebalanceFreq === "weekly" ? "fill" : "outline"}
+                variant={rebalanceFreq === "weekly" ? "solid" : "outline"}
                 size="sm"
                 onClick={() => setRebalanceFreq("weekly")}
               >
@@ -187,7 +189,7 @@ export default function AgentSettingsPage() {
 
         <div className="mt-8 pt-4 border-t border-outline-variant/30">
           <PillButton
-            variant="fill"
+            variant="solid"
             size="md"
             onClick={handleSave}
             disabled={isSaving}
