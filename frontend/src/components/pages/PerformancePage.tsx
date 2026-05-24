@@ -7,9 +7,15 @@ export function PerformancePage() {
     <LandingShell activePath="/performance" className="bg-performance-grid">
       <main className="pt-32 px-margin-mobile md:px-margin-desktop max-w-[1440px] mx-auto flex flex-col gap-16 md:gap-24">
         <section className="flex flex-col items-start max-w-4xl">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="pulse-dot"></div>
+            <span className="font-label-caps text-label-caps text-primary-container uppercase tracking-widest">
+              Live Alpha Generation
+            </span>
+          </div>
           <h1 className="font-headline-xl text-headline-xl text-on-surface mb-6">
             Institutional-Grade <br className="hidden md:block" />
-            <span className="text-secondary-container">Performance.</span>
+            <span className="text-secondary-container gold-glow">Performance.</span>
           </h1>
           <p className="font-body-md text-body-md text-on-surface-variant max-w-2xl">
             Continuous market scanning. Convex optimization. Regime-aware
@@ -30,7 +36,7 @@ export function PerformancePage() {
                   <span className="font-data-sm text-data-sm text-on-surface-variant block mb-1">
                     CUMULATIVE P&L (YTD)
                   </span>
-                  <span className="font-data-lg text-[32px] font-medium text-primary-container">
+                  <span className="font-data-lg text-[32px] font-medium text-primary-container neon-text">
                     +24.8%
                   </span>
                 </div>
@@ -71,12 +77,11 @@ export function PerformancePage() {
                     strokeDasharray="1 2"
                   ></line>
                   <path
-                    className="chart-area chart-area-animate"
+                    className="chart-area"
                     d="M0,40 C10,38 20,45 30,30 C40,15 50,25 60,10 C70,-5 80,15 90,5 L100,0 L100,50 L0,50 Z"
                   ></path>
                   <path
-                    className="chart-line chart-line-animate"
-                    pathLength={100}
+                    className="chart-line"
                     d="M0,40 C10,38 20,45 30,30 C40,15 50,25 60,10 C70,-5 80,15 90,5 L100,0"
                   ></path>
                 </svg>
