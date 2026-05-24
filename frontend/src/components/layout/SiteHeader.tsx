@@ -33,7 +33,6 @@ export function SiteHeader({ activePath }: SiteHeaderProps) {
   const [loginOpen, setLoginOpen] = useState(false);
   
   const router = useRouter();
-  // FIXED: Initialized the usePathname hook
   const pathname = usePathname(); 
 
   const links = navLinks.map((link) => ({
@@ -45,7 +44,7 @@ export function SiteHeader({ activePath }: SiteHeaderProps) {
     <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-xl border-b border-outline-variant/30">
       <div className="flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4 max-w-[1440px] mx-auto">
         <div className="flex items-center gap-2 md:gap-12">
-          {/* FIXED: Removed nested <a> tag */}
+
           <Link href="/" className="flex items-center gap-2 md:gap-3">
             <BrandMark className="-ml-0.5" showText={false} />
           </Link>
@@ -61,7 +60,7 @@ export function SiteHeader({ activePath }: SiteHeaderProps) {
                   transition-colors duration-300
                 `}
               >
-                {/* FIXED: Removed nested <a> tag */}
+   
                 {link.label}
               </Link>
             ))}

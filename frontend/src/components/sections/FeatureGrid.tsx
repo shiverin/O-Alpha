@@ -1,6 +1,6 @@
 import { Panel } from '@/components/ui/Panel';
 import { Icon } from '@/components/ui/Icon';
-import { getAccentStyle } from '@/lib/ui';
+//import { getAccentStyle } from '@/lib/ui';
 
 type FeatureCard = {
   title: string;
