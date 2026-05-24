@@ -35,10 +35,11 @@ const profiles: ProfileCard[] = [
 import { Panel } from '@/components/ui/Panel';
 import { Icon } from '@/components/ui/Icon';
 import { getAccentStyle, getBorderStyle } from '@/lib/ui';
+import { Container } from '@/components/ui/Container';
 
 export function ExecutionFlow() {
   return (
-    <section className="px-margin-desktop max-w-[1440px] mx-auto w-full">
+    <Container>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
         <div>
           <h2 className="font-headline-xl text-headline-xl text-on-background mb-4">
@@ -118,6 +119,6 @@ export function ExecutionFlow() {
           );
         })}
       </div>
-    </section>
+    </Container>
   );
 }
