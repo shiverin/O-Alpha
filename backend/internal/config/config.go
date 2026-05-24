@@ -21,6 +21,9 @@ type Config struct {
 	IngestSymbols  []string
 	IngestInterval string
 	IngestLookback time.Duration
+
+	JWTSecret string
+	TokenExpiry time.Duration
 }
 
 // Load reads configuration from the environment.
@@ -33,7 +36,10 @@ func Load() (*Config, error) {
 		AlpacaAPIKey:    os.Getenv("ALPACA_API_KEY"),
 		AlpacaAPISecret: os.Getenv("ALPACA_API_SECRET"),
 		AlpacaDataURL:   envOr("ALPACA_DATA_URL", "https://data.alpaca.markets"),
-		IngestInterval:  envOr("INGEST_INTERVAL", "1h"),
+		IngestSymbols:  []string{},
+		IngestInterval: envOr("INGEST_INTERVAL", "1h"),
+		JWTSecret:      os.Getenv("JWT_SECRET"),
+		TokenExpiry:    time.Hour * 24, // 24 hours default
 	}
 
 	if cfg.DatabaseURL == "" {
@@ -56,6 +62,13 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("INGEST_LOOKBACK: %w", err)
 	}
 	cfg.IngestLookback = d
+
+	// Override token expiry if set
+	if expiryStr := os.Getenv("TOKEN_EXPIRY"); expiryStr != "" {
+		if d, err := time.ParseDuration(expiryStr); err == nil {
+			cfg.TokenExpiry = d
+		}
+	}
 
 	return cfg, nil
 }
