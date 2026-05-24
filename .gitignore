@@ -21,3 +21,7 @@ scripts/__pycache__/
 .idea/
 .vscode/
 *.swp
+
+backend/ROADMAP.md
+progress.md
+.claude/
