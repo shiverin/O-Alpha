@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
+import { Panel } from '@/components/ui/Panel';
+import { Icon } from '@/components/ui/Icon';
 
 type LoginModalProps = {
   isOpen: boolean;
@@ -72,9 +74,9 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
         onClick={onClose}
       />
       {/* Changed max-w-md to max-w-sm to scale the entire box down */}
-      <div className="relative z-10 w-full max-w-sm overflow-hidden rounded-[24px] border border-outline-variant/40 bg-surface-container-high/90 shadow-[0_20px_50px_rgba(0,0,0,0.55)]">
+      <Panel className="z-10 w-full max-w-sm overflow-hidden rounded-[24px] border border-outline-variant/40 bg-surface-container-high/90 shadow-[0_20px_50px_rgba(0,0,0,0.55)]">
         <div className="pointer-events-none absolute left-0 right-0 top-0 h-28 bg-gradient-to-b from-white/5 to-transparent" />
-        
+
         {/* Added z-20 to ensure the close button is clickable above the inner content */}
         <button
           className="absolute right-4 top-4 z-20 inline-flex h-9 w-9 items-center justify-center rounded-full border border-outline-variant/40 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-background"
@@ -82,9 +84,9 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
           onClick={onClose}
           aria-label="Cancel login"
         >
-          <span className="material-symbols-outlined text-[18px]">close</span>
+          <Icon name="close" size="small" color="text-on-surface-variant" />
         </button>
-        
+
         {/* Reduced padding from p-8 sm:p-10 to p-6 sm:p-8 */}
         <div className="relative z-10 flex flex-col items-center p-6 sm:p-8">
           <div className="mb-6 flex flex-col items-center text-center">
@@ -102,15 +104,13 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               Log In
             </h1>
             <p className="font-data-sm text-data-sm text-on-surface-variant">
-            
+
             </p>
           </div>
           <form className="w-full space-y-5" onSubmit={handleSubmit}>
             <div className="space-y-3">
               <div className="group relative">
-                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant transition-colors group-focus-within:text-primary-container">
-                  badge
-                </span>
+                <Icon name="badge" className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant transition-colors group-focus-within:text-primary-container" />
                 {/* Reduced vertical padding (py-4 to py-3) */}
                 <input
                   className="w-full rounded-t-lg border-x-0 border-b border-t-0 border-outline-variant/60 bg-surface-container-low py-3 pl-12 pr-4 font-body-md text-on-background transition-colors focus:border-primary-container focus:bg-surface-container-highest focus:ring-0"
@@ -122,9 +122,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 />
               </div>
               <div className="group relative">
-                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant transition-colors group-focus-within:text-primary-container">
-                  key
-                </span>
+                <Icon name="key" className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant transition-colors group-focus-within:text-primary-container" />
                 {/* Reduced vertical padding (py-4 to py-3) */}
                 <input
                   className="w-full rounded-t-lg border-x-0 border-b border-t-0 border-outline-variant/60 bg-surface-container-low py-3 pl-12 pr-12 font-body-md text-on-background transition-colors focus:border-primary-container focus:bg-surface-container-highest focus:ring-0"
@@ -134,9 +132,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                   onChange={(event) => setPassword(event.target.value)}
                   required
                 />
-                <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant">
-                  visibility_off
-                </span>
+                <Icon name="visibility_off" className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant" />
               </div>
             </div>
 
@@ -173,12 +169,12 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               type="button"
               onClick={handleBypass}
             >
-              <span className="material-symbols-outlined text-[18px] text-primary-container">login</span>
+              <Icon name="login" size="small" color="text-primary-container" />
               Skip login
             </button>
           </form>
         </div>
-      </div>
+      </Panel>
     </div>,
     document.body,
   );
