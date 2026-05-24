@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
-// Ignore missing type declarations for CSS side-effect import
-// @ts-expect-error - Next.js handles CSS imports at runtime, but TS may not have module types.
 import "./globals.css";
 
 const inter = Inter({
