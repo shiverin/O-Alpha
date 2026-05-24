@@ -1,0 +1,93 @@
+.container {
+  min-height: 100vh;
+  background: var(--app-background);
+  color: var(--text-on-background);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 4rem 1rem;
+  position: relative;
+}
+.title {
+  font-family: var(--font-headline-lg);
+  font-size: var(--text-headline-lg);
+  margin-bottom: 1rem;
+  text-align: center;
+}
+.subtitle {
+  font-family: var(--font-body-md);
+  font-size: var(--text-body-md);
+  color: var(--text-on-surface-variant);
+  max-width: 48rem;
+  text-align: center;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+.grid {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  width: 100%;
+  max-width: 80rem;
+  margin-bottom: 3rem;
+}
+.card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  background: var(--bg-surface-container-high);
+  border: 1px solid var(--border-outline-variant);
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+.image {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+}
+.content {
+  padding: 1.5rem;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+.title2 {
+  font-family: var(--font-headline-md);
+  font-size: var(--text-headline-md);
+  margin-bottom: 0.5rem;
+  color: var(--text-on-background);
+}
+.description {
+  font-family: var(--font-body-md);
+  font-size: var(--text-body-md);
+  color: var(--text-on-surface-variant);
+  flex-grow: 1;
+}
+.footer {
+  margin-top: auto;
+  width: 100%;
+  max-width: 80rem;
+  text-align: center;
+  font-family: var(--font-data-sm);
+  font-size: var(--text-data-sm);
+  color: var(--text-on-surface-variant);
+  padding: 2rem 1rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --app-background: radial-gradient(circle at 15% 10%, rgba(0, 213, 255, 0.08), transparent 40%),
+                      radial-gradient(circle at 80% 80%, rgba(255, 211, 77, 0.06), transparent 45%),
+                      linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(11, 17, 23, 0) 40%);
+    --bg-surface-container-high: rgba(18, 27, 36, 0.92);
+    --border-outline-variant: rgba(255, 255, 255, 0.08);
+    --text-on-background: #fff;
+    --text-on-surface-variant: rgba(255, 255, 255, 0.7);
+  }
+}

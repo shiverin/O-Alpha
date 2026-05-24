@@ -62,7 +62,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const handleBypass = () => {
     localStorage.setItem("oa-auth", "true");
     onClose();
-    router.push("/app/dashboard");
+    router.push("/demo");
   };
 
   return createPortal(
