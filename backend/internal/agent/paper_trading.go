@@ -53,7 +53,7 @@ func (a *PaperAccount) Sell(ctx context.Context, symbol string, price float64, a
 	}
 	a.Positions[symbol] -= amount
 	if a.Positions[symbol] == 0 {
-		delete(a.Positions[symbol])
+		delete(a.Positions, symbol)
 	}
 	proceeds := price * amount
 	a.Cash += proceeds
