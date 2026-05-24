@@ -1,20 +1,13 @@
+import { Panel } from '@/components/ui/Panel';
+import { Icon } from '@/components/ui/Icon';
+import { getAccentStyle } from '@/lib/ui';
+
 type FeatureCard = {
   title: string;
   description: string;
   icon: string;
   accent: "primary" | "secondary";
 };
-
-const accentStyles = {
-  primary: {
-    text: "text-primary-container",
-    ring: "group-hover:border-primary-container/60",
-  },
-  secondary: {
-    text: "text-secondary-fixed",
-    ring: "group-hover:border-secondary-fixed/60",
-  },
-} as const;
 
 const features: FeatureCard[] = [
   {
@@ -41,14 +34,22 @@ const features: FeatureCard[] = [
 ];
 
 function FeatureCardView({ card }: { card: FeatureCard }) {
-  const accent = accentStyles[card.accent];
+  const isPrimary = card.accent === "primary";
 
   return (
-    <div className="bg-surface-container-high/80 border border-outline-variant/50 p-8 rounded-2xl relative overflow-hidden group transition-colors duration-300 hover:bg-surface-container-highest/80">
-      <div className={`w-12 h-12 rounded-full border border-outline-variant/40 flex items-center justify-center mb-6 transition-colors ${accent.ring}`}>
-        <span className={`material-symbols-outlined ${accent.text}`}>
-          {card.icon}
-        </span>
+    <Panel
+      className="p-8 relative overflow-hidden group transition-colors duration-300 hover:bg-surface-container-highest/80"
+    >
+      <div className={`w-12 h-12 rounded-full border border-outline-variant/40 flex items-center justify-center mb-6 transition-colors ${
+        isPrimary
+          ? 'group-hover:border-primary-container/60'
+          : 'group-hover:border-secondary-fixed/60'
+      }`}>
+      <Icon
+        name={card.icon}
+        size="medium"
+        color={isPrimary ? "text-primary-container" : "text-secondary-fixed"}
+      />
       </div>
       <h3 className="font-headline-lg text-headline-lg text-on-background mb-4">
         {card.title}
@@ -56,7 +57,7 @@ function FeatureCardView({ card }: { card: FeatureCard }) {
       <p className="font-body-md text-body-md text-on-surface-variant">
         {card.description}
       </p>
-    </div>
+    </Panel>
   );
 }
 
