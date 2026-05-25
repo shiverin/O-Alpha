@@ -1,5 +1,6 @@
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:8080";
+// @/lib/api.ts
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:8080";
 
 export interface BacktestRequest {
   symbol: string;
@@ -59,7 +60,7 @@ export async function runBacktest(
 
 // Generic API fetcher with auth support
 export const api = {
-  get: async <T>(endpoint: string): Promise<T> => {
+  get: async <R>(endpoint: string): Promise<R> => {
     const res = await fetch(`${API_BASE}${endpoint}`, {
       headers: getAuthHeaders(),
     });
@@ -72,7 +73,8 @@ export const api = {
     return res.json();
   },
 
-  post: async <T, R>(endpoint: string, data: T): Promise<R> => {
+  // Swapped to <R, T = unknown> so TypeScript infers the payload type automatically
+  post: async <R, T = unknown>(endpoint: string, data: T): Promise<R> => {
     const res = await fetch(`${API_BASE}${endpoint}`, {
       method: "POST",
       headers: getAuthHeaders(),
@@ -87,7 +89,8 @@ export const api = {
     return res.json();
   },
 
-  put: async <T, R>(endpoint: string, data: T): Promise<R> => {
+  // Swapped to <R, T = unknown> here as well
+  put: async <R, T = unknown>(endpoint: string, data: T): Promise<R> => {
     const res = await fetch(`${API_BASE}${endpoint}`, {
       method: "PUT",
       headers: getAuthHeaders(),
@@ -102,7 +105,7 @@ export const api = {
     return res.json();
   },
 
-  delete: async <T>(endpoint: string): Promise<T> => {
+  delete: async <R>(endpoint: string): Promise<R> => {
     const res = await fetch(`${API_BASE}${endpoint}`, {
       method: "DELETE",
       headers: getAuthHeaders(),

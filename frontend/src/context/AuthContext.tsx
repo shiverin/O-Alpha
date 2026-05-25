@@ -1,5 +1,7 @@
+"use client";
+
 import { createContext, useContext, useEffect, useState } from 'react';
-import api from '@/lib/api';
+import {api} from '@/lib/api';
 import type { User } from '@/lib/auth';
 
 interface AuthContextType {
@@ -20,7 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const response = await api.get<{ id: number; email: string }>('/auth/me');
         setUser({ id: response.id, email: response.email });
-      } catch (error) {
+      } catch {
         // Not authenticated or token invalid
         setUser(null);
       } finally {
@@ -44,8 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       await api.post('/auth/logout', {});
-    } catch (error) {
-      // Ignore logout errors
+    } catch {
     } finally {
       setUser(null);
     }
