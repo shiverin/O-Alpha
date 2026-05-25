@@ -5,11 +5,13 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Panel } from '@/components/ui/Panel';
 import { Icon } from '@/components/ui/Icon';
+import { api } from "@/lib/api";
+import { setToken } from "@/lib/auth";
 
 type LoginModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  redirectPath?: string; 
+  redirectPath?: string;
 };
 
 export function LoginModal({ isOpen, onClose}: LoginModalProps) {
@@ -17,6 +19,8 @@ export function LoginModal({ isOpen, onClose}: LoginModalProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const canSubmit = useMemo(() => email.length > 0 && password.length > 0, [email, password]);
 
@@ -43,18 +47,47 @@ export function LoginModal({ isOpen, onClose}: LoginModalProps) {
 
   if (!isOpen || !mounted) return null;
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!canSubmit) return;
-    document.cookie = "oa-auth=true; path=/; max-age=86400";
-    router.push("/app/dashboard");
-    onClose();
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await api.post<{ token: string; user: { id: number; email: string } }>("/auth/login", {
+        email,
+        password,
+      });
+
+      setToken(response.token);
+      router.push("/app/dashboard");
+      onClose();
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Login failed. Please check your credentials.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleBypass = () => {
-    document.cookie = "oa-auth=true; path=/; max-age=86400";
-    router.push("/app/dashboard");
-    onClose();
+  const handleBypass = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await api.post<{ token: string; user: { id: number; email: string } }>("/auth/login", {
+        email: "demo@example.com", // Demo credentials
+        password: "demopass123",
+      });
+
+      setToken(response.token);
+      router.push("/app/dashboard");
+      onClose();
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Demo login failed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return createPortal(
@@ -110,6 +143,12 @@ export function LoginModal({ isOpen, onClose}: LoginModalProps) {
               </div>
             </div>
 
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-800 text-sm">
+                {error}
+              </div>
+            )}
+
             <div className="flex items-center justify-between gap-4 text-data-sm text-on-surface-variant">
               <label className="inline-flex items-center gap-2 cursor-pointer">
                 <input
@@ -124,10 +163,11 @@ export function LoginModal({ isOpen, onClose}: LoginModalProps) {
             </div>
 
             <button
-              className="w-full rounded-full bg-primary-container px-8 py-3 text-base font-semibold text-background transition-transform duration-200 hover:scale-[1.02]"
+              className={`w-full rounded-full bg-primary-container px-8 py-3 text-base font-semibold text-background transition-transform duration-200 hover:scale-[1.02] ${loading ? 'opacity-50' : ''}`}
               type="submit"
+              disabled={loading}
             >
-              Start
+              {loading ? "Logging in..." : "Start"}
             </button>
 
             <div className="flex items-center gap-4 text-data-sm text-on-surface-variant">
@@ -137,12 +177,13 @@ export function LoginModal({ isOpen, onClose}: LoginModalProps) {
             </div>
 
             <button
-              className="flex w-full items-center justify-center gap-2 rounded-full border border-outline-variant/60 px-8 py-3 text-base font-medium text-on-background transition-colors hover:bg-surface-container-high"
+              className={`flex w-full items-center justify-center gap-2 rounded-full border border-outline-variant/60 px-8 py-3 text-base font-medium text-on-background transition-colors hover:bg-surface-container-high ${loading ? 'opacity-50' : ''}`}
               type="button"
               onClick={handleBypass}
+              disabled={loading}
             >
               <Icon name="login" size="small" color="text-primary-container" />
-              Skip login
+              {loading ? "Logging in..." : "Demo login"}
             </button>
           </form>
         </div>

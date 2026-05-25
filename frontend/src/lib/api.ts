@@ -26,12 +26,26 @@ export interface BacktestResult {
   num_trades: number;
 }
 
+// Helper function to get auth headers
+const getAuthHeaders = (): HeadersInit => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  return headers;
+};
+
 export async function runBacktest(
   payload: BacktestRequest
 ): Promise<BacktestResult> {
   const res = await fetch(`${API_BASE}/api/v1/backtest`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 
@@ -42,3 +56,63 @@ export async function runBacktest(
 
   return res.json();
 }
+
+// Generic API fetcher with auth support
+export const api = {
+  get: async <T>(endpoint: string): Promise<T> => {
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      headers: getAuthHeaders(),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? `Request failed (${res.status})`);
+    }
+
+    return res.json();
+  },
+
+  post: async <T, R>(endpoint: string, data: T): Promise<R> => {
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? `Request failed (${res.status})`);
+    }
+
+    return res.json();
+  },
+
+  put: async <T, R>(endpoint: string, data: T): Promise<R> => {
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? `Request failed (${res.status})`);
+    }
+
+    return res.json();
+  },
+
+  delete: async <T>(endpoint: string): Promise<T> => {
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? `Request failed (${res.status})`);
+    }
+
+    return res.json();
+  }
+};
