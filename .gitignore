@@ -13,7 +13,9 @@ frontend/out/
 frontend/.turbo/
 
 scripts/venv/
+backend/scripts/venv/
 scripts/__pycache__/
+backend/scripts/__pycache__/
 *.pyc
 .ipynb_checkpoints/
 
