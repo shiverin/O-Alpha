@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Container } from '@/components/ui/Container';
 import { Panel } from '@/components/ui/Panel';
 import { Icon } from '@/components/ui/Icon';
+import { removeToken } from "@/lib/auth";
 
 const navItems = [
   { label: "Overview", href: "/app/dashboard", icon: "dashboard" },
@@ -24,7 +25,7 @@ export function AppShell({
   const router = useRouter();
 
   const handleLogout = () => {
-    localStorage.removeItem("oa-auth");
+    removeToken();
     router.replace("/");
   };
 

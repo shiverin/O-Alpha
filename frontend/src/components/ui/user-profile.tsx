@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { removeToken, isAuthenticated, decodeToken } from "@/lib/auth";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 // FIXED: Added the missing sub-components to the import statement
-import { 
+import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
@@ -15,28 +15,14 @@ import {
 
 export function UserProfile() {
   const router = useRouter();
-  const [user, setUser] = useState<{ id: number; email: string } | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading, logout } = useAuth();
 
   useEffect(() => {
-    const checkAuth = () => {
-      if (isAuthenticated()) {
-        const token = localStorage.getItem("token") || "";
-        const decoded = decodeToken(token);
-        if (decoded) {
-          setUser(decoded);
-        }
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-    };
-
-    checkAuth();
+    // Auth context already handles loading state
   }, []);
 
-  const handleLogout = () => {
-    removeToken();
+  const handleLogout = async () => {
+    await logout();
     router.push("/login");
   };
 

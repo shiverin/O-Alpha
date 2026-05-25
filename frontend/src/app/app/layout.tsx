@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { isAuthenticated } from "@/lib/auth";
 
 export default function AppLayout({
   children,
@@ -12,7 +13,7 @@ export default function AppLayout({
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const authed = localStorage.getItem("oa-auth") === "true";
+    const authed = isAuthenticated();
     if (!authed) {
       router.replace("/login");
       return;
