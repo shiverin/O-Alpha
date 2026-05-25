@@ -5,18 +5,23 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Panel } from '@/components/ui/Panel';
 import { Icon } from '@/components/ui/Icon';
+import { api } from "@/lib/api";
+import { setToken } from "@/lib/auth";
 
 type LoginModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  redirectPath?: string; 
+  redirectPath?: string;
 };
 
-export function LoginModal({ isOpen, onClose}: LoginModalProps) {
+export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const canSubmit = useMemo(() => email.length > 0 && password.length > 0, [email, password]);
 
@@ -43,18 +48,57 @@ export function LoginModal({ isOpen, onClose}: LoginModalProps) {
 
   if (!isOpen || !mounted) return null;
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!canSubmit) return;
-    document.cookie = "oa-auth=true; path=/; max-age=86400";
-    router.push("/app/dashboard");
-    onClose();
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await api.post<{ token: string; user: { id: number; email: string } }>("/auth/login", {
+        email,
+        password,
+      });
+
+      setToken(response.token);
+      router.push(redirectPath || "/app/dashboard");
+      onClose();
+    } catch (err) {
+      // FIX: Check if it's a standard Error object instead of using 'any'
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Login failed. Please check your credentials.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleBypass = () => {
-    document.cookie = "oa-auth=true; path=/; max-age=86400";
-    router.push("/app/dashboard");
-    onClose();
+  const handleBypass = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await api.post<{ token: string; user: { id: number; email: string } }>("/auth/login", {
+        email: "demo@example.com", // Demo credentials
+        password: "demopass123",
+      });
+
+      setToken(response.token);
+      router.push(redirectPath || "/app/dashboard");
+      onClose();
+    } catch (err) {
+      // FIX: Check if it's a standard Error object instead of using 'any'
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Demo login failed.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return createPortal(
@@ -80,7 +124,6 @@ export function LoginModal({ isOpen, onClose}: LoginModalProps) {
         <div className="relative z-10 flex flex-col items-center p-6 sm:p-8">
           <div className="mb-6 flex flex-col items-center text-center">
             <h1 className="mb-1 text-2xl font-bold text-on-background">Log In</h1>
-            <p className="font-data-sm text-data-sm text-on-surface-variant"></p>
           </div>
 
           <form className="w-full space-y-5" onSubmit={handleSubmit}>
@@ -89,8 +132,8 @@ export function LoginModal({ isOpen, onClose}: LoginModalProps) {
                 <Icon name="badge" className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant transition-colors group-focus-within:text-primary-container" />
                 <input
                   className="w-full rounded-t-lg border-x-0 border-b border-t-0 border-outline-variant/60 bg-surface-container-low py-3 pl-12 pr-4 font-body-md text-on-background transition-colors focus:border-primary-container focus:bg-surface-container-highest focus:ring-0"
-                  placeholder="Username"
-                  type="text"
+                  placeholder="Email"
+                  type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -101,14 +144,27 @@ export function LoginModal({ isOpen, onClose}: LoginModalProps) {
                 <input
                   className="w-full rounded-t-lg border-x-0 border-b border-t-0 border-outline-variant/60 bg-surface-container-low py-3 pl-12 pr-12 font-body-md text-on-background transition-colors focus:border-primary-container focus:bg-surface-container-highest focus:ring-0"
                   placeholder="Password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
-                <Icon name="visibility_off" className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant transition-colors hover:text-on-background"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  <Icon name={showPassword ? "visibility" : "visibility_off"} />
+                </button>
               </div>
             </div>
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-800 text-sm rounded">
+                {error}
+              </div>
+            )}
 
             <div className="flex items-center justify-between gap-4 text-data-sm text-on-surface-variant">
               <label className="inline-flex items-center gap-2 cursor-pointer">
@@ -124,10 +180,11 @@ export function LoginModal({ isOpen, onClose}: LoginModalProps) {
             </div>
 
             <button
-              className="w-full rounded-full bg-primary-container px-8 py-3 text-base font-semibold text-background transition-transform duration-200 hover:scale-[1.02]"
+              className={`w-full rounded-full bg-primary-container px-8 py-3 text-base font-semibold text-background transition-transform duration-200 hover:scale-[1.02] ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
               type="submit"
+              disabled={loading}
             >
-              Start
+              {loading ? "Logging in..." : "Start"}
             </button>
 
             <div className="flex items-center gap-4 text-data-sm text-on-surface-variant">
@@ -137,12 +194,13 @@ export function LoginModal({ isOpen, onClose}: LoginModalProps) {
             </div>
 
             <button
-              className="flex w-full items-center justify-center gap-2 rounded-full border border-outline-variant/60 px-8 py-3 text-base font-medium text-on-background transition-colors hover:bg-surface-container-high"
+              className={`flex w-full items-center justify-center gap-2 rounded-full border border-outline-variant/60 px-8 py-3 text-base font-medium text-on-background transition-colors hover:bg-surface-container-high ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
               type="button"
               onClick={handleBypass}
+              disabled={loading}
             >
               <Icon name="login" size="small" color="text-primary-container" />
-              Skip login
+              {loading ? "Logging in..." : "Demo login"}
             </button>
           </form>
         </div>

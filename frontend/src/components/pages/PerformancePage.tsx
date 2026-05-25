@@ -77,11 +77,11 @@ export function PerformancePage() {
                     strokeDasharray="1 2"
                   ></line>
                   <path
-                    className="chart-area"
+                    className="chart-area chart-area-animate"
                     d="M0,40 C10,38 20,45 30,30 C40,15 50,25 60,10 C70,-5 80,15 90,5 L100,0 L100,50 L0,50 Z"
                   ></path>
                   <path
-                    className="chart-line"
+                    className="chart-line chart-line-animate"
                     d="M0,40 C10,38 20,45 30,30 C40,15 50,25 60,10 C70,-5 80,15 90,5 L100,0"
                   ></path>
                 </svg>
@@ -117,7 +117,7 @@ export function PerformancePage() {
           </div>
         </section>
 
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-gutter mb-4">
           <div>
             <h2 className="font-label-caps text-label-caps text-surface-tint uppercase mb-6 flex items-center gap-2 border-b border-outline-variant/30 pb-2 inline-flex">
               <span className="material-symbols-outlined text-sm">radar</span>
@@ -191,6 +191,7 @@ export function PerformancePage() {
             </div>
           </div>
         </section>
+
       </main>
     </LandingShell>
   );
