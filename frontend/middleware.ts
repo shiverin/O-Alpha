@@ -17,12 +17,6 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (token && pathname === '/login') {
-    const url = request.nextUrl.clone();
-    url.pathname = '/app/dashboard';
-    return NextResponse.redirect(url);
-  }
-
   return NextResponse.next();
 }
 

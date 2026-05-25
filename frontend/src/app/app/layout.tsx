@@ -15,7 +15,7 @@ export default function AppLayout({
   useEffect(() => {
     const authed = isAuthenticated();
     if (!authed) {
-      router.replace("/login");
+      router.replace("/?auth=required");
       return;
     }
     setReady(true);

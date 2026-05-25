@@ -7,6 +7,32 @@ import { runBacktest, type EquityPoint } from "@/lib/api";
 
 const metricTabs = ["1W", "1M", "YTD"] as const;
 
+type RegimeLevel = {
+  bull: number;
+  volatile: number;
+  bear: number;
+};
+
+const buildFallbackEquityCurve = (): EquityPoint[] => {
+  const now = Date.now();
+  const points = 64;
+
+  return Array.from({ length: points }, (_, idx) => {
+    const t = idx / (points - 1);
+    const trend = 10000 + t * 1650;
+    const cycle = Math.sin(t * Math.PI * 3.6) * 180;
+    const pullback = Math.sin(t * Math.PI * 9) * 65;
+    const equity = trend + cycle + pullback;
+
+    return {
+      time: new Date(now - (points - idx) * 5 * 24 * 60 * 60 * 1000).toISOString(),
+      equity: Number(equity.toFixed(2)),
+    };
+  });
+};
+
+const DEFAULT_EQUITY_CURVE = buildFallbackEquityCurve();
+
 export function PerformancePage() {
   const [data, setData] = useState<EquityPoint[]>([]);
   const [loading, setLoading] = useState(false);
@@ -14,6 +40,11 @@ export function PerformancePage() {
   const [symbol, setSymbol] = useState("AAPL");
   const [fastWindow, setFastWindow] = useState(10);
   const [slowWindow, setSlowWindow] = useState(30);
+  const [regimeLevels, setRegimeLevels] = useState<RegimeLevel>({
+    bull: 74,
+    volatile: 50,
+    bear: 24,
+  });
 
   const runBacktestHandler = useCallback(async () => {
     setLoading(true);
@@ -35,10 +66,12 @@ export function PerformancePage() {
 
       setData(result.equity_curve);
     } catch (err) {
+      setData(DEFAULT_EQUITY_CURVE);
+
       if (err instanceof Error) {
-        setError(err.message);
+        setError(`${err.message} Showing fallback performance data.`);
       } else {
-        setError("Failed to run backtest");
+        setError("Failed to run backtest. Showing fallback performance data.");
       }
     } finally {
       setLoading(false);
@@ -48,6 +81,29 @@ export function PerformancePage() {
   useEffect(() => {
     runBacktestHandler();
   }, [runBacktestHandler]);
+
+  useEffect(() => {
+    const clamp = (value: number, min: number, max: number) =>
+      Math.max(min, Math.min(max, value));
+
+    const interval = window.setInterval(() => {
+      setRegimeLevels((current) => {
+        const shock = () => (Math.random() < 0.28 ? (Math.random() * 40 - 20) : 0);
+
+        const nextBull = clamp(current.bull + (Math.random() * 26 - 13) + shock(), 18, 98);
+        const nextVolatile = clamp(current.volatile + (Math.random() * 30 - 15) + shock(), 6, 95);
+        const nextBear = clamp(current.bear + (Math.random() * 26 - 13) + shock(), 4, 88);
+
+        return {
+          bull: Math.round(nextBull),
+          volatile: Math.round(nextVolatile),
+          bear: Math.round(nextBear),
+        };
+      });
+    }, 700);
+
+    return () => window.clearInterval(interval);
+  }, []);
 
   const currentReturnPct = useMemo(() => {
     if (data.length < 2) {
@@ -62,16 +118,15 @@ export function PerformancePage() {
     return ((latest - initial) / initial) * 100;
   }, [data]);
 
+  const bullStatus = regimeLevels.bull >= 72 ? "SCALING" : regimeLevels.bull >= 58 ? "BUILDING" : "SOFT";
+  const volatileStatus = regimeLevels.volatile >= 58 ? "ACTIVE" : regimeLevels.volatile >= 36 ? "WATCH" : "CALM";
+  const bearStatus = regimeLevels.bear >= 32 ? "ELEVATED" : regimeLevels.bear >= 18 ? "HEDGED" : "LOW";
+
   return (
     <LandingShell activePath="/performance" className="bg-performance-grid">
       <main className="pt-32 px-margin-mobile md:px-margin-desktop max-w-[1440px] mx-auto flex flex-col gap-16 md:gap-24">
         <section className="flex flex-col items-start max-w-4xl">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="pulse-dot"></div>
-            <span className="font-label-caps text-label-caps text-primary-container uppercase tracking-widest">
-              Live Alpha Generation
-            </span>
-          </div>
+
           <h1 className="font-headline-xl text-headline-xl text-on-surface mb-6">
             Institutional-Grade <br className="hidden md:block" />
             <span className="text-secondary-container gold-glow">Performance.</span>
@@ -128,8 +183,8 @@ export function PerformancePage() {
             <span className="material-symbols-outlined text-sm">monitoring</span>
             Real-Time Metrics
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-gutter">
-            <div className="md:col-span-8 glass-card rounded p-6 flex flex-col justify-between h-[400px]">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-gutter items-start">
+            <div className="md:col-span-8 glass-card rounded p-6 flex flex-col h-[460px] lg:h-[520px] overflow-hidden">
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <span className="font-data-sm text-data-sm text-on-surface-variant block mb-1">
@@ -155,7 +210,7 @@ export function PerformancePage() {
                   ))}
                 </div>
               </div>
-              <div className="w-full flex-grow relative mt-4">
+              <div className="w-full flex-grow min-h-0 relative mt-4 overflow-hidden">
                 {data.length > 0 ? (
                   <EquityCurveChart data={data} />
                 ) : (
@@ -166,8 +221,8 @@ export function PerformancePage() {
               </div>
             </div>
 
-            <div className="md:col-span-4 flex flex-col gap-gutter">
-              <div className="glass-card rounded p-6 flex-1 flex flex-col justify-center">
+            <div className="md:col-span-4 flex flex-col gap-gutter self-start">
+              <div className="glass-card rounded p-6 h-[190px] flex flex-col justify-center">
                 <span className="font-data-sm text-data-sm text-on-surface-variant mb-2">
                   SHARPE RATIO
                 </span>
@@ -180,7 +235,7 @@ export function PerformancePage() {
                   </span>
                 </div>
               </div>
-              <div className="glass-card rounded p-6 flex-1 flex flex-col justify-center">
+              <div className="glass-card rounded p-6 h-[190px] flex flex-col justify-center">
                 <span className="font-data-sm text-data-sm text-on-surface-variant mb-2">
                   MAX DRAWDOWN (CONTROLLED)
                 </span>
@@ -212,10 +267,13 @@ export function PerformancePage() {
                     BULL
                   </span>
                   <div className="flex-grow mx-4 bg-surface-container-highest h-[2px] relative">
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-3/4 h-[2px] bg-secondary-container"></div>
+                    <div
+                      className="absolute left-0 top-1/2 -translate-y-1/2 h-[2px] bg-secondary-container transition-all duration-500 ease-out"
+                      style={{ width: `${regimeLevels.bull}%` }}
+                    ></div>
                   </div>
                   <span className="font-data-sm text-data-sm text-secondary-container">
-                    SCALING
+                    {bullStatus}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -223,19 +281,27 @@ export function PerformancePage() {
                     VOLATILE
                   </span>
                   <div className="flex-grow mx-4 bg-surface-container-highest h-[2px] relative">
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1/2 h-[2px] bg-surface-tint"></div>
+                    <div
+                      className="absolute left-0 top-1/2 -translate-y-1/2 h-[2px] bg-surface-tint transition-all duration-500 ease-out"
+                      style={{ width: `${regimeLevels.volatile}%` }}
+                    ></div>
                   </div>
                   <span className="font-data-sm text-data-sm text-surface-tint">
-                    ACTIVE
+                    {volatileStatus}
                   </span>
                 </div>
-                <div className="flex items-center justify-between opacity-50">
+                <div className="flex items-center justify-between">
                   <span className="font-data-sm text-data-sm text-on-surface w-24">
                     BEAR
                   </span>
-                  <div className="flex-grow mx-4 bg-surface-container-highest h-[2px] relative"></div>
+                  <div className="flex-grow mx-4 bg-surface-container-highest h-[2px] relative">
+                    <div
+                      className="absolute left-0 top-1/2 -translate-y-1/2 h-[2px] bg-error/80 transition-all duration-500 ease-out"
+                      style={{ width: `${regimeLevels.bear}%` }}
+                    ></div>
+                  </div>
                   <span className="font-data-sm text-data-sm text-on-surface-variant">
-                    HEDGED
+                    {bearStatus}
                   </span>
                 </div>
               </div>
