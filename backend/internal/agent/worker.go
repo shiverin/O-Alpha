@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/oalpha/internal/alpaca"
@@ -15,21 +16,24 @@ import (
 
 // AgentWorker runs the live agent execution loop
 type AgentWorker struct {
-	ctx          context.Context
-	cancelFunc   context.CancelFunc
-	alpacaClient *alpaca.Client
-	repo         *db.Repository
-	strategy     backtest.Strategy
-	symbol       string
-	timeframe    string
-	paperTrade   bool
-	initialCash  float64
-	account      *PaperAccount
-	ticker       *time.Ticker
-	doneCh       chan struct{}
-	errCh        chan error
-	wsConnector  *marketdata.WebSocketConnector
-	useWebSocket bool
+	ctx            context.Context
+	cancelFunc     context.CancelFunc
+	alpacaClient   *alpaca.Client
+	repo           *db.Repository
+	strategy       backtest.Strategy
+	symbol         string
+	timeframe      string
+	paperTrade     bool
+	initialCash    float64
+	account        *PaperAccount
+	ticker         *time.Ticker
+	doneCh         chan struct{}
+	errCh          chan error
+	wsConnector    *marketdata.WebSocketConnector
+	useWebSocket   bool
+	barsMu         sync.RWMutex
+	historicalBars []models.Bar
+	maxBars        int
 }
 
 // NewAgentWorker creates a new agent worker
@@ -59,6 +63,7 @@ func NewAgentWorker(
 		doneCh:       make(chan struct{}),
 		errCh:        make(chan error, 1),
 		useWebSocket: useWebSocket,
+		maxBars:      10000,
 	}
 
 	if useWebSocket {
@@ -85,32 +90,18 @@ func (w *AgentWorker) Start() error {
 	if _, err := w.strategy.GenerateSignal(w.ctx, bars); err != nil {
 		return fmt.Errorf("failed to generate initial signals: %w", err)
 	}
+	w.setHistoricalBars(bars)
 
 	if w.useWebSocket && w.wsConnector != nil {
 		// Use WebSocket for real-time data
 		if err := w.wsConnector.Start(w.ctx); err != nil {
 			return fmt.Errorf("failed to start WebSocket: %w", err)
 		}
-		// Run the worker loop (will process WebSocket data separately)
-		go w.runLoop()
+		go w.handleWebSocketData()
 	} else {
 		// Use ticker-based polling (original behavior)
 		// Set ticker based on timeframe
-		var interval time.Duration
-		switch w.timeframe {
-		case "1Min":
-			interval = time.Minute
-		case "5Min":
-			interval = 5 * time.Minute
-		case "15Min":
-			interval = 15 * time.Minute
-		case "1Hour":
-			interval = time.Hour
-		case "1Day":
-			interval = 24 * time.Hour
-		default:
-			interval = time.Hour // default to 1 hour
-		}
+		interval := timeframeToDuration(w.timeframe)
 
 		w.ticker = time.NewTicker(interval)
 
@@ -209,24 +200,10 @@ func (w *AgentWorker) handleWebSocketData() {
 
 // processNewBar handles incoming real-time bar data
 func (w *AgentWorker) processNewBar(bar models.Bar) error {
-	// Get recent bars for indicator warmup (we need historical data for most indicators)
-	end := time.Now().UTC()
-	start := end.Add(-720 * time.Hour) // 30 days
-
-	// Fetch recent bars to build complete dataset
-	historicalBars, err := w.alpacaClient.GetBars(w.ctx, w.symbol, w.timeframe, start, end, 10000)
-	if err != nil {
-		return fmt.Errorf("failed to fetch historical data: %w", err)
-	}
-
-	// Add the new bar to our dataset
-	// Check if we already have this bar (by timestamp) to avoid duplicates
-	if len(historicalBars) > 0 && historicalBars[len(historicalBars)-1].Time.Equal(bar.Time) {
-		// Update the last bar with new data (it's still forming)
-		historicalBars[len(historicalBars)-1] = bar
-	} else {
-		// This is a new completed bar
-		historicalBars = append(historicalBars, bar)
+	w.appendOrUpdateBar(bar)
+	historicalBars := w.getHistoricalBarsSnapshot()
+	if len(historicalBars) == 0 {
+		return fmt.Errorf("no bars available for signal generation")
 	}
 
 	// Generate signals with updated data
@@ -255,8 +232,9 @@ func (w *AgentWorker) processNewBar(bar models.Bar) error {
 
 	// Log status
 	if w.paperTrade {
+		cash, positions := w.account.Snapshot()
 		log.Printf("Paper trade - Symbol: %s, Signal: %v, Price: %.2f, Cash: %.2f, Positions: %v",
-			w.symbol, latestSignal, latestBar.Close, w.account.Cash, w.account.Positions)
+			w.symbol, latestSignal, latestBar.Close, cash, positions)
 	} else {
 		log.Printf("Live trade - Symbol: %s, Signal: %v, Price: %.2f",
 			w.symbol, latestSignal, latestBar.Close)
@@ -267,9 +245,9 @@ func (w *AgentWorker) processNewBar(bar models.Bar) error {
 
 // processTick fetches new data, generates signals, and executes trades
 func (w *AgentWorker) processTick() error {
-	// Fetch recent bars (enough for indicator warmup)
+	// Fetch only a small recent window and merge it into in-memory history.
 	end := time.Now().UTC()
-	start := end.Add(-720 * time.Hour) // 30 days
+	start := end.Add(-2 * timeframeToDuration(w.timeframe))
 
 	bars, err := w.alpacaClient.GetBars(w.ctx, w.symbol, w.timeframe, start, end, 10000)
 	if err != nil {
@@ -277,7 +255,13 @@ func (w *AgentWorker) processTick() error {
 	}
 
 	if len(bars) == 0 {
-		return fmt.Errorf("no bars returned")
+		return nil
+	}
+
+	w.mergeBars(bars)
+	bars = w.getHistoricalBarsSnapshot()
+	if len(bars) == 0 {
+		return fmt.Errorf("no bars available for signal generation")
 	}
 
 	// Generate signals
@@ -306,8 +290,9 @@ func (w *AgentWorker) processTick() error {
 
 	// Log status
 	if w.paperTrade {
+		cash, positions := w.account.Snapshot()
 		log.Printf("Paper trade - Symbol: %s, Signal: %v, Price: %.2f, Cash: %.2f, Positions: %v",
-			w.symbol, latestSignal, latestBar.Close, w.account.Cash, w.account.Positions)
+			w.symbol, latestSignal, latestBar.Close, cash, positions)
 	} else {
 		log.Printf("Live trade - Symbol: %s, Signal: %v, Price: %.2f",
 			w.symbol, latestSignal, latestBar.Close)
@@ -343,7 +328,7 @@ func (w *AgentWorker) executePaperTrade(signal models.Signal, price float64) err
 		}
 	case models.SignalSell:
 		// Sell 50% of current position
-		currentPos := w.account.Positions[w.symbol]
+		currentPos := w.account.GetPosition(w.symbol)
 		if currentPos <= 0 {
 			return fmt.Errorf("no position to sell")
 		}
@@ -379,4 +364,81 @@ func (w *AgentWorker) Err() <-chan error {
 // Done returns a channel that closes when the worker stops
 func (w *AgentWorker) Done() <-chan struct{} {
 	return w.doneCh
+}
+
+func timeframeToDuration(timeframe string) time.Duration {
+	switch timeframe {
+	case "1Min":
+		return time.Minute
+	case "5Min":
+		return 5 * time.Minute
+	case "15Min":
+		return 15 * time.Minute
+	case "1Hour":
+		return time.Hour
+	case "1Day":
+		return 24 * time.Hour
+	default:
+		return time.Hour
+	}
+}
+
+func (w *AgentWorker) setHistoricalBars(bars []models.Bar) {
+	w.barsMu.Lock()
+	defer w.barsMu.Unlock()
+	w.historicalBars = append([]models.Bar(nil), bars...)
+	w.trimHistoricalBarsLocked()
+}
+
+func (w *AgentWorker) getHistoricalBarsSnapshot() []models.Bar {
+	w.barsMu.RLock()
+	defer w.barsMu.RUnlock()
+	return append([]models.Bar(nil), w.historicalBars...)
+}
+
+func (w *AgentWorker) appendOrUpdateBar(bar models.Bar) {
+	w.barsMu.Lock()
+	defer w.barsMu.Unlock()
+
+	n := len(w.historicalBars)
+	if n > 0 && w.historicalBars[n-1].Time.Equal(bar.Time) {
+		w.historicalBars[n-1] = bar
+	} else {
+		w.historicalBars = append(w.historicalBars, bar)
+	}
+	w.trimHistoricalBarsLocked()
+}
+
+func (w *AgentWorker) mergeBars(newBars []models.Bar) {
+	w.barsMu.Lock()
+	defer w.barsMu.Unlock()
+
+	if len(w.historicalBars) == 0 {
+		w.historicalBars = append([]models.Bar(nil), newBars...)
+		w.trimHistoricalBarsLocked()
+		return
+	}
+
+	indexByTime := make(map[time.Time]int, len(w.historicalBars))
+	for i, bar := range w.historicalBars {
+		indexByTime[bar.Time] = i
+	}
+
+	for _, bar := range newBars {
+		if i, ok := indexByTime[bar.Time]; ok {
+			w.historicalBars[i] = bar
+			continue
+		}
+		w.historicalBars = append(w.historicalBars, bar)
+		indexByTime[bar.Time] = len(w.historicalBars) - 1
+	}
+
+	w.trimHistoricalBarsLocked()
+}
+
+func (w *AgentWorker) trimHistoricalBarsLocked() {
+	if w.maxBars <= 0 || len(w.historicalBars) <= w.maxBars {
+		return
+	}
+	w.historicalBars = w.historicalBars[len(w.historicalBars)-w.maxBars:]
 }

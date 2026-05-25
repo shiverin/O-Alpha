@@ -1,5 +1,7 @@
 // @/lib/api.ts
 
+import { getToken } from '@/lib/auth';
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:8080";
 
 export interface BacktestRequest {
@@ -29,7 +31,7 @@ export interface BacktestResult {
 
 // Helper function to get auth headers
 const getAuthHeaders = (): HeadersInit => {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const token = typeof window !== 'undefined' ? getToken() : null;
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
   };

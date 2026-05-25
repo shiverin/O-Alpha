@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import {api} from '@/lib/api';
-import type { User } from '@/lib/auth';
+import { decodeToken, getToken, removeToken, type User } from '@/lib/auth';
 
 interface AuthContextType {
   user: User | null;
@@ -19,11 +19,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const checkAuth = async () => {
+      const token = getToken();
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      const decoded = decodeToken(token);
+      if (decoded) {
+        // Optimistically hydrate user state from token while backend validation runs.
+        setUser(decoded);
+      }
+
       try {
         const response = await api.get<{ id: number; email: string }>('/auth/me');
         setUser({ id: response.id, email: response.email });
       } catch {
         // Not authenticated or token invalid
+        removeToken();
         setUser(null);
       } finally {
         setLoading(false);

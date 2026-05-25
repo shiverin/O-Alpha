@@ -1,5 +1,8 @@
 import { jwtDecode } from 'jwt-decode';
 
+const AUTH_COOKIE_NAME = 'oa-auth';
+const TOKEN_STORAGE_KEY = 'token';
+
 export interface User {
   id: number;
   email: string;
@@ -10,22 +13,27 @@ export interface User {
  */
 export function setToken(token: string): void {
   // Store token in a cookie that expires in 24 hours
-  document.cookie = `token=${token}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax`;
+  document.cookie = `${AUTH_COOKIE_NAME}=${token}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax`;
+  localStorage.setItem(TOKEN_STORAGE_KEY, token);
 }
 
 /**
  * Get the JWT token from cookies
  */
 export function getToken(): string | null {
-  const match = document.cookie.match(/(^| )token=([^;]+)/);
-  return match ? match[2] : null;
+  const match = document.cookie.match(new RegExp(`(^| )${AUTH_COOKIE_NAME}=([^;]+)`));
+  if (match) {
+    return match[2];
+  }
+  return localStorage.getItem(TOKEN_STORAGE_KEY);
 }
 
 /**
  * Remove the JWT token from cookies
  */
 export function removeToken(): void {
-  document.cookie = 'token=; path=/; max-age=0';
+  document.cookie = `${AUTH_COOKIE_NAME}=; path=/; max-age=0`;
+  localStorage.removeItem(TOKEN_STORAGE_KEY);
 }
 
 /**

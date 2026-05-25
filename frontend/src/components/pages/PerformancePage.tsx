@@ -1,8 +1,67 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { LandingShell } from "../layout/LandingShell";
+import { EquityCurveChart } from "@/components/EquityCurveChart";
+import { runBacktest, type EquityPoint } from "@/lib/api";
 
 const metricTabs = ["1W", "1M", "YTD"] as const;
 
 export function PerformancePage() {
+  const [data, setData] = useState<EquityPoint[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [symbol, setSymbol] = useState("AAPL");
+  const [fastWindow, setFastWindow] = useState(10);
+  const [slowWindow, setSlowWindow] = useState(30);
+
+  const runBacktestHandler = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const endDate = new Date().toISOString().split("T")[0];
+      const startDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0];
+
+      const result = await runBacktest({
+        symbol,
+        start: startDate,
+        end: endDate,
+        fast_window: fastWindow,
+        slow_window: slowWindow,
+      });
+
+      setData(result.equity_curve);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Failed to run backtest");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [symbol, fastWindow, slowWindow]);
+
+  useEffect(() => {
+    runBacktestHandler();
+  }, [runBacktestHandler]);
+
+  const currentReturnPct = useMemo(() => {
+    if (data.length < 2) {
+      return 0;
+    }
+
+    const initial = data[0].equity;
+    const latest = data[data.length - 1].equity;
+    if (initial === 0) {
+      return 0;
+    }
+    return ((latest - initial) / initial) * 100;
+  }, [data]);
+
   return (
     <LandingShell activePath="/performance" className="bg-performance-grid">
       <main className="pt-32 px-margin-mobile md:px-margin-desktop max-w-[1440px] mx-auto flex flex-col gap-16 md:gap-24">
@@ -22,6 +81,46 @@ export function PerformancePage() {
             execution. O(Alpha) translates your risk appetite into systematic,
             absolute returns without emotional bias.
           </p>
+
+          <div className="mt-8 w-full flex flex-wrap items-end gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="font-data-sm text-data-sm text-on-surface-variant">Symbol</label>
+              <input
+                type="text"
+                value={symbol}
+                onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                className="rounded border border-outline-variant/40 bg-surface-container-low px-3 py-2 text-on-surface"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="font-data-sm text-data-sm text-on-surface-variant">Fast MA</label>
+              <input
+                type="number"
+                min={1}
+                value={fastWindow}
+                onChange={(e) => setFastWindow(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                className="rounded border border-outline-variant/40 bg-surface-container-low px-3 py-2 text-on-surface"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="font-data-sm text-data-sm text-on-surface-variant">Slow MA</label>
+              <input
+                type="number"
+                min={2}
+                value={slowWindow}
+                onChange={(e) => setSlowWindow(Math.max(2, parseInt(e.target.value, 10) || 2))}
+                className="rounded border border-outline-variant/40 bg-surface-container-low px-3 py-2 text-on-surface"
+              />
+            </div>
+            <button
+              onClick={runBacktestHandler}
+              disabled={loading}
+              className="rounded-full bg-primary-container px-6 py-3 font-data-md text-background disabled:opacity-50"
+            >
+              {loading ? "Running..." : "Run Backtest"}
+            </button>
+          </div>
+          {error && <p className="mt-3 text-error font-data-sm text-data-sm">{error}</p>}
         </section>
 
         <section>
@@ -37,7 +136,8 @@ export function PerformancePage() {
                     CUMULATIVE P&L (YTD)
                   </span>
                   <span className="font-data-lg text-[32px] font-medium text-primary-container neon-text">
-                    +24.8%
+                    {currentReturnPct >= 0 ? "+" : ""}
+                    {currentReturnPct.toFixed(2)}%
                   </span>
                 </div>
                 <div className="flex gap-2">
@@ -56,35 +156,13 @@ export function PerformancePage() {
                 </div>
               </div>
               <div className="w-full flex-grow relative mt-4">
-                <svg
-                  className="absolute inset-0 w-full h-full"
-                  preserveAspectRatio="none"
-                  viewBox="0 0 100 50"
-                >
-                  <defs>
-                    <linearGradient id="chart-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="rgba(0, 229, 255, 0.2)"></stop>
-                      <stop offset="100%" stopColor="rgba(0, 229, 255, 0)"></stop>
-                    </linearGradient>
-                  </defs>
-                  <line
-                    x1="0"
-                    y1="25"
-                    x2="100"
-                    y2="25"
-                    stroke="rgba(255,255,255,0.05)"
-                    strokeWidth="0.5"
-                    strokeDasharray="1 2"
-                  ></line>
-                  <path
-                    className="chart-area chart-area-animate"
-                    d="M0,40 C10,38 20,45 30,30 C40,15 50,25 60,10 C70,-5 80,15 90,5 L100,0 L100,50 L0,50 Z"
-                  ></path>
-                  <path
-                    className="chart-line chart-line-animate"
-                    d="M0,40 C10,38 20,45 30,30 C40,15 50,25 60,10 C70,-5 80,15 90,5 L100,0"
-                  ></path>
-                </svg>
+                {data.length > 0 ? (
+                  <EquityCurveChart data={data} />
+                ) : (
+                  <div className="h-full flex items-center justify-center text-on-surface-variant font-data-sm text-data-sm">
+                    {loading ? "Calculating performance..." : "No data available"}
+                  </div>
+                )}
               </div>
             </div>
 

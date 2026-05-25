@@ -3,10 +3,12 @@ package agent
 import (
 	"context"
 	"fmt"
+	"sync"
 )
 
 // PaperAccount simulates a trading account for paper trading.
 type PaperAccount struct {
+	mu        sync.RWMutex
 	Cash      float64
 	Positions map[string]float64 // symbol -> number of shares
 }
@@ -22,6 +24,9 @@ func NewPaperAccount(initialCash float64) *PaperAccount {
 // Buy buys shares of a symbol at the given price.
 // Returns the number of shares bought and the cost, or an error if insufficient funds.
 func (a *PaperAccount) Buy(ctx context.Context, symbol string, price float64, amount float64) (float64, float64, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
 	if price <= 0 {
 		return 0, 0, fmt.Errorf("price must be positive")
 	}
@@ -40,6 +45,9 @@ func (a *PaperAccount) Buy(ctx context.Context, symbol string, price float64, am
 // Sell sells shares of a symbol at the given price.
 // Returns the number of shares sold and the proceeds, or an error if insufficient shares.
 func (a *PaperAccount) Sell(ctx context.Context, symbol string, price float64, amount float64) (float64, float64, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
 	if price <= 0 {
 		return 0, 0, fmt.Errorf("price must be positive")
 	}
@@ -60,6 +68,9 @@ func (a *PaperAccount) Sell(ctx context.Context, symbol string, price float64, a
 
 // Equity returns the total equity (cash + market value of positions) based on current prices.
 func (a *PaperAccount) Equity(ctx context.Context, prices map[string]float64) float64 {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
 	equity := a.Cash
 	for symbol, shares := range a.Positions {
 		if price, ok := prices[symbol]; ok {
@@ -67,4 +78,24 @@ func (a *PaperAccount) Equity(ctx context.Context, prices map[string]float64) fl
 		}
 	}
 	return equity
+}
+
+// GetPosition returns the current position quantity for a symbol.
+func (a *PaperAccount) GetPosition(symbol string) float64 {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	return a.Positions[symbol]
+}
+
+// Snapshot returns a point-in-time copy of cash and positions.
+func (a *PaperAccount) Snapshot() (float64, map[string]float64) {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	positions := make(map[string]float64, len(a.Positions))
+	for symbol, qty := range a.Positions {
+		positions[symbol] = qty
+	}
+
+	return a.Cash, positions
 }

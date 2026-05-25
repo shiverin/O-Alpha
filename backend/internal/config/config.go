@@ -13,6 +13,7 @@ type Config struct {
 	RedisURL       string
 	MigrationsPath string
 	HTTPAddr       string
+	JWTSecret      string
 
 	AlpacaAPIKey    string
 	AlpacaAPISecret string
@@ -26,10 +27,11 @@ type Config struct {
 // Load reads configuration from the environment.
 func Load() (*Config, error) {
 	cfg := &Config{
-		DatabaseURL:    os.Getenv("DATABASE_URL"),
-		RedisURL:       os.Getenv("REDIS_URL"),
-		MigrationsPath: envOr("MIGRATIONS_PATH", "file://migrations"),
-		HTTPAddr:       envOr("HTTP_ADDR", ":8080"),
+		DatabaseURL:     os.Getenv("DATABASE_URL"),
+		RedisURL:        os.Getenv("REDIS_URL"),
+		MigrationsPath:  envOr("MIGRATIONS_PATH", "file://migrations"),
+		HTTPAddr:        envOr("HTTP_ADDR", ":8080"),
+		JWTSecret:       envOr("JWT_SECRET", "dev-change-me"),
 		AlpacaAPIKey:    os.Getenv("ALPACA_API_KEY"),
 		AlpacaAPISecret: os.Getenv("ALPACA_API_SECRET"),
 		AlpacaDataURL:   envOr("ALPACA_DATA_URL", "https://data.alpaca.markets"),
