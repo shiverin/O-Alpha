@@ -36,7 +36,7 @@ func main() {
 
 	repo := db.NewRepository(sqlDB)
 	handler := api.NewHandler(repo)
-	router := api.NewRouter(handler)
+	router := api.NewRouter(handler, cfg)
 
 	srv := &http.Server{
 		Addr:         cfg.HTTPAddr,
