@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Dispatch, SetStateAction } from "react";
 // FIXED: Imported usePathname alongside useRouter
 import { useRouter, usePathname } from "next/navigation";
 
@@ -19,6 +19,8 @@ type NavLink = {
 
 type SiteHeaderProps = {
   activePath?: string;
+  loginModalOpen?: boolean;
+  onLoginModalOpenChange?: Dispatch<SetStateAction<boolean>>;
 };
 
 const navLinks: NavLink[] = [
@@ -28,9 +30,12 @@ const navLinks: NavLink[] = [
   { label: "Mission", href: "/mission" },
 ];
 
-export function SiteHeader({ activePath }: SiteHeaderProps) {
+export function SiteHeader({ activePath, loginModalOpen: externalLoginOpen, onLoginModalOpenChange }: SiteHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [loginOpen, setLoginOpen] = useState(false);
+  const [internalLoginOpen, setInternalLoginOpen] = useState(false);
+  
+  const loginOpen = externalLoginOpen !== undefined ? externalLoginOpen : internalLoginOpen;
+  const setLoginOpen = onLoginModalOpenChange || setInternalLoginOpen;
   
   const router = useRouter();
   const pathname = usePathname(); 

@@ -15,14 +15,13 @@ import {
 
 export function UserProfile() {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
 
   useEffect(() => {
     // Auth context already handles loading state
   }, []);
 
   const handleLogout = async () => {
-    const { logout } = useAuth();
     await logout();
     router.push("/login");
   };
