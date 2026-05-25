@@ -5,6 +5,9 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+
+	"github.com/oalpha/internal/auth"
+	"github.com/oalpha/internal/db"
 )
 
 // NewRouter builds the Gin engine with routes and middleware.
@@ -21,7 +24,22 @@ func NewRouter(h *Handler) *gin.Engine {
 		MaxAge:           12 * time.Hour,
 	}))
 
+	// Initialize auth service
+	userRepo := db.NewUserRepository(h.repo.GetDB())
+	authService := auth.NewAuthService(userRepo, "your-secret-key", 24*time.Hour)
+	authHandler := auth.NewAuthHandler(authService, userRepo)
+
 	r.GET("/health", h.Health)
+
+	// Auth routes
+	auth := r.Group("/auth")
+	{
+		auth.POST("/login", authHandler.Login)
+		auth.POST("/logout", authHandler.Logout)
+		auth.POST("/validate", authHandler.ValidateToken)
+		auth.GET("/me", authHandler.GetCurrentUser)
+	}
+
 	v1 := r.Group("/api/v1")
 	{
 		v1.POST("/backtest", h.RunBacktest)
