@@ -47,13 +47,22 @@ func (r *Repository) InsertBars(ctx context.Context, bars []models.Bar) (int64, 
 			close = EXCLUDED.close,
 			volume = EXCLUDED.volume`
 
+	batch := &pgx.Batch{}
+	for _, b := range bars {
+		batch.Queue(q, b.Time, b.Symbol, b.Open, b.High, b.Low, b.Close, b.Volume)
+	}
+
+	br := tx.SendBatch(ctx, batch)
 	var inserted int64
 	for _, b := range bars {
-		_, err := tx.Exec(ctx, q, b.Time, b.Symbol, b.Open, b.High, b.Low, b.Close, b.Volume)
+		_, err := br.Exec()
 		if err != nil {
 			return inserted, fmt.Errorf("insert bar %s %s: %w", b.Symbol, b.Time, err)
 		}
 		inserted++
+	}
+	if err := br.Close(); err != nil {
+		return inserted, fmt.Errorf("close batch: %w", err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
