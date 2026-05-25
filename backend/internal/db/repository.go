@@ -15,6 +15,11 @@ type Repository struct {
 	db *pgxpool.Pool
 }
 
+// GetDB returns the underlying database connection
+func (r *Repository) GetDB() *pgxpool.Pool {
+	return r.db
+}
+
 // NewRepository returns a Repository backed by db.
 func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}

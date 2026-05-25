@@ -32,6 +32,21 @@ func NewClient(baseURL, apiKey, apiSecret string) *Client {
 	}
 }
 
+// BaseURL returns the base URL for the API client
+func (c *Client) BaseURL() string {
+	return c.baseURL
+}
+
+// APIKey returns the API key for the client
+func (c *Client) APIKey() string {
+	return c.apiKey
+}
+
+// APISecret returns the API secret for the client
+func (c *Client) APISecret() string {
+	return c.apiSecret
+}
+
 type barsResponse struct {
 	Bars          []alpacaBar `json:"bars"`
 	NextPageToken string      `json:"next_page_token"`
