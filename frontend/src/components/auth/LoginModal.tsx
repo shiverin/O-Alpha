@@ -48,6 +48,30 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
 
   if (!isOpen || !mounted) return null;
 
+  const createLocalDemoToken = (): string => {
+    const encode = (value: object) =>
+      btoa(JSON.stringify(value)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+
+    const now = Math.floor(Date.now() / 1000);
+    const header = encode({ alg: "HS256", typ: "JWT" });
+    const payload = encode({
+      user_id: 999,
+      email: "demo@example.com",
+      exp: now + 60 * 60 * 24,
+      iat: now,
+    });
+
+    return `${header}.${payload}.offline-demo-signature`;
+  };
+
+  const isBackendUnavailable = (err: unknown): boolean => {
+    if (err instanceof TypeError) {
+      return true;
+    }
+
+    return err instanceof Error && /Failed to fetch|NetworkError|Request failed \(5\d\d\)/i.test(err.message);
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!canSubmit) return;
@@ -80,6 +104,8 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
     setLoading(true);
     setError(null);
 
+    const demoTarget = "/app/dashboard";
+
     try {
       const response = await api.post<{ token: string; user: { id: number; email: string } }>("/auth/login", {
         email: "demo@example.com", // Demo credentials
@@ -87,11 +113,14 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
       });
 
       setToken(response.token);
-      router.push(redirectPath || "/app/dashboard");
+      router.push(demoTarget);
       onClose();
     } catch (err) {
-      // FIX: Check if it's a standard Error object instead of using 'any'
-      if (err instanceof Error) {
+      if (isBackendUnavailable(err)) {
+        setToken(createLocalDemoToken());
+        router.push(demoTarget);
+        onClose();
+      } else if (err instanceof Error) {
         setError(err.message);
       } else {
         setError("Demo login failed.");

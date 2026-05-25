@@ -23,7 +23,7 @@ export function UserProfile() {
 
   const handleLogout = async () => {
     await logout();
-    router.push("/login");
+    router.push("/");
   };
 
   if (loading) {
@@ -33,7 +33,7 @@ export function UserProfile() {
   if (!user) {
     return (
       <>
-        <a href="/login" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
+        <a href="/" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
           Sign in
         </a>
       </>

@@ -34,10 +34,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const response = await api.get<{ id: number; email: string }>('/auth/me');
         setUser({ id: response.id, email: response.email });
-      } catch {
-        // Not authenticated or token invalid
-        removeToken();
-        setUser(null);
+      } catch (err) {
+        const isNetworkError = err instanceof TypeError || (err instanceof Error && /Failed to fetch|NetworkError/i.test(err.message));
+
+        if (decoded && isNetworkError) {
+          // Keep token-backed session for local/demo mode when backend is down.
+          setUser(decoded);
+        } else {
+          removeToken();
+          setUser(null);
+        }
       } finally {
         setLoading(false);
       }
