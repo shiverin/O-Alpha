@@ -1,4 +1,4 @@
-import { LandingShell } from "../layout/LandingShell";
+import { LandingShell } from "../../layout/LandingShell";
 
 const configureItems = [
   { icon: "tune", text: "Risk profile" },

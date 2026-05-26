@@ -1,17 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { LandingShell } from "../layout/LandingShell";
+import { LandingShell } from "../../layout/LandingShell";
 import StrategySelector, { type StrategyConfig } from "@/components/StrategySelector";
 import { runBacktest, type EquityPoint, type BacktestRequest } from "@/lib/api";
 import { DEFAULT_EQUITY_CURVE } from "@/lib/mockData";
 import { useRegimeSimulation } from "@/hooks/useRegimeSimulation";
-import RegimeDetectionCard from "@/components/performance/RegimeDetectionCard";
-import RiskArchitectureCard from "@/components/performance/RiskArchitectureCard";
-import TelemetryMetrics from "@/components/performance/TelemetryMetrics";
+import RegimeDetectionCard from "@/components/sections/performance/RegimeDetectionCard";
+import RiskArchitectureCard from "@/components/sections/performance/RiskArchitectureCard";
+import TelemetryMetrics from "@/components/sections/performance/TelemetryMetrics";
 
 export function PerformancePage() {
-  // 1. Core State
   const [data, setData] = useState<EquityPoint[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,11 +20,9 @@ export function PerformancePage() {
     null
   );
 
-  // 2. Custom Hooks
   const { regimeLevels, bullStatus, volatileStatus, bearStatus } =
     useRegimeSimulation();
 
-  // 3. Derived Data
   const currentReturnPct = useMemo(() => {
     if (data.length < 2) return 0;
     const initial = data[0].equity;
@@ -33,7 +30,6 @@ export function PerformancePage() {
     return initial === 0 ? 0 : ((latest - initial) / initial) * 100;
   }, [data]);
 
-  // 4. API Logic
   const runBacktestHandler = useCallback(async () => {
     if (!strategyConfig) return;
     setLoading(true);
@@ -72,16 +68,13 @@ export function PerformancePage() {
     }
   }, [strategyConfig, symbol]);
 
-  // Run automatically when config loads
   useEffect(() => {
     if (strategyConfig) runBacktestHandler();
   }, [strategyConfig, runBacktestHandler]);
 
-  // 5. Render
   return (
     <LandingShell activePath="/performance" className="bg-performance-grid">
       <main className="pt-32 px-margin-mobile md:px-margin-desktop max-w-[1440px] mx-auto flex flex-col gap-16 md:gap-24">
-        {/* HERO & CONTROLS */}
         <section className="flex flex-col items-start max-w-4xl">
           <h1 className="font-headline-xl text-headline-xl text-on-surface mb-6">
             Institutional-Grade <br className="hidden md:block" />
@@ -96,7 +89,6 @@ export function PerformancePage() {
           </p>
 
           <div className="mt-8 w-full flex flex-col gap-4">
-            {/* Symbol Input */}
             <div className="flex flex-col gap-1 w-48">
               <label className="font-data-sm text-data-sm text-on-surface-variant">
                 Symbol
@@ -109,7 +101,6 @@ export function PerformancePage() {
               />
             </div>
 
-            {/* The single source of truth for strategy settings */}
             <StrategySelector onConfigChange={setStrategyConfig} />
 
             <button
@@ -127,14 +118,12 @@ export function PerformancePage() {
           </div>
         </section>
 
-        {/* METRICS & CHARTS */}
         <TelemetryMetrics
           data={data}
           loading={loading}
           currentReturnPct={currentReturnPct}
         />
 
-        {/* BOTTOM WIDGETS */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-gutter mb-4">
           <RegimeDetectionCard
             levels={regimeLevels}
