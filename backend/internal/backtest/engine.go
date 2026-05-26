@@ -65,7 +65,7 @@ func RunBacktest(ctx context.Context, bars []models.Bar, strat Strategy, initial
 	// Mark to market at last close if still holding.
 	if shares > 0 {
 		cash = shares * bars[len(bars)-1].Close
-		shares = 0
+		//shares = 0
 	}
 
 	equities := make([]float64, len(equityCurve))

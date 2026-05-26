@@ -70,15 +70,15 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
     return `${header}.${payload}.offline-demo-signature`;
   };
 
-  const isBackendUnavailable = (err: unknown): boolean => {
-    if (err instanceof TypeError) {
-      return true;
-    }
-    return (
-      err instanceof Error &&
-      /Failed to fetch|NetworkError|Request failed \(5\d\d\)/i.test(err.message)
-    );
-  };
+  // const isBackendUnavailable = (err: unknown): boolean => {
+  //   if (err instanceof TypeError) {
+  //     return true;
+  //   }
+  //   return (
+  //     err instanceof Error &&
+  //     /Failed to fetch|NetworkError|Request failed \(5\d\d\)/i.test(err.message)
+  //   );
+  // };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

@@ -22,55 +22,55 @@ func TestNewClient(t *testing.T) {
 func TestValidateBar(t *testing.T) {
 	// Valid bar
 	assert.NoError(t, ValidateBar(models.Bar{
-		Open:  100,
-		High:  110,
-		Low:   90,
-		Close: 105,
+		Open:   100,
+		High:   110,
+		Low:    90,
+		Close:  105,
 		Volume: 1000,
 	}))
 
 	// Negative price
 	assert.Error(t, ValidateBar(models.Bar{
-		Open:  -100,
-		High:  110,
-		Low:   90,
-		Close: 105,
+		Open:   -100,
+		High:   110,
+		Low:    90,
+		Close:  105,
 		Volume: 1000,
 	}))
 
 	// Negative volume
 	assert.Error(t, ValidateBar(models.Bar{
-		Open:  100,
-		High:  110,
-		Low:   90,
-		Close: 105,
+		Open:   100,
+		High:   110,
+		Low:    90,
+		Close:  105,
 		Volume: -1000,
 	}))
 
 	// High < low
 	assert.Error(t, ValidateBar(models.Bar{
-		Open:  100,
-		High:  90,
-		Low:   110,
-		Close: 105,
+		Open:   100,
+		High:   90,
+		Low:    110,
+		Close:  105,
 		Volume: 1000,
 	}))
 
 	// High below open/close
 	assert.Error(t, ValidateBar(models.Bar{
-		Open:  100,
-		High:  95,
-		Low:   90,
-		Close: 105,
+		Open:   100,
+		High:   95,
+		Low:    90,
+		Close:  105,
 		Volume: 1000,
 	}))
 
 	// Low above open/close
 	assert.Error(t, ValidateBar(models.Bar{
-		Open:  100,
-		High:  110,
-		Low:   115,
-		Close: 105,
+		Open:   100,
+		High:   110,
+		Low:    115,
+		Close:  105,
 		Volume: 1000,
 	}))
 }
@@ -83,7 +83,10 @@ func TestPlaceOrderValidation(t *testing.T) {
 		assert.Equal(t, "test-key", r.Header.Get("APCA-API-KEY-ID"))
 		assert.Equal(t, "test-secret", r.Header.Get("APCA-API-SECRET-KEY"))
 		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(`{"id":"order123","symbol":"AAPL","qty":"10","side":"buy","status":"new"}`))
+		_, err := w.Write([]byte(`{"id":"order123","symbol":"AAPL","qty":"10","side":"buy","status":"new"}`))
+		if err != nil {
+			t.Fatalf("write response: %v", err)
+		}
 	}))
 	defer ts.Close()
 
@@ -96,9 +99,9 @@ func TestPlaceOrderValidation(t *testing.T) {
 
 	// Test empty symbol
 	_, err = c.PlaceOrder(context.Background(), &OrderRequest{
-		Qty:   10,
-		Side:  "buy",
-		Type:  "market",
+		Qty:  10,
+		Side: "buy",
+		Type: "market",
 	})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "symbol is required")

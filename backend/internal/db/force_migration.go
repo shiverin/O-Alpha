@@ -24,7 +24,9 @@ func ForceResetMigrations(databaseURL, migrationsPath string) error {
 	if err != nil {
 		return fmt.Errorf("create migrator: %w", err)
 	}
-	defer m.Close()
+	defer func() {
+		_, _ = m.Close()
+	}()
 
 	// Force the version to the latest available migration
 	if err := m.Force(latestVersion); err != nil {
