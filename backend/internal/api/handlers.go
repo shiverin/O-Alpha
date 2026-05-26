@@ -5,19 +5,23 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/oalpha/internal/agent"
 	"github.com/oalpha/internal/backtest"
 	"github.com/oalpha/internal/db"
 	"github.com/oalpha/pkg/models"
 )
 
-// Handler holds HTTP dependencies.
+// Add AgentManager property to your dependency matrix
 type Handler struct {
-	repo *db.Repository
+	repo         *db.Repository
+	AgentManager *agent.AgentManager // <-- Inject here
 }
 
-// NewHandler creates API handlers.
-func NewHandler(repo *db.Repository) *Handler {
-	return &Handler{repo: repo}
+func NewHandler(repo *db.Repository, am *agent.AgentManager) *Handler {
+	return &Handler{
+		repo:         repo,
+		AgentManager: am,
+	}
 }
 
 // Health returns service status.
@@ -128,4 +132,102 @@ func (h *Handler) RunBacktest(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, result)
+}
+
+type AgentControlRequest struct {
+	UserID       int64   `json:"user_id"` // Simplified identity binding for public mock matching
+	Symbol       string  `json:"symbol" binding:"required"`
+	StrategyType string  `json:"strategy_type" binding:"required"` // "MA_CROSSOVER" or "KALMAN"
+	Timeframe    string  `json:"timeframe"`                        // e.g. "1Hour", "1Min"
+	InitialCash  float64 `json:"initial_cash"`
+	UseWebSocket bool    `json:"use_websocket"`
+	QNoise       float64 `json:"q_noise"`
+	RNoise       float64 `json:"r_noise"`
+	ZThreshold   float64 `json:"z_threshold"`
+	FastPeriod   int     `json:"fast_period"`
+	SlowPeriod   int     `json:"slow_period"`
+}
+
+// LaunchLiveAgent provisions and kicks off a real-time live trading process loop.
+func (h *Handler) LaunchLiveAgent(c *gin.Context) {
+	var req AgentControlRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if req.UserID == 0 {
+		req.UserID = 999 // Fallback demo placeholder ID
+	}
+	if req.Timeframe == "" {
+		req.Timeframe = "1Hour"
+	}
+	if req.InitialCash <= 0 {
+		req.InitialCash = 50000.0
+	}
+
+	// Resolve the desired Strategy strategy pattern mapping
+	var strat backtest.Strategy
+	switch req.StrategyType {
+	case "KALMAN":
+		if req.QNoise == 0 {
+			req.QNoise = 0.01
+		}
+		if req.RNoise == 0 {
+			req.RNoise = 0.5
+		}
+		if req.ZThreshold == 0 {
+			req.ZThreshold = 2.0
+		}
+		strat = backtest.NewKalmanStrategy(req.QNoise, req.RNoise, 20, req.ZThreshold)
+	default:
+		if req.FastPeriod == 0 {
+			req.FastPeriod = 10
+		}
+		if req.SlowPeriod == 0 {
+			req.SlowPeriod = 30
+		}
+		strat = backtest.NewMACrossoverStrategy(req.FastPeriod, req.SlowPeriod)
+	}
+
+	err := h.AgentManager.StartAgent(
+		c.Request.Context(),
+		req.UserID,
+		req.Symbol,
+		req.Timeframe,
+		strat,
+		true, // Enforce paper trading flags for safety thresholds in public demos
+		req.InitialCash,
+		req.UseWebSocket,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "activated", "symbol": req.Symbol})
+}
+
+// TerminateLiveAgent stops a matching active process loop instantly.
+func (h *Handler) TerminateLiveAgent(c *gin.Context) {
+	var req struct {
+		UserID int64  `json:"user_id"`
+		Symbol string `json:"symbol" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if req.UserID == 0 {
+		req.UserID = 999
+	}
+
+	err := h.AgentManager.StopAgent(req.UserID, req.Symbol)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "terminated", "symbol": req.Symbol})
 }

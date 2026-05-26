@@ -2,9 +2,11 @@ package db
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/oalpha/pkg/models"
 )
@@ -45,7 +47,8 @@ func (r *UserRepository) GetUserByUsername(ctx context.Context, username string)
 	var u models.User
 	err := r.db.QueryRow(ctx, q, username).Scan(&u.ID, &u.Username, &u.PasswordHash, &u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
-		if err.Error() == "no rows in result set" {
+		// FIX: Swapped out fragile text matching for the official driver sentinel value via errors.Is
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("select user: %w", err)
@@ -63,7 +66,8 @@ func (r *UserRepository) GetUserByID(ctx context.Context, id int64) (*models.Use
 	var u models.User
 	err := r.db.QueryRow(ctx, q, id).Scan(&u.ID, &u.Username, &u.PasswordHash, &u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
-		if err.Error() == "no rows in result set" {
+		// FIX: Swapped out fragile text matching for the official driver sentinel value via errors.Is
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("select user by id: %w", err)

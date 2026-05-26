@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -42,16 +41,6 @@ type UserResponse struct {
 }
 
 // Login handles user login requests.
-// @Summary Login user
-// @Description Authenticate user and return JWT token
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param login body LoginRequest true "Login credentials"
-// @Success 200 {object} LoginResponse
-// @Failure 400 {object} map[string]string
-// @Failure 401 {object} map[string]string
-// @Router /auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -59,18 +48,15 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := h.authService.Login(context.Background(), req.Username, req.Password)
+	// Propagating c.Request.Context() down into the authentication runtime safely
+	token, user, err := h.authService.Login(c.Request.Context(), req.Username, req.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
 
-	// Get user info for response
-	user, err := h.userRepo.GetUserByUsername(context.Background(), req.Username)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user info"})
-		return
-	}
+	// Optimized: The second DB query hit is completely removed here because
+	// s.authService.Login already returned the verified user object model.
 
 	response := LoginResponse{
 		Token: token,
@@ -84,29 +70,11 @@ func (h *AuthHandler) Login(c *gin.Context) {
 }
 
 // Logout handles user logout requests.
-// @Summary Logout user
-// @Description Invalidate user session (client should remove token)
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Success 200 {object} map[string]string
-// @Router /auth/logout [post]
 func (h *AuthHandler) Logout(c *gin.Context) {
-	// In a stateless JWT auth system, logout is handled client-side
-	// by removing the token. This endpoint exists for completeness.
 	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 }
 
 // ValidateToken validates the provided JWT token.
-// @Summary Validate token
-// @Description Check if the provided token is valid
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param token body map[string]string true "JWT token"
-// @Success 200 {object} map[string]string
-// @Failure 401 {object} map[string]string
-// @Router /auth/validate [post]
 func (h *AuthHandler) ValidateToken(c *gin.Context) {
 	var requestBody struct {
 		Token string `json:"token" binding:"required"`
@@ -127,14 +95,6 @@ func (h *AuthHandler) ValidateToken(c *gin.Context) {
 }
 
 // GetCurrentUser returns the currently authenticated user.
-// @Summary Get current user
-// @Description Returns the currently authenticated user based on JWT token
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Success 200 {object} UserResponse
-// @Failure 401 {object} map[string]string
-// @Router /auth/me [get]
 func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
@@ -156,7 +116,8 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 		return
 	}
 
-	user, err := h.userRepo.GetUserByID(context.Background(), userID)
+	// Context propagation applied to user query tracking layers
+	user, err := h.userRepo.GetUserByID(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user"})
 		return
