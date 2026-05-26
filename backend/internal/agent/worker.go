@@ -19,7 +19,7 @@ type AgentWorker struct {
 	ctx            context.Context
 	cancelFunc     context.CancelFunc
 	alpacaClient   *alpaca.Client
-	repo           *db.Repository
+	repo           *db.BarsRepository 
 	strategy       backtest.Strategy
 	symbol         string
 	timeframe      string
@@ -40,7 +40,7 @@ type AgentWorker struct {
 func NewAgentWorker(
 	ctx context.Context,
 	alpacaClient *alpaca.Client,
-	repo *db.Repository,
+	repo *db.BarsRepository,
 	strategy backtest.Strategy,
 	symbol string,
 	timeframe string,

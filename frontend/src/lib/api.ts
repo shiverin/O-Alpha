@@ -130,3 +130,37 @@ export const api = {
     return res.json();
   },
 };
+
+// Append these definitions and methods to frontend/src/lib/api.ts
+
+export interface ServerAgentSettings {
+  user_id: number;
+  risk_profile: string;
+  leverage: number;
+  max_positions: number;
+  stop_loss_pct: number;
+  take_profit_pct: number;
+  rebalance_freq: string;
+}
+
+export interface SettingsCheckResponse {
+  found: boolean;
+  settings?: ServerAgentSettings;
+}
+
+export const settingsApi = {
+  check: async (userID: number): Promise<SettingsCheckResponse> => {
+    return api.get<SettingsCheckResponse>(`/api/v1/user/settings?user_id=${userID}`);
+  },
+  save: async (payload: {
+    user_id: number;
+    risk_profile: string;
+    leverage: number;
+    max_positions: number;
+    stop_loss_pct: number;
+    take_profit_pct: number;
+    rebalance_freq: string;
+  }): Promise<{ status: string }> => {
+    return api.post<{ status: string }, typeof payload>("/api/v1/user/settings", payload);
+  }
+};

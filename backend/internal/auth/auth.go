@@ -10,6 +10,13 @@ import (
 	"github.com/oalpha/pkg/models"
 )
 
+// Claims defines a strongly-typed JWT payload structure to eliminate map casting traps.
+type Claims struct {
+	UserID   int64  `json:"user_id"`
+	Username string `json:"username"`
+	jwt.RegisteredClaims
+}
+
 // AuthService handles authentication logic.
 type AuthService struct {
 	userRepo    *db.UserRepository
@@ -27,45 +34,52 @@ func NewAuthService(userRepo *db.UserRepository, jwtSecret string, tokenExpiry t
 }
 
 // Login authenticates a user with username and password.
-func (s *AuthService) Login(ctx context.Context, username, password string) (string, error) {
+// It preserves auto-registration behavior while returning the user to avoid a duplicate DB lookup.
+func (s *AuthService) Login(ctx context.Context, username, password string) (string, *models.User, error) {
 	user, err := s.userRepo.GetUserByUsername(ctx, username)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
+
+	// Preserved Auto-Registration Behavior
 	if user == nil {
 		newUser := &models.User{Username: username}
 		if err := newUser.SetPassword(password); err != nil {
-			return "", err
+			return "", nil, err
 		}
 		if err := s.userRepo.CreateUser(ctx, newUser); err != nil {
-			return "", err
+			return "", nil, err
 		}
 		user = newUser
 	}
 
 	if err := user.ComparePassword(password); err != nil {
-		return "", errors.New("invalid credentials")
+		return "", nil, errors.New("invalid credentials")
 	}
 
-	// Create token
-	token := jwt.New(jwt.SigningMethodHS256)
-	claims := token.Claims.(jwt.MapClaims)
-	claims["user_id"] = user.ID
-	claims["username"] = user.Username
-	claims["exp"] = time.Now().Add(s.tokenExpiry).Unix()
+	// Create token using safe, typed Claims struct
+	claims := Claims{
+		UserID:   user.ID,
+		Username: user.Username,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.tokenExpiry)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
 
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	t, err := token.SignedString(s.jwtSecret)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
-	return t, nil
+	return t, user, nil
 }
 
-// ValidateToken validates a JWT token and returns the user ID if valid.
+// ValidateToken validates a JWT token and returns the user ID safely without float64 casting.
 func (s *AuthService) ValidateToken(tokenString string) (int64, error) {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		// Validate the signing method
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
@@ -75,12 +89,9 @@ func (s *AuthService) ValidateToken(tokenString string) (int64, error) {
 		return 0, err
 	}
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		if float64UserID, ok := claims["user_id"].(float64); ok {
-			return int64(float64UserID), nil
-		}
-		return 0, errors.New("invalid user ID in token")
+	if !token.Valid {
+		return 0, errors.New("invalid token")
 	}
 
-	return 0, errors.New("invalid token")
+	return claims.UserID, nil
 }

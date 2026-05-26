@@ -15,6 +15,26 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+func parseAlpacaTimeframe(tf string) time.Duration {
+	switch tf {
+	case "1Min":
+		return time.Minute
+	case "5Min":
+		return 5 * time.Minute
+	case "15Min":
+		return 15 * time.Minute
+	case "1Hour":
+		return time.Hour
+	case "1Day":
+		return 24 * time.Hour
+	default:
+		if d, err := time.ParseDuration(tf); err == nil {
+			return d
+		}
+		return time.Hour
+	}
+}
+
 func main() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
@@ -33,12 +53,8 @@ func main() {
 		log.Fatal().Msg("ALPACA_API_SECRET is required for ingest")
 	}
 
-	tickInterval := time.Hour
-	if d, err := time.ParseDuration(cfg.IngestInterval); err == nil && d > 0 {
-		tickInterval = d
-	} else {
-		log.Warn().Err(err).Str("value", cfg.IngestInterval).Msg("invalid INGEST_INTERVAL, defaulting to 1h")
-	}
+	tickInterval := parseAlpacaTimeframe(cfg.IngestInterval)
+	log.Info().Str("interval", cfg.IngestInterval).Str("parsed_duration", tickInterval.String()).Msg("Smart Delta-Sync scheduling engine online")
 
 	if err := db.RunMigrations(cfg.DatabaseURL, cfg.MigrationsPath); err != nil {
 		log.Fatal().Err(err).Msg("run migrations")
@@ -50,20 +66,18 @@ func main() {
 	}
 	defer sqlDB.Close()
 
-	repo := db.NewRepository(sqlDB)
+	repo := db.NewBarsRepository(sqlDB)
 	client := alpaca.NewClient(cfg.AlpacaDataURL, cfg.AlpacaAPIKey, cfg.AlpacaAPISecret)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Backfill historical data once at startup.
-	end := time.Now().UTC()
-	start := end.Add(-cfg.IngestLookback)
-	if err := ingestAll(ctx, repo, client, cfg.IngestSymbols, cfg.IngestInterval, start, end); err != nil {
-		log.Error().Err(err).Msg("initial backfill failed")
+	// 🚀 1. Trigger delta synchronization immediately for all symbols at startup
+	if err := syncAllSymbolsDelta(ctx, repo, client, cfg.IngestSymbols, cfg.IngestInterval, cfg.IngestLookback); err != nil {
+		log.Error().Err(err).Msg("startup delta resync encountered warnings")
 	}
 
-	// Periodic ingest per symbol.
+	// ⏰ 2. Establish our long-running background cron interval ticker
 	ticker := time.NewTicker(tickInterval)
 	defer ticker.Stop()
 
@@ -73,10 +87,9 @@ func main() {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				windowEnd := time.Now().UTC()
-				windowStart := windowEnd.Add(-2 * tickInterval)
-				if err := ingestAll(ctx, repo, client, cfg.IngestSymbols, cfg.IngestInterval, windowStart, windowEnd); err != nil {
-					log.Error().Err(err).Msg("periodic ingest failed")
+				log.Info().Msg("Cron cycle triggered. Evaluating time delta gaps...")
+				if err := syncAllSymbolsDelta(ctx, repo, client, cfg.IngestSymbols, cfg.IngestInterval, cfg.IngestLookback); err != nil {
+					log.Error().Err(err).Msg("periodic delta resync failed")
 				}
 			}
 		}
@@ -85,10 +98,11 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Info().Msg("ingest service stopped")
+	log.Info().Msg("ingest service stopped gracefully")
 }
 
-func ingestAll(ctx context.Context, repo *db.Repository, client *alpaca.Client, symbols []string, interval string, start, end time.Time) error {
+// Spans concurrent goroutines across target assets to safely perform delta updates
+func syncAllSymbolsDelta(ctx context.Context, repo *db.BarsRepository, client *alpaca.Client, symbols []string, interval string, defaultLookback time.Duration) error {
 	var wg sync.WaitGroup
 	errCh := make(chan error, len(symbols))
 
@@ -96,9 +110,9 @@ func ingestAll(ctx context.Context, repo *db.Repository, client *alpaca.Client, 
 		wg.Add(1)
 		go func(sym string) {
 			defer wg.Done()
-			if err := ingestSymbol(ctx, repo, client, sym, interval, start, end); err != nil {
+			if err := syncSingleSymbolDelta(ctx, repo, client, sym, interval, defaultLookback); err != nil {
 				errCh <- err
-				log.Error().Err(err).Str("symbol", sym).Msg("ingest failed")
+				log.Error().Err(err).Str("symbol", sym).Msg("delta sync task failed")
 			}
 		}(symbol)
 	}
@@ -114,15 +128,48 @@ func ingestAll(ctx context.Context, repo *db.Repository, client *alpaca.Client, 
 	return nil
 }
 
-func ingestSymbol(ctx context.Context, repo *db.Repository, client *alpaca.Client, symbol, interval string, start, end time.Time) error {
+// Evaluates database timelines against real-world gaps to query exact ranges from Alpaca
+func syncSingleSymbolDelta(ctx context.Context, repo *db.BarsRepository, client *alpaca.Client, symbol, interval string, defaultLookback time.Duration) error {
+	end := time.Now().UTC()
+	var start time.Time
+
+	// 🔍 Check database to find when we last logged this asset configuration
+	latestTime, found, err := repo.GetLatestBarTime(ctx, symbol, interval)
+	if err != nil {
+		return err
+	}
+
+	if found {
+		// ✅ Smart Delta Mode: Start pulling from the exact millisecond of your last recorded bar.
+		// Your composite ON CONFLICT clause will safely handle updating this boundary bar if its metrics finalized late.
+		start = latestTime
+		log.Info().Str("symbol", symbol).Time("last_recorded", start).Msg("Delta sync mapping initialized")
+	} else {
+		// 💤 Bulk Inception Mode: Table is pristine, apply lookback window configurations
+		start = end.Add(-defaultLookback)
+		log.Info().Str("symbol", symbol).Time("lookback_start", start).Msg("No data found. Commencing cold structural initialization")
+	}
+
+	// Avoid firing empty, redundant queries over the wire to Alpaca if we are already completely up to date
+	if end.Sub(start) < 2*time.Second {
+		log.Debug().Str("symbol", symbol).Msg("Asset database timeline matches real-world metrics. Sync skipped")
+		return nil
+	}
+
 	bars, err := client.GetBars(ctx, symbol, interval, start, end, 10000)
 	if err != nil {
 		return err
 	}
-	n, err := repo.InsertBars(ctx, bars)
+
+	if len(bars) == 0 {
+		return nil
+	}
+
+	n, err := repo.InsertBars(ctx, bars, interval)
 	if err != nil {
 		return err
 	}
-	log.Info().Str("symbol", symbol).Int("fetched", len(bars)).Int64("upserted", n).Msg("ingested bars")
+
+	log.Info().Str("symbol", symbol).Int("fetched", len(bars)).Int64("upserted", n).Msg("Ingestion synchronization successfully finalized")
 	return nil
 }

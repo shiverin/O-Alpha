@@ -8,6 +8,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/oalpha/internal/agent"
+	"github.com/oalpha/internal/alpaca"
 	"github.com/oalpha/internal/api"
 	"github.com/oalpha/internal/config"
 	"github.com/oalpha/internal/db"
@@ -34,8 +36,20 @@ func main() {
 	}
 	defer sqlDB.Close()
 
-	repo := db.NewRepository(sqlDB)
-	handler := api.NewHandler(repo)
+	// ... underneath your existing db initialization blocks
+	repo := db.NewBarsRepository(sqlDB)
+
+	// Initialize your new standalone agent configuration data layer link
+	agentRepo := db.NewAgentRepository(sqlDB)
+
+	// Instantiating the master Alpaca client to feed upstream market connectors
+	alpacaClient := alpaca.NewClient(cfg.AlpacaDataURL, cfg.AlpacaAPIKey, cfg.AlpacaAPISecret)
+
+	// Initialize the Agent Manager tracking sub-system context
+	agentManager := agent.NewAgentManager(alpacaClient, repo)
+
+	// Inject all requirements safely down into handler factories
+	handler := api.NewHandler(repo, agentManager, agentRepo)
 	router := api.NewRouter(handler, cfg)
 
 	srv := &http.Server{
