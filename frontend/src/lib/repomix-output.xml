@@ -1,0 +1,409 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+api.ts
+auth.ts
+mockData.ts
+ui.ts
+utils.ts
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="api.ts">
+// @/lib/api.ts
+
+import { getToken } from '@/lib/auth';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:8080";
+
+export interface BacktestRequest {
+  symbol: string;
+  start: string;
+  end: string;
+  strategy_type?: string; // "MA_CROSSOVER" or "KALMAN"
+  timeframe?: string;     // e.g., "1Day"
+  // Kalman-specific parameters
+  q_noise?: number;
+  r_noise?: number;
+  z_threshold?: number;
+  // MA-specific parameters
+  fast_window?: number;
+  slow_window?: number;
+  initial_cash?: number;
+}
+
+export interface EquityPoint {
+  time: string;
+  equity: number;
+}
+
+export interface BacktestResult {
+  symbol: string;
+  equity_curve: EquityPoint[];
+  sharpe: number;
+  sortino: number;
+  max_drawdown: number;
+  total_return: number;
+  annual_return: number;
+  num_trades: number;
+}
+
+// Helper function to get auth headers
+const getAuthHeaders = (): HeadersInit => {
+  const token = typeof window !== 'undefined' ? getToken() : null;
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  return headers;
+};
+
+export async function runBacktest(
+  payload: BacktestRequest
+): Promise<BacktestResult> {
+  const res = await fetch(`${API_BASE}/api/v1/backtest`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? `Backtest failed (${res.status})`);
+  }
+
+  return res.json();
+}
+
+// Generic API fetcher with auth support
+export const api = {
+  get: async <R>(endpoint: string): Promise<R> => {
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      headers: getAuthHeaders(),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? `Request failed (${res.status})`);
+    }
+
+    return res.json();
+  },
+
+  // Swapped to <R, T = unknown> so TypeScript infers the payload type automatically
+  post: async <R, T = unknown>(endpoint: string, data: T): Promise<R> => {
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? `Request failed (${res.status})`);
+    }
+
+    return res.json();
+  },
+
+  // Swapped to <R, T = unknown> here as well
+  put: async <R, T = unknown>(endpoint: string, data: T): Promise<R> => {
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? `Request failed (${res.status})`);
+    }
+
+    return res.json();
+  },
+
+  delete: async <R>(endpoint: string): Promise<R> => {
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? `Request failed (${res.status})`);
+    }
+
+    return res.json();
+  }
+};
+</file>
+
+<file path="auth.ts">
+import { jwtDecode } from 'jwt-decode';
+
+const AUTH_COOKIE_NAME = 'oa-auth';
+const TOKEN_STORAGE_KEY = 'token';
+
+export interface User {
+  id: number;
+  email: string;
+}
+
+/**
+ * Set the JWT token in a cookie
+ */
+export function setToken(token: string): void {
+  // Store token in a cookie that expires in 24 hours
+  document.cookie = `${AUTH_COOKIE_NAME}=${token}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax`;
+  localStorage.setItem(TOKEN_STORAGE_KEY, token);
+}
+
+/**
+ * Get the JWT token from cookies
+ */
+export function getToken(): string | null {
+  const match = document.cookie.match(new RegExp(`(^| )${AUTH_COOKIE_NAME}=([^;]+)`));
+  if (match) {
+    return match[2];
+  }
+  return localStorage.getItem(TOKEN_STORAGE_KEY);
+}
+
+/**
+ * Remove the JWT token from cookies
+ */
+export function removeToken(): void {
+  document.cookie = `${AUTH_COOKIE_NAME}=; path=/; max-age=0`;
+  localStorage.removeItem(TOKEN_STORAGE_KEY);
+}
+
+/**
+ * Decode the JWT token to get user information
+ * Note: This does not validate the token signature, only decodes the payload.
+ * For security-critical operations, always validate the token on the backend.
+ */
+export function decodeToken(token: string): User | null {
+  try {
+    const decoded = jwtDecode<{ user_id: number; email: string }>(token);
+    return {
+      id: decoded.user_id,
+      email: decoded.email
+    };
+  } catch {
+    // FIXED: Removed the unused 'err' variable
+    return null;
+  }
+}
+
+/**
+ * Check if the user is authenticated (has a valid token)
+ */
+export function isAuthenticated(): boolean {
+  const token = getToken();
+  if (!token) return false;
+
+  // Check if token is expired by decoding and checking exp
+  try {
+    // FIXED: Passed the exact expected type instead of using 'any' or 'unknown'
+    const decoded = jwtDecode<{ exp: number }>(token);
+    return decoded.exp * 1000 > Date.now();
+  } catch {
+    return false;
+  }
+}
+</file>
+
+<file path="mockData.ts">
+import type { EquityPoint } from "@/lib/api";
+
+export const buildFallbackEquityCurve = (): EquityPoint[] => {
+  const now = Date.now();
+  
+  // 1. Increased points for a more detailed, dense chart
+  const points = 120; 
+
+  return Array.from({ length: points }, (_, idx) => {
+    const t = idx / (points - 1);
+    
+    // The underlying smooth market direction
+    const trend = 10000 + t * 1650;
+    const cycle = Math.sin(t * Math.PI * 3.6) * 180;
+    const pullback = Math.sin(t * Math.PI * 9) * 65;
+    
+    // 2. THE VARIANCE: Random jagged market noise
+    // Math.random() - 0.5 generates a number between -0.5 and 0.5.
+    // Multiply by a volatility factor (e.g., 180) to make the spikes larger or smaller.
+    const volatility = 180;
+    const noise = (Math.random() - 0.5) * volatility;
+
+    // Combine the smooth math with the chaotic noise
+    const equity = trend + cycle + pullback + noise;
+
+    return {
+      time: new Date(now - (points - idx) * 24 * 60 * 60 * 1000).toISOString(), // 1 point per day
+      equity: Number(equity.toFixed(2)),
+    };
+  });
+};
+
+export const DEFAULT_EQUITY_CURVE = buildFallbackEquityCurve();
+</file>
+
+<file path="ui.ts">
+/**
+ * UI and styling utility functions
+ */
+
+/**
+ * Returns accent-based styling classes for hover/active states
+ * Useful for creating theme-aware interactive elements
+ *
+ * @param accent - The accent color to use (primary, secondary, tertiary, etc.)
+ * @returns string of Tailwind classes for accent-based styling
+ */
+export const getAccentStyle = (accent: 'primary' | 'secondary' | 'tertiary'): string => {
+  switch (accent) {
+    case 'primary':
+      return 'hover:bg-primary-container/10 active:bg-primary-container/20'
+    case 'secondary':
+      return 'hover:bg-secondary-container/10 active:bg-secondary-container/20'
+    case 'tertiary':
+      return 'hover:bg-tertiary-container/10 active:bg-tertiary-container/20'
+    default:
+      return ''
+  }
+}
+
+/**
+ * Returns border styling classes for different intensities
+ *
+ * @param intensity - Border intensity ('light', 'medium', 'strong', or number 0-100)
+ * @returns string of Tailwind classes for border styling
+ */
+export const getBorderStyle = (
+  intensity: 'light' | 'medium' | 'strong' | number = 'medium'
+): string => {
+  if (typeof intensity === 'number') {
+    // Clamp between 0-100
+    const clamped = Math.max(0, Math.min(100, intensity))
+    return `border border-outline-variant/${clamped}`
+  }
+
+  switch (intensity) {
+    case 'light':
+      return 'border border-outline-variant/30'
+    case 'medium':
+      return 'border border-outline-variant/50'
+    case 'strong':
+      return 'border border-outline-variant/70'
+    default:
+      return 'border border-outline-variant/50'
+  }
+}
+
+/**
+ * Returns glass/panel styling classes with optional hover effect
+ *
+ * @param elevated - whether to include hover elevation effect
+ * @returns string of Tailwind classes for glass panel styling
+ */
+export const getPanelStyle = (elevated: boolean = false): string => {
+  const base = 'bg-surface-container-high/80 border border-outline-variant/50 rounded-2xl'
+  return elevated ? `${base} hover:bg-surface-container-highest/80 transition-colors duration-300` : base
+}
+
+/**
+ * Returns container layout classes
+ *
+ * @param fluid - if true, removes max-width constraint
+ * @param px - horizontal padding ('mobile', 'desktop', or 'none')
+ * @param maxWidth - custom max-width (when not fluid)
+ * @returns string of Tailwind classes for container layout
+ */
+export const getContainerStyle = (
+  fluid: boolean = false,
+  px: 'mobile' | 'desktop' | 'none' = 'desktop',
+  maxWidth: string | number = '[1440px]'
+): string => {
+  // Padding
+  let pxClass = ''
+  switch (px) {
+    case 'mobile':
+      pxClass = 'px-margin-mobile'
+      break
+    case 'desktop':
+      pxClass = 'px-margin-desktop'
+      break
+    case 'none':
+      pxClass = 'px-0'
+      break
+  }
+
+  // Width
+  let widthClass = 'w-full'
+  if (!fluid && maxWidth) {
+    widthClass += ` max-w-${typeof maxWidth === 'number' ? `[${maxWidth}px]` : maxWidth}`
+  }
+
+  // Centering
+  const mxClass = !fluid ? 'mx-auto' : ''
+
+  return `${pxClass} ${widthClass} ${mxClass}`.trim()
+}
+</file>
+
+<file path="utils.ts">
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+</file>
+
+</files>

@@ -14,14 +14,14 @@ type ProfileCard = {
 
 const profiles: ProfileCard[] = [
   {
-    label: "PROFILE 01",
+    label: "The",
     title: "Conservative",
     summary: "Capital preservation focus.",
     accent: "neutral",
     items: ["Low volatility targeting", "Blue-chip preference", "Strict trailing stop-loss"],
   },
   {
-    label: "PROFILE 02",
+    label: "The",
     title: "Opportunist",
     summary: "Agile momentum capture.",
     accent: "primary",
@@ -29,7 +29,7 @@ const profiles: ProfileCard[] = [
     items: ["Trend identification algorithms", "Mid-cap sector rotation", "Dynamic position sizing"],
   },
   {
-    label: "PROFILE 03",
+    label: "The",
     title: "Quant",
     summary: "Statistical arbitrage.",
     accent: "secondary",
@@ -61,7 +61,7 @@ export function ExecutionFlow() {
       </div>
 
       {/* The Profile Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+      <div className="grid grid-cols-1 gap-6 md:gap-8">
         {profiles.map((profile, index) => {
           const isPrimary = profile.accent === "primary";
           const isSecondary = profile.accent === "secondary";

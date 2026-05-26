@@ -3,16 +3,10 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Container } from '@/components/ui/Container';
-import { Panel } from '@/components/ui/Panel';
 import { Icon } from '@/components/ui/Icon';
+import { AppTopBar } from "@/components/app/AppTopBar";
 import { removeToken } from "@/lib/auth";
-
-const navItems = [
-  { label: "Overview", href: "/app/dashboard", icon: "dashboard" },
-  { label: "Agent Settings", href: "/app/agent-settings", icon: "settings_input_component" },
-  { label: "Portfolio", href: "/app/portfolio", icon: "pie_chart" },
-  { label: "Activity", href: "/app/activity", icon: "history" },
-];
+import { appNavItems } from "@/components/app/appNav";
 
 export function AppShell({
   title,
@@ -30,66 +24,67 @@ export function AppShell({
   };
 
   return (
-    <div className="min-h-screen flex bg-background text-on-background">
-      <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full w-64 border-r border-outline-variant/30 bg-surface-container-lowest">
-        <Panel className="px-6 py-8">
-          <div className="font-headline-lg text-headline-lg text-on-background">
+    <div className="min-h-screen flex bg-background text-on-background font-body">
+      
+      {/* =========================================
+          LEFT SIDEBAR (MINIMALIST TERMINAL DOCK)
+      ========================================= */}
+      <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full w-64 border-r border-outline-variant/20 bg-surface-container-lowest/40 backdrop-blur-md">
+        
+        {/* Minimalist Header without the Box Panel Container */}
+        <div className="px-7 pt-10 pb-12 flex items-center gap-2">
+          <span className="text-lg font-light tracking-[0.15em] text-on-background">
             O(Alpha)
-          </div>
-          <div className="font-data-sm text-data-sm text-on-surface-variant mt-2">
-            Neural Core Active
-          </div>
-        </Panel>
-        <nav className="flex-1 px-3 space-y-1">
-          {navItems.map((item) => {
+          </span>
+        </div>
+
+        {/* Navigation Desk */}
+        <nav className="flex-1 px-4 space-y-1.5">
+          {appNavItems.map((item) => {
             const active = pathname === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={
+                className={`group flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
                   active
-                    ? "flex items-center gap-3 px-4 py-3 rounded-xl bg-primary-container/10 text-primary-container"
-                    : "flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high/70 hover:text-on-background"
-                }
+                    ? "bg-surface-container text-primary-container border border-outline-variant/30 shadow-sm"
+                    : "text-on-surface-variant hover:bg-white/[0.02] hover:text-on-background"
+                }`}
               >
-                <Icon name={item.icon} size="small" />
-                <span className="font-body-md text-body-md">{item.label}</span>
+                <div className={`transition-transform duration-300 group-hover:scale-105 ${active ? 'text-primary-container' : 'text-on-surface-variant/70 group-hover:text-on-surface'}`}>
+                  <Icon name={item.icon} size="small" />
+                </div>
+                <span className="text-sm font-light tracking-wide">{item.label}</span>
               </Link>
             );
           })}
         </nav>
-        <div className="px-6 pb-6 mt-auto">
+
+        {/* Bottom Panel Actions */}
+        <div className="px-6 pb-8 mt-auto">
           <button
-            className="w-full py-2 rounded-full border border-outline-variant/40 font-body-md text-body-md text-on-background hover:bg-surface-container-high transition-colors"
+            className="w-full py-2.5 rounded-full border border-outline-variant/30 text-xs font-medium tracking-wider uppercase text-on-surface-variant hover:text-on-background hover:bg-surface-container-high hover:border-outline-variant/60 transition-all duration-300 ease-out"
             onClick={handleLogout}
           >
             Log out
           </button>
         </div>
       </aside>
-      <div className="flex-1 md:ml-64">
-        <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-outline-variant/30">
-          <Container>
-            <div className="flex items-center justify-between h-16">
-              <div className="font-headline-lg text-headline-lg text-on-background">
-                {title}
-              </div>
-              <button
-                className="px-4 py-2 rounded-full border border-outline-variant/40 text-on-surface-variant hover:text-on-background hover:bg-surface-container-high transition-colors"
-                onClick={handleLogout}
-              >
-                Log out
-              </button>
+
+      <div className="flex-1 md:ml-64 flex flex-col min-w-0">
+        <AppTopBar title={title} onSignOut={handleLogout} />
+
+        {/* Dynamic Inner Stage views */}
+        <main className="px-margin-mobile md:px-margin-desktop py-12 flex-grow min-w-0">
+          <Container className="min-w-0">
+            <div className="animate-in fade-in duration-700 ease-out">
+              {children}
             </div>
-          </Container>
-        </header>
-        <main className="px-margin-mobile md:px-margin-desktop py-10">
-          <Container>
-            {children}
           </Container>
         </main>
       </div>
+
     </div>
   );
 }

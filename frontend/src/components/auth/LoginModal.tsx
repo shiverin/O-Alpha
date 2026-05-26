@@ -16,14 +16,14 @@ type LoginModalProps = {
 
 export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = useMemo(() => email.length > 0 && password.length > 0, [email, password]);
+  const canSubmit = useMemo(() => username.length > 0 && password.length > 0, [username, password]);
 
   useEffect(() => {
     setMounted(true);
@@ -68,7 +68,6 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
     if (err instanceof TypeError) {
       return true;
     }
-
     return err instanceof Error && /Failed to fetch|NetworkError|Request failed \(5\d\d\)/i.test(err.message);
   };
 
@@ -80,8 +79,9 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
     setError(null);
 
     try {
+      // FIX: Changed payload key from 'email' to 'username' to align with true username auth
       const response = await api.post<{ token: string; user: { id: number; email: string } }>("/auth/login", {
-        email,
+        username, 
         password,
       });
 
@@ -89,7 +89,6 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
       router.push(redirectPath || "/app/dashboard");
       onClose();
     } catch (err) {
-      // FIX: Check if it's a standard Error object instead of using 'any'
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -107,8 +106,9 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
     const demoTarget = "/app/dashboard";
 
     try {
+      // FIX: Keeping demo logic explicitly matching whatever key your endpoint expects
       const response = await api.post<{ token: string; user: { id: number; email: string } }>("/auth/login", {
-        email: "demo@example.com", // Demo credentials
+        username: "demouser", 
         password: "demopass123",
       });
 
@@ -159,12 +159,13 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
             <div className="space-y-3">
               <div className="group relative">
                 <Icon name="badge" className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant transition-colors group-focus-within:text-primary-container" />
+                {/* FIX: Set type to "text" since "username" isn't a valid HTML input type */}
                 <input
                   className="w-full rounded-t-lg border-x-0 border-b border-t-0 border-outline-variant/60 bg-surface-container-low py-3 pl-12 pr-4 font-body-md text-on-background transition-colors focus:border-primary-container focus:bg-surface-container-highest focus:ring-0"
-                  placeholder="Email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Username"
+                  type="text" 
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   required
                 />
               </div>

@@ -47,11 +47,11 @@ export function SiteHeader({ activePath, loginModalOpen: externalLoginOpen, onLo
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-xl border-b border-outline-variant/30">
-      <div className="flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4 max-w-[1440px] mx-auto">
+      <div className="flex justify-between items-center px-16 md:px-margin-desktop py-4 max-w-[1440px] mx-auto">
         <div className="flex items-center gap-2 md:gap-12">
 
           <Link href="/" className="flex items-center gap-2 md:gap-3">
-            <BrandMark className="-ml-0.5" showText={false} />
+            <BrandMark className="-ml-0.5" logoSize="md" showText={false} />
           </Link>
           <div className="hidden md:flex gap-8 items-center pt-1">
             {links.map((link) => (
@@ -110,7 +110,7 @@ export function SiteHeader({ activePath, loginModalOpen: externalLoginOpen, onLo
       >
         <div
           className={
-            "px-margin-mobile py-4 flex flex-col gap-3 transition-all duration-300 ease-out " +
+            "px-6 py-4 flex flex-col gap-3 transition-all duration-300 ease-out " +
             (menuOpen
               ? "opacity-100 translate-y-0"
               : "opacity-0 -translate-y-2 pointer-events-none")

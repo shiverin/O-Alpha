@@ -1,4 +1,4 @@
-import { LandingShell } from "../layout/LandingShell";
+import { LandingShell } from "../../layout/LandingShell";
 
 type TierFeature = {
   icon: string;
