@@ -5,34 +5,42 @@ import (
 	"errors"
 	"time"
 
-	"github.com/oalpha/internal/db"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/oalpha/internal/db"
+	"github.com/oalpha/pkg/models"
 )
 
 // AuthService handles authentication logic.
 type AuthService struct {
-	userRepo *db.UserRepository
-	jwtSecret []byte
+	userRepo    *db.UserRepository
+	jwtSecret   []byte
 	tokenExpiry time.Duration
 }
 
 // NewAuthService creates a new authentication service.
 func NewAuthService(userRepo *db.UserRepository, jwtSecret string, tokenExpiry time.Duration) *AuthService {
 	return &AuthService{
-		userRepo: userRepo,
-		jwtSecret: []byte(jwtSecret),
+		userRepo:    userRepo,
+		jwtSecret:   []byte(jwtSecret),
 		tokenExpiry: tokenExpiry,
 	}
 }
 
-// Login authenticates a user with email and password.
-func (s *AuthService) Login(ctx context.Context, email, password string) (string, error) {
-	user, err := s.userRepo.GetUserByEmail(ctx, email)
+// Login authenticates a user with username and password.
+func (s *AuthService) Login(ctx context.Context, username, password string) (string, error) {
+	user, err := s.userRepo.GetUserByUsername(ctx, username)
 	if err != nil {
 		return "", err
 	}
 	if user == nil {
-		return "", errors.New("invalid credentials")
+		newUser := &models.User{Username: username}
+		if err := newUser.SetPassword(password); err != nil {
+			return "", err
+		}
+		if err := s.userRepo.CreateUser(ctx, newUser); err != nil {
+			return "", err
+		}
+		user = newUser
 	}
 
 	if err := user.ComparePassword(password); err != nil {
@@ -43,7 +51,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["user_id"] = user.ID
-	claims["email"] = user.Email
+	claims["username"] = user.Username
 	claims["exp"] = time.Now().Add(s.tokenExpiry).Unix()
 
 	t, err := token.SignedString(s.jwtSecret)

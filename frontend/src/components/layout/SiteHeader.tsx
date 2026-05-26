@@ -170,7 +170,7 @@ export function SiteHeader({
       <LoginModal
         isOpen={loginOpen}
         onClose={() => setLoginOpen(false)}
-        redirectPath={pathname}
+        redirectPath="/app/dashboard"
       />
     </nav>
   );

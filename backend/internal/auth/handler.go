@@ -9,7 +9,7 @@ import (
 
 // Notice we dropped the "auth." prefix here because we are ALREADY in the auth package!
 type AuthHandler struct {
-	authService *AuthService 
+	authService *AuthService
 	userRepo    *db.UserRepository
 }
 
@@ -21,7 +21,7 @@ func NewAuthHandler(authService *AuthService, userRepo *db.UserRepository) *Auth
 }
 
 type LoginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
+	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
 
@@ -32,7 +32,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := h.authService.Login(c.Request.Context(), req.Email, req.Password)
+	token, err := h.authService.Login(c.Request.Context(), req.Username, req.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return

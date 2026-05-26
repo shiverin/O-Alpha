@@ -38,10 +38,10 @@ export function PerformancePage() {
     setError(null);
 
     try {
-      const endDate = new Date().toISOString().split("T")[0];
-      const startDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0];
+      const endDate = new Date().toISOString();
+      const startDate = new Date(
+        Date.now() - 365 * 24 * 60 * 60 * 1000,
+      ).toISOString();
 
       const payload: BacktestRequest = {
         symbol,

@@ -7,7 +7,7 @@ import { decodeToken, getToken, removeToken, type User } from "@/lib/auth";
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -32,10 +32,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const response = await api.get<{ id: number; email: string }>(
+        const response = await api.get<{ id: number; username: string }>(
           "/auth/me",
         );
-        setUser({ id: response.id, email: response.email });
+        setUser({ id: response.id, username: response.username });
       } catch (err) {
         const isNetworkError =
           err instanceof TypeError ||
@@ -57,14 +57,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkAuth();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (username: string, password: string) => {
     try {
       const response = await api.post<{
         token: string;
-        user: { id: number; email: string };
-      }>("/auth/login", { email, password });
+        user: { id: number; username: string };
+      }>("/auth/login", { username, password });
       // Token will be stored by the API interceptor in headers
-      setUser({ id: response.user.id, email: response.user.email });
+      setUser({ id: response.user.id, username: response.user.username });
     } catch (error) {
       throw error;
     }

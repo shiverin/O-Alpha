@@ -51,8 +51,8 @@ export function UserProfile() {
           size="sm"
           className="flex items-center space-x-2"
         >
-          <Avatar name={user.email} className="h-8 w-8" />
-          <span className="hidden md:block">{user.email}</span>
+          <Avatar name={user.username} className="h-8 w-8" />
+          <span className="hidden md:block">{user.username}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-48" align="end" sideOffset={4}>

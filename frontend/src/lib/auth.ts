@@ -5,7 +5,7 @@ const TOKEN_STORAGE_KEY = "token";
 
 export interface User {
   id: number;
-  email: string;
+  username: string;
 }
 
 /**
@@ -45,10 +45,10 @@ export function removeToken(): void {
  */
 export function decodeToken(token: string): User | null {
   try {
-    const decoded = jwtDecode<{ user_id: number; email: string }>(token);
+    const decoded = jwtDecode<{ user_id: number; username: string }>(token);
     return {
       id: decoded.user_id,
-      email: decoded.email,
+      username: decoded.username,
     };
   } catch {
     // FIXED: Removed the unused 'err' variable
