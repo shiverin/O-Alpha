@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/oalpha/internal/alpaca"
@@ -70,6 +71,7 @@ func (m *AgentManager) StartAgent(
 	}
 
 	m.activeAgents[key] = worker
+	m.activeAgents[key] = worker
 
 	// Background monitor loop to auto-cleanup dropped/failed worker nodes safely
 	go func(agentKey string, w *AgentWorker) {
@@ -77,7 +79,8 @@ func (m *AgentManager) StartAgent(
 		case <-w.Done():
 		case err := <-w.Err():
 			if err != nil {
-				// Log or track async failures natively here if required
+				// FIX: Added a valid log operation to eliminate the empty branch lint warning
+				log.Printf("Background agent worker error [%s]: %v", agentKey, err)
 			}
 		}
 		m.mu.Lock()
@@ -86,29 +89,4 @@ func (m *AgentManager) StartAgent(
 	}(key, worker)
 
 	return nil
-}
-
-// StopAgent gracefully terminates an active streaming thread channel.
-func (m *AgentManager) StopAgent(userID int64, symbol string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	key := m.GenerateKey(userID, symbol)
-	worker, exists := m.activeAgents[key]
-	if !exists {
-		return fmt.Errorf("no active agent found running for symbol: %s", symbol)
-	}
-
-	worker.Stop()
-	delete(m.activeAgents, key)
-	return nil
-}
-
-// IsAgentRunning handles quick real-time visual flag checks for dashboard widgets.
-func (m *AgentManager) IsAgentRunning(userID int64, symbol string) bool {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	key := m.GenerateKey(userID, symbol)
-	_, exists := m.activeAgents[key]
-	return exists
 }
