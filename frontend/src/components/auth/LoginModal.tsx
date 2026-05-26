@@ -62,7 +62,7 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
     const header = encode({ alg: "HS256", typ: "JWT" });
     const payload = encode({
       user_id: 999,
-      email: "demo@example.com",
+      username: "demouser",
       exp: now + 60 * 60 * 24,
       iat: now,
     });
@@ -70,15 +70,15 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
     return `${header}.${payload}.offline-demo-signature`;
   };
 
-  const isBackendUnavailable = (err: unknown): boolean => {
-    if (err instanceof TypeError) {
-      return true;
-    }
-    return (
-      err instanceof Error &&
-      /Failed to fetch|NetworkError|Request failed \(5\d\d\)/i.test(err.message)
-    );
-  };
+  // const isBackendUnavailable = (err: unknown): boolean => {
+  //   if (err instanceof TypeError) {
+  //     return true;
+  //   }
+  //   return (
+  //     err instanceof Error &&
+  //     /Failed to fetch|NetworkError|Request failed \(5\d\d\)/i.test(err.message)
+  //   );
+  // };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -88,10 +88,9 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
     setError(null);
 
     try {
-      // FIX: Changed payload key from 'email' to 'username' to align with true username auth
       const response = await api.post<{
         token: string;
-        user: { id: number; email: string };
+        user: { id: number; username: string };
       }>("/auth/login", {
         username,
         password,
@@ -118,24 +117,11 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
     const demoTarget = "/app/dashboard";
 
     try {
-      // FIX: Keeping demo logic explicitly matching whatever key your endpoint expects
-      const response = await api.post<{
-        token: string;
-        user: { id: number; email: string };
-      }>("/auth/login", {
-        username: "demouser",
-        password: "demopass123",
-      });
-
-      setToken(response.token);
+      setToken(createLocalDemoToken());
       router.push(demoTarget);
       onClose();
     } catch (err) {
-      if (isBackendUnavailable(err)) {
-        setToken(createLocalDemoToken());
-        router.push(demoTarget);
-        onClose();
-      } else if (err instanceof Error) {
+      if (err instanceof Error) {
         setError(err.message);
       } else {
         setError("Demo login failed.");
@@ -179,7 +165,6 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
                   name="badge"
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant transition-colors group-focus-within:text-primary-container"
                 />
-                {/* FIX: Set type to "text" since "username" isn't a valid HTML input type */}
                 <input
                   className="w-full rounded-t-lg border-x-0 border-b border-t-0 border-outline-variant/60 bg-surface-container-low py-3 pl-12 pr-4 font-body-md text-on-background transition-colors focus:border-primary-container focus:bg-surface-container-highest focus:ring-0"
                   placeholder="Username"

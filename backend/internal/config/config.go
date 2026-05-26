@@ -5,6 +5,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 // Config holds application configuration loaded from environment variables.
@@ -26,6 +28,8 @@ type Config struct {
 
 // Load reads configuration from the environment.
 func Load() (*Config, error) {
+	_ = godotenv.Load(".env", "../.env")
+
 	cfg := &Config{
 		DatabaseURL:     os.Getenv("DATABASE_URL"),
 		RedisURL:        os.Getenv("REDIS_URL"),

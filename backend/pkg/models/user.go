@@ -9,11 +9,11 @@ import (
 
 // User represents a user in the system.
 type User struct {
-	ID        int64     `json:"id"`
-	Email     string    `json:"email"`
+	ID           int64     `json:"id"`
+	Username     string    `json:"username"`
 	PasswordHash string    `json:"-"` // never JSON encoded
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 // SetPassword hashes the password and stores it in the PasswordHash field.

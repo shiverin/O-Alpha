@@ -71,10 +71,15 @@ func (w *WebSocketConnector) Start(ctx context.Context) error {
 		return fmt.Errorf("websocket dial failed: %w", err)
 	}
 	if resp.StatusCode != 101 {
-		resp.Body.Close()
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("close body: %v", err)
+		}
 		return fmt.Errorf("unexpected WS response: %d", resp.StatusCode)
 	}
-	resp.Body.Close()
+
+	if err := resp.Body.Close(); err != nil {
+		log.Printf("close body: %v", err)
+	}
 	w.wsConn = c
 
 	// Subscribe to bars for symbols
@@ -83,7 +88,7 @@ func (w *WebSocketConnector) Start(ctx context.Context) error {
 		"bars":   w.symbols,
 	}
 	if err := w.wsConn.WriteJSON(subMsg); err != nil {
-		w.wsConn.Close()
+		_ = w.wsConn.Close()
 		return fmt.Errorf("subscription failed: %w", err)
 	}
 
@@ -102,7 +107,7 @@ func (w *WebSocketConnector) Start(ctx context.Context) error {
 func (w *WebSocketConnector) readMessages(ctx context.Context) {
 	defer func() {
 		if w.wsConn != nil {
-			w.wsConn.Close()
+			_ = w.wsConn.Close()
 		}
 		close(w.dataChan)
 		close(w.errChan)
@@ -237,7 +242,7 @@ func (w *WebSocketConnector) Stop() {
 	w.reconnectTicker.Stop()
 
 	if w.wsConn != nil {
-		w.wsConn.Close()
+		_ = w.wsConn.Close()
 	}
 
 	// Wait for goroutines to cleanup

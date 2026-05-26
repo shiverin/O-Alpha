@@ -25,20 +25,20 @@ func NewAuthHandler(authService *auth.AuthService, userRepo *db.UserRepository) 
 
 // LoginRequest represents the login request body.
 type LoginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=6"`
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
 }
 
 // LoginResponse represents the login response body.
 type LoginResponse struct {
-	Token string `json:"token"`
+	Token string       `json:"token"`
 	User  UserResponse `json:"user"`
 }
 
 // UserResponse represents the user data returned in auth responses.
 type UserResponse struct {
-	ID    int64  `json:"id"`
-	Email string `json:"email"`
+	ID       int64  `json:"id"`
+	Username string `json:"username"`
 }
 
 // Login handles user login requests.
@@ -59,14 +59,14 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := h.authService.Login(context.Background(), req.Email, req.Password)
+	token, err := h.authService.Login(context.Background(), req.Username, req.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
 
 	// Get user info for response
-	user, err := h.userRepo.GetUserByEmail(context.Background(), req.Email)
+	user, err := h.userRepo.GetUserByUsername(context.Background(), req.Username)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user info"})
 		return
@@ -75,8 +75,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	response := LoginResponse{
 		Token: token,
 		User: UserResponse{
-			ID:   user.ID,
-			Email: user.Email,
+			ID:       user.ID,
+			Username: user.Username,
 		},
 	}
 
@@ -167,8 +167,8 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 	}
 
 	response := UserResponse{
-		ID:   user.ID,
-		Email: user.Email,
+		ID:       user.ID,
+		Username: user.Username,
 	}
 
 	c.JSON(http.StatusOK, response)

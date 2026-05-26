@@ -68,7 +68,7 @@ func (s *RegimeDetectorStrategy) GenerateSignal(ctx context.Context, bars []mode
 
 	for i := range bars {
 		// Default to hold
-		var signal models.Signal = models.SignalHold
+		signal := models.SignalHold
 
 		if i >= s.slowMA-1 { // We have enough data for both MAs
 			fastMA := fastMAValues[i]

@@ -168,7 +168,7 @@ export default function DashboardPage() {
           </div>
 
           {/* TELEMETRY LIVE EXECUTION LOG TERMINAL (SPAN 6 ON MD & LG COHORTS) */}
-          <div className="md:col-span-6 group relative flex flex-col h-[380px] bg-surface-container-low border border-outline-variant/30 rounded-[32px] p-5 sm:p-8 overflow-hidden hover:bg-surface-container transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+          <div className="md:col-span-12 group relative flex flex-col h-[380px] bg-surface-container-low border border-outline-variant/30 rounded-[32px] p-5 sm:p-8 overflow-hidden hover:bg-surface-container transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
             <h3 className="text-[10px] font-medium tracking-[0.2em] text-on-surface uppercase mb-5 flex items-center gap-2">
               <span className="material-symbols-outlined text-[16px] text-on-surface-variant">
                 terminal
@@ -210,7 +210,7 @@ export default function DashboardPage() {
           </div>
 
           {/* PORTFOLIO ALLOCATION DOCK CHART (SPAN 6 ON MD & LG COHORTS) */}
-          <div className="md:col-span-6 group relative flex flex-col h-auto md:h-[380px] bg-surface-container-low border border-outline-variant/30 rounded-[32px] p-5 sm:p-8 overflow-hidden hover:bg-surface-container transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+          <div className="md:col-span-12 group relative flex flex-col h-auto md:h-[380px] bg-surface-container-low border border-outline-variant/30 rounded-[32px] p-5 sm:p-8 overflow-hidden hover:bg-surface-container transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
             <h3 className="text-[10px] font-medium tracking-[0.2em] text-on-surface uppercase mb-6">
               Portfolio Allocation
             </h3>
