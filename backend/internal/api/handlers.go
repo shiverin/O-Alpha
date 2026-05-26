@@ -36,9 +36,21 @@ func (h *Handler) RunBacktest(c *gin.Context) {
 		return
 	}
 
-	if req.FastPeriod >= req.SlowPeriod {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "fast_period must be less than slow_period"})
-		return
+	// Only enforce MA rules if they are explicitly using MA_CROSSOVER or defaulting to it
+	if req.StrategyType == "MA_CROSSOVER" || req.StrategyType == "" {
+		fast := req.FastPeriod
+		if fast == 0 {
+			fast = 10
+		} // Safe defaults
+		slow := req.SlowPeriod
+		if slow == 0 {
+			slow = 30
+		}
+
+		if fast >= slow {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "fast_period must be less than slow_period"})
+			return
+		}
 	}
 
 	end := time.Now().UTC()
@@ -65,8 +77,49 @@ func (h *Handler) RunBacktest(c *gin.Context) {
 		initialCash = 100_000
 	}
 
-	// Create MA crossover strategy (maintains backward compatibility)
-	strat := backtest.NewMACrossoverStrategy(req.FastPeriod, req.SlowPeriod)
+	var strat backtest.Strategy
+
+	// Dynamically route the strategy based on frontend input
+	switch req.StrategyType {
+	case "KALMAN":
+		q := req.QNoise
+		if q == 0 {
+			q = 0.01
+		}
+		r := req.RNoise
+		if r == 0 {
+			r = 0.5
+		}
+		z := req.ZThreshold
+		if z == 0 {
+			z = 2.0
+		}
+
+		strat = backtest.NewKalmanStrategy(q, r, 20, z)
+
+	case "MA_CROSSOVER":
+		fast := req.FastPeriod
+		if fast == 0 {
+			fast = 10
+		}
+		slow := req.SlowPeriod
+		if slow == 0 {
+			slow = 30
+		}
+		strat = backtest.NewMACrossoverStrategy(fast, slow)
+
+	default:
+		// Default to MA crossover if nothing is specified for backward compatibility
+		fast := req.FastPeriod
+		if fast == 0 {
+			fast = 10
+		}
+		slow := req.SlowPeriod
+		if slow == 0 {
+			slow = 30
+		}
+		strat = backtest.NewMACrossoverStrategy(fast, slow)
+	}
 
 	result, err := backtest.RunBacktest(c.Request.Context(), bars, strat, initialCash)
 	if err != nil {

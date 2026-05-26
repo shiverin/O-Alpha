@@ -1,0 +1,81 @@
+name: O(Alpha) CI/CD Engine
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  # ============================================================================
+  # STAGE 1: QUALITY CONTROL & ASSURANCE (RUNS ON PR & MERGE)
+  # ============================================================================
+  quality-control:
+    name: Verify Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm' # Change to 'pnpm' or 'yarn' if you use alternative package managers
+
+      - name: Install Monorepo Dependencies
+        run: npm ci
+
+      - name: Run Formatting Validation (Prettier)
+        run: npm run format:check
+
+      - name: Run Code Linting Rules (ESLint)
+        run: npm run lint
+
+      - name: Run Static Type-Check (TypeScript)
+        run: npm run typecheck
+
+  # ============================================================================
+  # STAGE 2: TEST SERVER DEPLOYMENT GATE (RUNS ONLY ON OPEN PULL REQUESTS)
+  # ============================================================================
+  test-deployment:
+    name: Verify Test Server Build
+    needs: quality-control
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Monorepo Dependencies
+        run: npm ci
+
+      - name: Execute Test Server Compilation (Dry-Run Build)
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+  # ============================================================================
+  # STAGE 3: PRODUCTION SERVER DEPLOYMENT (RUNS ONLY POST-MERGE TO MAIN)
+  # ============================================================================
+  production-deployment:
+    name: Deploy to Official Production Server
+    needs: quality-control
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      # Add your explicit hosting deployment logic here (e.g., Vercel, AWS, Azure, Docker Hub)
+      - name: Execute Official Deploy Script
+        run: echo "Code validated. Deploying safely to production environment server..."

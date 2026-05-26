@@ -6,7 +6,10 @@
         "dev": "next dev",
         "build": "next build",
         "start": "next start",
-        "lint": "next lint"
+        "lint": "next lint",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "typecheck": "tsc --noEmit"
     },
     "dependencies": {
         "@heroicons/react": "^2.2.0",
@@ -31,6 +34,7 @@
         "eslint": "^8.56.0",
         "eslint-config-next": "^14.1.0",
         "postcss": "^8.4.33",
+        "prettier": "^3.3.3",
         "tailwindcss": "^3.4.1",
         "typescript": "^5.9.3"
     }

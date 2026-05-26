@@ -22,11 +22,20 @@ const (
 	SignalSell
 )
 
-// BacktestRequest configures a MA crossover backtest run.
+// BacktestRequest configures a backtest run with support for multiple strategies.
 type BacktestRequest struct {
-	Symbol      string     `json:"symbol" binding:"required"`
-	FastPeriod  int        `json:"fast_period" binding:"required,min=1"`
-	SlowPeriod  int        `json:"slow_period" binding:"required,min=2"`
+	Symbol       string     `json:"symbol" binding:"required"`
+	StrategyType string     `json:"strategy_type" binding:"required"` // "MA_CROSSOVER" or "KALMAN"
+	Timeframe    string     `json:"timeframe,omitempty"`             // e.g. "1Day", "1Hour"
+
+	// Kalman-specific parameters
+	QNoise     float64 `json:"q_noise,omitempty"`
+	RNoise     float64 `json:"r_noise,omitempty"`
+	ZThreshold float64 `json:"z_threshold,omitempty"`
+
+	// MA-specific parameters
+	FastPeriod  int        `json:"fast_period,omitempty"`
+	SlowPeriod  int        `json:"slow_period,omitempty"`
 	InitialCash float64    `json:"initial_cash"`
 	Start       *time.Time `json:"start,omitempty"`
 	End         *time.Time `json:"end,omitempty"`
