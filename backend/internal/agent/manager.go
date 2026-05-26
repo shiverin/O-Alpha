@@ -90,3 +90,28 @@ func (m *AgentManager) StartAgent(
 
 	return nil
 }
+
+// StopAgent gracefully terminates an active streaming thread channel.
+func (m *AgentManager) StopAgent(userID int64, symbol string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	key := m.GenerateKey(userID, symbol)
+	worker, exists := m.activeAgents[key]
+	if !exists {
+		return fmt.Errorf("no active agent found running for symbol: %s", symbol)
+	}
+
+	worker.Stop()
+	delete(m.activeAgents, key)
+	return nil
+}
+
+// IsAgentRunning handles quick real-time visual flag checks for dashboard widgets.
+func (m *AgentManager) IsAgentRunning(userID int64, symbol string) bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	key := m.GenerateKey(userID, symbol)
+	_, exists := m.activeAgents[key]
+	return exists
+}
