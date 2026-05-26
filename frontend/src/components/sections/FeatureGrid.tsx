@@ -1,9 +1,7 @@
 "use client";
 
-import { Panel } from '@/components/ui/Panel';
 import { Icon } from '@/components/ui/Icon';
 import { useEffect, useRef, useState } from 'react';
-//import { getAccentStyle } from '@/lib/ui';
 
 type FeatureCard = {
   title: string;
@@ -36,112 +34,93 @@ const features: FeatureCard[] = [
   },
 ];
 
-function FeatureCardView({ card, expanded }: { card: FeatureCard; expanded: boolean }) {
+function FeatureCardView({ card }: { card: FeatureCard }) {
   const isPrimary = card.accent === "primary";
 
   return (
-    <Panel
-      className={`relative flex h-[350px] sm:h-[350px] flex-col overflow-hidden p-6 sm:p-7 transition-all duration-500 ease-out ${
-        expanded
-          ? 'bg-surface-container-highest/92 shadow-[0_18px_50px_rgba(0,0,0,0.14)] border-outline-variant/70'
-          : 'bg-surface-container-high/85'
-      }`}
-    >
-      <div className={`absolute inset-x-6 top-6 h-24 rounded-[28px] blur-2xl opacity-60 transition-opacity duration-500 ${
-        isPrimary
-          ? expanded
-            ? 'bg-primary-container/28'
-            : 'bg-primary-container/20'
-          : expanded
-            ? 'bg-secondary-fixed/28'
-            : 'bg-secondary-fixed/20'
-      }`} />
-      <div className="relative z-10 flex h-full flex-col">
-        <div className="flex items-start gap-4">
-          <div
-            className={`relative mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border bg-surface-container/80 transition-all duration-500 ${
-              expanded ? 'scale-110' : 'scale-100'
-            } ${
-              isPrimary ? 'border-primary-container/50' : 'border-secondary-fixed/50'
-            }`}
-          >
-            <Icon
-              name={card.icon}
-              size="medium"
-              color={isPrimary ? "text-primary-container" : "text-secondary-fixed"}
-            />
-          </div>
+    // Uses your surface-container tokens for a clean, theme-aware background
+    <div className="group relative flex flex-col h-full bg-surface-container-low border border-outline-variant/30 rounded-[32px] p-8 overflow-hidden hover:bg-surface-container transition-colors duration-500 ease-out">
+      
+      {/* Premium subtle top-edge glow on hover using your theme accents */}
+      <div className={`absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent ${isPrimary ? 'via-primary-container/60' : 'via-secondary-fixed/60'} to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700`} />
+      
+      {/* Ambient background glow mapped to primary/secondary tokens */}
+      <div className={`absolute -top-24 -right-24 w-48 h-48 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none ${isPrimary ? 'bg-primary-container/10' : 'bg-secondary-fixed/10'}`} />
 
-          <div className="min-w-0 flex-1 pt-1">
-            <h3 className="font-headline-lg text-headline-lg text-on-background leading-tight">
-              {card.title}
-            </h3>
-          </div>
-        </div>
-
-        <div className={`mt-auto overflow-hidden pt-5 transition-all duration-700 ease-out ${expanded ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
-          <p className="font-body-md text-body-md leading-7 text-on-surface-variant">
-            {card.description}
-          </p>
-        </div>
+      {/* Icon Wrapper */}
+      <div className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-outline-variant/40 bg-surface-container-highest mb-8 group-hover:scale-110 transition-transform duration-500 ease-out">
+        <Icon
+          name={card.icon}
+          size="medium"
+          className={`transition-colors duration-500 ${isPrimary ? 'text-primary-container/80 group-hover:text-primary-container' : 'text-secondary-fixed/80 group-hover:text-secondary-fixed'}`}
+        />
       </div>
-    </Panel>
+
+      {/* Typography mapped to your 'on-surface' tokens */}
+      <div className="relative z-10 flex flex-col flex-1">
+        <h3 className="text-lg font-medium tracking-wide text-on-surface mb-4">
+          {card.title}
+        </h3>
+        <p className="text-sm font-light leading-relaxed text-on-surface-variant">
+          {card.description}
+        </p>
+      </div>
+    </div>
   );
 }
 
 export function FeatureGrid() {
   const cardRefs = useRef<Array<HTMLDivElement | null>>([]);
-  const [expandedCards, setExpandedCards] = useState<boolean[]>(() => features.map(() => false));
+  const [isVisible, setIsVisible] = useState<boolean[]>(() => features.map(() => false));
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (!entry.isIntersecting) {
-            return;
+          if (entry.isIntersecting) {
+            const index = Number((entry.target as HTMLElement).dataset.index);
+            setIsVisible((current) => {
+              const next = [...current];
+              next[index] = true;
+              return next;
+            });
           }
-
-          const index = Number((entry.target as HTMLElement).dataset.index);
-
-          setExpandedCards((current) => {
-            if (current[index]) {
-              return current;
-            }
-
-            const next = [...current];
-            next[index] = true;
-            return next;
-          });
         });
       },
       {
-        threshold: 0.45,
-        rootMargin: '0px 0px -10% 0px',
+        threshold: 0.2, 
+        rootMargin: '0px 0px -5% 0px',
       }
     );
 
-    cardRefs.current.forEach((element) => {
-      if (element) {
-        observer.observe(element);
-      }
+    const currentRefs = cardRefs.current;
+    currentRefs.forEach((element) => {
+      if (element) observer.observe(element);
     });
 
-    return () => observer.disconnect();
+    return () => {
+      currentRefs.forEach((element) => {
+        if (element) observer.unobserve(element);
+      });
+    };
   }, []);
 
   return (
-    <section className="px-margin-desktop max-w-[1440px] mx-auto w-full">
-      <div className="text-center mb-12">
-        <h2 className="font-headline-xl text-headline-xl text-on-background mb-4">
+    <section className="px-6 md:px-12 max-w-[1200px] mx-auto w-full py-24">
+      
+      {/* Redesigned Header using theme typography tokens */}
+      <div className="text-center mb-20 flex flex-col items-center">
+        <span className="text-[10px] uppercase tracking-[0.3em] text-on-surface-variant font-medium mb-4 block">
           The Product
+        </span>
+        <h2 className="text-3xl md:text-5xl font-light tracking-tight text-on-background mb-6 max-w-2xl">
+          Human intuition, <br className="hidden md:block" />
+          <span className="text-on-surface-variant/60">optmized to perfection.</span>
         </h2>
-        <p className="font-body-md text-body-md text-on-surface-variant max-w-2xl mx-auto">
-          Converting your unique market preferences into ruthless, continuous
-          decisions. A seamless bridge between human intuition and machine
-          execution.
-        </p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+
+      {/* The Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
         {features.map((card, index) => (
           <div
             key={card.title}
@@ -149,12 +128,15 @@ export function FeatureGrid() {
               cardRefs.current[index] = element;
             }}
             data-index={index}
-            className={`h-full transition-all duration-700 ease-out ${
-              expandedCards[index] ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-70'
+            // Buttery smooth cascading slide-up reveal remains identical
+            className={`h-full transform transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              isVisible[index] 
+                ? 'translate-y-0 opacity-100 scale-100' 
+                : 'translate-y-12 opacity-0 scale-[0.98]'
             }`}
-            style={{ transitionDelay: `${index * 120}ms` }}
+            style={{ transitionDelay: `${index * 150}ms` }}
           >
-            <FeatureCardView card={card} expanded={expandedCards[index]} />
+            <FeatureCardView card={card} />
           </div>
         ))}
       </div>

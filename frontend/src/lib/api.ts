@@ -8,6 +8,13 @@ export interface BacktestRequest {
   symbol: string;
   start: string;
   end: string;
+  strategy_type?: string; // "MA_CROSSOVER" or "KALMAN"
+  timeframe?: string;     // e.g., "1Day"
+  // Kalman-specific parameters
+  q_noise?: number;
+  r_noise?: number;
+  z_threshold?: number;
+  // MA-specific parameters
   fast_window?: number;
   slow_window?: number;
   initial_cash?: number;
