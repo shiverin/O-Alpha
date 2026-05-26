@@ -1,7 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { AppShell } from "@/components/app/AppShell";
-import { useState } from "react";
+import { settingsApi } from "@/lib/api"; // ✅ Integrated database network layer
+import { useAuth } from "@/context/AuthContext"; // ✅ Integrated authorization context
 
 export default function AgentSettingsPage() {
   const [isAdvanced, setIsAdvanced] = useState(false);
@@ -23,6 +25,45 @@ export default function AgentSettingsPage() {
   const [stopLoss, setStopLoss] = useState(2.5);
   const [takeProfit, setTakeProfit] = useState(5.0);
   const [rebalanceFreq, setRebalanceFreq] = useState("daily");
+
+  const { user } = useAuth();
+  const currentUserID = user?.id || 999;
+
+  // ─────────────────────────────────────────────────────────────
+  // 📥 READ: LOAD PREFERENCES MATRIX ON COMPONENT MOUNT
+  // ─────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const loadCurrentConfigurationState = async () => {
+      // Branch A: Load fields from localized storage blocks for sandbox demo states
+      if (currentUserID === 999) {
+        const demoProfile = localStorage.getItem("oa_demo_risk_posture") || "moderate";
+        setRiskProfile(demoProfile);
+        setLeverage(Number(localStorage.getItem("oa_demo_leverage")) || (demoProfile === "conservative" ? 1 : demoProfile === "aggressive" ? 4 : 2));
+        setMaxPositions(Number(localStorage.getItem("oa_demo_max_positions")) || (demoProfile === "conservative" ? 3 : demoProfile === "aggressive" ? 12 : 6));
+        setStopLoss(Number(localStorage.getItem("oa_demo_stop_loss_pct")) || (demoProfile === "conservative" ? 1.5 : demoProfile === "aggressive" ? 4.0 : 2.5));
+        setTakeProfit(Number(localStorage.getItem("oa_demo_take_profit_pct")) || (demoProfile === "conservative" ? 3.0 : demoProfile === "aggressive" ? 12.0 : 5.0));
+        setRebalanceFreq(localStorage.getItem("oa_demo_rebalance_freq") || (demoProfile === "conservative" ? "weekly" : demoProfile === "aggressive" ? "hourly" : "daily"));
+        return;
+      }
+
+      // Branch B: Pull down precise parameters directly from the cloud database
+      try {
+        const response = await settingsApi.check(currentUserID);
+        if (response.found && response.settings) {
+          setRiskProfile(response.settings.risk_profile);
+          setLeverage(response.settings.leverage);
+          setMaxPositions(response.settings.max_positions);
+          setStopLoss(response.settings.stop_loss_pct);
+          setTakeProfit(response.settings.take_profit_pct);
+          setRebalanceFreq(response.settings.rebalance_freq);
+        }
+      } catch (err) {
+        console.error("Failed to read parameters from cloud database:", err);
+      }
+    };
+
+    loadCurrentConfigurationState();
+  }, [currentUserID]);
 
   const handleProfileSelection = (
     profile: "conservative" | "moderate" | "aggressive",
@@ -54,15 +95,45 @@ export default function AgentSettingsPage() {
     setFlippedCards((prev) => ({ ...prev, [profile]: !prev[profile] }));
   };
 
-  // const calculatedLeverageText = useMemo(() => {
-  //   return `${(1.0 + (leverage / 5) * 4).toFixed(1)}x`;
-  // }, [leverage]);
-
+  // ─────────────────────────────────────────────────────────────
+  // 📤 WRITE: SAVE CORE HYPERPARAMETERS
+  // ─────────────────────────────────────────────────────────────
   const handleSave = async () => {
     setIsSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setIsSaving(false);
-    alert("Neural core settings synchronized successfully.");
+
+    // Branch A: Persist locally for anonymous demo sessions
+    if (currentUserID === 999) {
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      localStorage.setItem("oa_demo_risk_posture", riskProfile);
+      localStorage.setItem("oa_demo_leverage", leverage.toString());
+      localStorage.setItem("oa_demo_max_positions", maxPositions.toString());
+      localStorage.setItem("oa_demo_stop_loss_pct", stopLoss.toString());
+      localStorage.setItem("oa_demo_take_profit_pct", takeProfit.toString());
+      localStorage.setItem("oa_demo_rebalance_freq", rebalanceFreq);
+      setIsSaving(false);
+      alert("Demo frame settings synchronized successfully.");
+      return;
+    }
+
+    // Branch B: Map attributes to strict snake_case and fire over the wire
+    const configPayload = {
+      user_id: currentUserID,
+      risk_profile: riskProfile,
+      leverage: leverage,
+      max_positions: maxPositions,
+      stop_loss_pct: stopLoss,
+      take_profit_pct: takeProfit,
+      rebalance_freq: rebalanceFreq,
+    };
+
+    try {
+      await settingsApi.save(configPayload);
+      alert("Settings applied successfully.");
+    } catch {
+      alert("Failed to communicate with the server.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const profileDescriptions = {
@@ -113,7 +184,6 @@ export default function AgentSettingsPage() {
             System Posture Blueprint
           </span>
 
-          {/* OPTIMIZED: Changed from md:grid-cols-3 to xl:grid-cols-3 so intermediate viewports keep cards full-width */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full">
             {(["conservative", "moderate", "aggressive"] as const).map(
               (profile) => {
@@ -126,15 +196,12 @@ export default function AgentSettingsPage() {
                     onClick={() => handleProfileSelection(profile)}
                     className="[perspective:1000px] h-44 w-full cursor-pointer select-none"
                   >
-                    {/* 3D Core Container Engine */}
                     <div
                       className={`relative w-full h-full transition-transform duration-500 [transform-style:preserve-3d] ${
                         isFlipped ? "[transform:rotateY(180deg)]" : ""
                       }`}
                     >
-                      {/* ───────────────────────────────────────
-                        FRONT FACE: ULTRACLEAN RADIAL LAYOUT
-                    ─────────────────────────────────────── */}
+                      {/* FRONT FACE */}
                       <div
                         className={`absolute inset-0 [backface-visibility:hidden] flex flex-col justify-center items-center bg-surface-container-low border rounded-[24px] p-6 transition-all duration-300 ${
                           isSelected
@@ -142,7 +209,6 @@ export default function AgentSettingsPage() {
                             : "border-outline-variant/30 hover:border-outline-variant/60"
                         }`}
                       >
-                        {/* Fixed Top-Right Question Mark Node */}
                         <button
                           type="button"
                           onClick={(e) => toggleCardFlip(profile, e)}
@@ -153,7 +219,6 @@ export default function AgentSettingsPage() {
                           </span>
                         </button>
 
-                        {/* Isolated Single Word Brand Typography */}
                         <h4
                           className={`text-xl font-light tracking-widest uppercase transition-all duration-300 ${
                             isSelected
@@ -165,11 +230,8 @@ export default function AgentSettingsPage() {
                         </h4>
                       </div>
 
-                      {/* ───────────────────────────────────────
-                        BACK FACE: MINIMAL BALANCED SUMMARY
-                    ─────────────────────────────────────── */}
+                      {/* BACK FACE */}
                       <div className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)] flex flex-col justify-center bg-surface-container border border-outline-variant/40 rounded-[24px] p-6 shadow-xl">
-                        {/* Reversion Icon mapped to EXACT identical spatial alignment anchor */}
                         <button
                           type="button"
                           onClick={(e) => toggleCardFlip(profile, e)}
@@ -180,7 +242,6 @@ export default function AgentSettingsPage() {
                           </span>
                         </button>
 
-                        {/* Clean description cluster with right side gutter safe-padding */}
                         <p className="text-xs font-light leading-relaxed text-on-surface-variant/80 pr-6 select-text">
                           {profileDescriptions[profile]}
                         </p>
@@ -197,7 +258,6 @@ export default function AgentSettingsPage() {
             ADVANCED EXPERT VARIABLE PARAMETERS
         ========================================= */}
         {isAdvanced && (
-          /* OPTIMIZED: Adjusted tuning panels down to xl:grid-cols-2 as well for unified visual symmetry */
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 md:gap-8 animate-in fade-in slide-in-from-top-4 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] border-t border-outline-variant/10 pt-6">
             {/* INPUT PANEL MODULE LEFT */}
             <div className="group relative bg-surface-container-low border border-outline-variant/30 rounded-[32px] p-6 sm:p-8 flex flex-col gap-6">

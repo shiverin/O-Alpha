@@ -36,16 +36,20 @@ func main() {
 	}
 	defer sqlDB.Close()
 
-	repo := db.NewRepository(sqlDB)
+	// ... underneath your existing db initialization blocks
+	repo := db.NewBarsRepository(sqlDB)
+
+	// Initialize your new standalone agent configuration data layer link
+	agentRepo := db.NewAgentRepository(sqlDB)
+
 	// Instantiating the master Alpaca client to feed upstream market connectors
-	// Utilizing environmental config variables loaded natively by config.Load()
 	alpacaClient := alpaca.NewClient(cfg.AlpacaDataURL, cfg.AlpacaAPIKey, cfg.AlpacaAPISecret)
 
 	// Initialize the Agent Manager tracking sub-system context
 	agentManager := agent.NewAgentManager(alpacaClient, repo)
 
-	// Inject both requirements down to build operational handlers safely
-	handler := api.NewHandler(repo, agentManager)
+	// Inject all requirements safely down into handler factories
+	handler := api.NewHandler(repo, agentManager, agentRepo)
 	router := api.NewRouter(handler, cfg)
 
 	srv := &http.Server{

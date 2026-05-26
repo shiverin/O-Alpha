@@ -16,11 +16,11 @@ type AgentManager struct {
 	mu           sync.RWMutex
 	activeAgents map[string]*AgentWorker
 	alpacaClient *alpaca.Client
-	repo         *db.Repository
+	repo         *db.BarsRepository
 }
 
 // NewAgentManager instantiates a clean orchestrator instance.
-func NewAgentManager(client *alpaca.Client, repo *db.Repository) *AgentManager {
+func NewAgentManager(client *alpaca.Client, repo *db.BarsRepository) *AgentManager {
 	return &AgentManager{
 		activeAgents: make(map[string]*AgentWorker),
 		alpacaClient: client,

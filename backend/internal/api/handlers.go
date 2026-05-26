@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -11,16 +12,19 @@ import (
 	"github.com/oalpha/pkg/models"
 )
 
-// Add AgentManager property to your dependency matrix
+// Handler handles systematic HTTP network request parameters.
 type Handler struct {
-	repo         *db.Repository
-	AgentManager *agent.AgentManager // <-- Inject here
+	repo         *db.BarsRepository
+	AgentManager *agent.AgentManager
+	AgentRepo    *db.AgentRepository
 }
 
-func NewHandler(repo *db.Repository, am *agent.AgentManager) *Handler {
+// NewHandler builds a clean instance of your endpoint coordinator dependencies.
+func NewHandler(repo *db.BarsRepository, am *agent.AgentManager, ar *db.AgentRepository) *Handler {
 	return &Handler{
 		repo:         repo,
 		AgentManager: am,
+		AgentRepo:    ar,
 	}
 }
 
@@ -45,7 +49,7 @@ func (h *Handler) RunBacktest(c *gin.Context) {
 		fast := req.FastPeriod
 		if fast == 0 {
 			fast = 10
-		} // Safe defaults
+		}
 		slow := req.SlowPeriod
 		if slow == 0 {
 			slow = 30
@@ -66,7 +70,13 @@ func (h *Handler) RunBacktest(c *gin.Context) {
 		end = req.End.UTC()
 	}
 
-	bars, err := h.repo.GetBars(c.Request.Context(), req.Symbol, start, end)
+	// Fix 1: Ensure timeframe has a solid default fallback state
+	if req.Timeframe == "" {
+		req.Timeframe = "1Day"
+	}
+
+	// Fix 2: Pass req.Timeframe into the updated partitioned data query layer
+	bars, err := h.repo.GetBars(c.Request.Context(), req.Symbol, req.Timeframe, start, end)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -74,6 +84,34 @@ func (h *Handler) RunBacktest(c *gin.Context) {
 	if len(bars) == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "no bars found for symbol"})
 		return
+	}
+
+	// Fix 3: Calculate intervals dynamically to match current partitions
+	var expectedInterval time.Duration
+	switch req.Timeframe {
+	case "1Min":
+		expectedInterval = time.Minute
+	case "5Min":
+		expectedInterval = 5 * time.Minute
+	case "15Min":
+		expectedInterval = 15 * time.Minute
+	case "1Hour":
+		expectedInterval = time.Hour
+	default:
+		expectedInterval = 24 * time.Hour
+	}
+
+	// Fix 4: Pass req.Timeframe down to the updated validation report signature
+	report, err := h.repo.ValidateData(c.Request.Context(), req.Symbol, req.Timeframe, start, end, expectedInterval)
+	if err == nil && report != nil {
+		if report.InvalidBars > 0 && (float64(report.InvalidBars)/float64(report.BarCount)) > 0.05 {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":         "backtest aborted: historical data quality is too poor",
+				"invalid_count": report.InvalidBars,
+				"total_scanned": report.BarCount,
+			})
+			return
+		}
 	}
 
 	initialCash := req.InitialCash
@@ -98,7 +136,6 @@ func (h *Handler) RunBacktest(c *gin.Context) {
 		if z == 0 {
 			z = 2.0
 		}
-
 		strat = backtest.NewKalmanStrategy(q, r, 20, z)
 
 	case "MA_CROSSOVER":
@@ -113,7 +150,6 @@ func (h *Handler) RunBacktest(c *gin.Context) {
 		strat = backtest.NewMACrossoverStrategy(fast, slow)
 
 	default:
-		// Default to MA crossover if nothing is specified for backward compatibility
 		fast := req.FastPeriod
 		if fast == 0 {
 			fast = 10
@@ -135,10 +171,10 @@ func (h *Handler) RunBacktest(c *gin.Context) {
 }
 
 type AgentControlRequest struct {
-	UserID       int64   `json:"user_id"` // Simplified identity binding for public mock matching
+	UserID       int64   `json:"user_id"`
 	Symbol       string  `json:"symbol" binding:"required"`
-	StrategyType string  `json:"strategy_type" binding:"required"` // "MA_CROSSOVER" or "KALMAN"
-	Timeframe    string  `json:"timeframe"`                        // e.g. "1Hour", "1Min"
+	StrategyType string  `json:"strategy_type" binding:"required"`
+	Timeframe    string  `json:"timeframe"`
 	InitialCash  float64 `json:"initial_cash"`
 	UseWebSocket bool    `json:"use_websocket"`
 	QNoise       float64 `json:"q_noise"`
@@ -157,7 +193,7 @@ func (h *Handler) LaunchLiveAgent(c *gin.Context) {
 	}
 
 	if req.UserID == 0 {
-		req.UserID = 999 // Fallback demo placeholder ID
+		req.UserID = 999
 	}
 	if req.Timeframe == "" {
 		req.Timeframe = "1Hour"
@@ -190,6 +226,7 @@ func (h *Handler) LaunchLiveAgent(c *gin.Context) {
 		strat = backtest.NewMACrossoverStrategy(req.FastPeriod, req.SlowPeriod)
 	}
 
+	// Fix 5: Cleaned up and removed the broken, uncompiled trailing GetBars block here
 	err := h.AgentManager.StartAgent(
 		c.Request.Context(),
 		req.UserID,
@@ -230,4 +267,67 @@ func (h *Handler) TerminateLiveAgent(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "terminated", "symbol": req.Symbol})
+}
+
+// GetUserSettings evaluates if a configuration state is available for the given user profile.
+func (h *Handler) GetUserSettings(c *gin.Context) {
+	userIDStr := c.Query("user_id")
+	if userIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id query parameter is required"})
+		return
+	}
+
+	var userID int64
+	if _, err := fmt.Sscanf(userIDStr, "%d", &userID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user_id format"})
+		return
+	}
+
+	settings, err := h.AgentRepo.GetAgentSettings(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if settings == nil {
+		c.JSON(http.StatusOK, gin.H{"found": false})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"found": true, "settings": settings})
+}
+
+// SaveUserSettings ingests settings payloads and synchronizes active database models.
+func (h *Handler) SaveUserSettings(c *gin.Context) {
+	var req struct {
+		UserID        int64   `json:"user_id" binding:"required"`
+		RiskProfile   string  `json:"risk_profile" binding:"required"`
+		Leverage      int     `json:"leverage" binding:"required"`
+		MaxPositions  int     `json:"max_positions" binding:"required"`
+		StopLossPct   float64 `json:"stop_loss_pct" binding:"required"`
+		TakeProfitPct float64 `json:"take_profit_pct" binding:"required"`
+		RebalanceFreq string  `json:"rebalance_freq" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	settings := &db.AgentSettings{
+		UserID:        req.UserID,
+		RiskProfile:   req.RiskProfile,
+		Leverage:      req.Leverage,
+		MaxPositions:  req.MaxPositions,
+		StopLossPct:   req.StopLossPct,
+		TakeProfitPct: req.TakeProfitPct,
+		RebalanceFreq: req.RebalanceFreq,
+	}
+
+	if err := h.AgentRepo.SaveAgentSettings(c.Request.Context(), settings); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "synchronized"})
 }

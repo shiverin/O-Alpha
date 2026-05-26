@@ -1,14 +1,14 @@
--- 1. Users Table (Add IF NOT EXISTS)
+-- 1. Users Table (Aligned for Pure Usernames)
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    email TEXT UNIQUE NOT NULL,
+    username TEXT UNIQUE NOT NULL, -- ✅ Fixed: Changed from email to username
     password_hash TEXT NOT NULL,
     role TEXT DEFAULT 'user' NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
--- 2. User Sessions (Add IF NOT EXISTS)
+-- 2. User Sessions
 CREATE TABLE IF NOT EXISTS user_sessions (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_id BIGINT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
@@ -19,10 +19,9 @@ CREATE TABLE IF NOT EXISTS user_sessions (
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
--- Add IF NOT EXISTS for the index
 CREATE INDEX IF NOT EXISTS user_sessions_user_id_idx ON user_sessions(user_id);
 
--- 3. Agent Settings / Preferences (Add IF NOT EXISTS)
+-- 3. Agent Settings / Preferences
 CREATE TABLE IF NOT EXISTS agent_settings (
     user_id BIGINT REFERENCES users(id) ON DELETE CASCADE PRIMARY KEY,
     risk_profile TEXT DEFAULT 'moderate' NOT NULL,

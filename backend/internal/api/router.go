@@ -53,6 +53,11 @@ func NewRouter(h *Handler, cfg *config.Config) *gin.Engine {
 		// Live Agent Manager Orchestration Controllers
 		v1.POST("/agent/start", h.LaunchLiveAgent)
 		v1.POST("/agent/stop", h.TerminateLiveAgent)
+
+		// User Database Configuration Triggers
+
+		v1.GET("/user/settings", h.GetUserSettings)
+		v1.POST("/user/settings", h.SaveUserSettings)
 	}
 
 	return r
