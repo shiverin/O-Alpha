@@ -1,13 +1,13 @@
-import React from 'react'
+import React from "react";
 
 interface IconProps {
-  name: string
-  size?: 'small' | 'medium' | 'large' | number
-  color?: string
-  className?: string
-  title?: string
+  name: string;
+  size?: "small" | "medium" | "large" | number;
+  color?: string;
+  className?: string;
+  title?: string;
   /** @deprecated Use color prop instead */
-  variant?: 'primary' | 'secondary' | 'tertiary'
+  variant?: "primary" | "secondary" | "tertiary";
 }
 
 /**
@@ -26,49 +26,49 @@ export const Icon = ({
   name,
   size,
   color,
-  className = '',
+  className = "",
   title,
   variant,
 }: IconProps) => {
   // Default size
-  let sizeClass = 'text-base'
-  if (typeof size === 'string') {
+  let sizeClass = "text-base";
+  if (typeof size === "string") {
     switch (size) {
-      case 'small':
-        sizeClass = 'text-sm'
-        break
-      case 'medium':
-        sizeClass = 'text-base'
-        break
-      case 'large':
-        sizeClass = 'text-xl'
-        break
+      case "small":
+        sizeClass = "text-sm";
+        break;
+      case "medium":
+        sizeClass = "text-base";
+        break;
+      case "large":
+        sizeClass = "text-xl";
+        break;
     }
-  } else if (typeof size === 'number') {
+  } else if (typeof size === "number") {
     // Custom size in pixels
-    sizeClass = `text-[${size}px]`
+    sizeClass = `text-[${size}px]`;
   }
 
   // Color from variant (deprecated) or color prop
-  let colorClass = ''
+  let colorClass = "";
   if (variant) {
     // Deprecated variant prop
     switch (variant) {
-      case 'primary':
-        colorClass = 'text-primary-container'
-        break
-      case 'secondary':
-        colorClass = 'text-secondary-container'
-        break
-      case 'tertiary':
-        colorClass = 'text-tertiary-container'
-        break
+      case "primary":
+        colorClass = "text-primary-container";
+        break;
+      case "secondary":
+        colorClass = "text-secondary-container";
+        break;
+      case "tertiary":
+        colorClass = "text-tertiary-container";
+        break;
     }
   } else if (color) {
-    colorClass = color
+    colorClass = color;
   } else {
     // Default color
-    colorClass = 'text-primary-container'
+    colorClass = "text-primary-container";
   }
 
   return (
@@ -76,9 +76,9 @@ export const Icon = ({
       className={`material-symbols-outlined ${sizeClass} ${colorClass} ${className}`}
       aria-hidden="true"
       role="img"
-      {...(title && { 'aria-label': title })}
+      {...(title && { "aria-label": title })}
     >
       {name}
     </span>
-  )
-}
+  );
+};

@@ -12,7 +12,10 @@ const sizeClasses: Record<NonNullable<PillButtonProps["size"]>, string> = {
   md: "px-6 py-2 text-body-md",
 };
 
-const variantClasses: Record<NonNullable<PillButtonProps["variant"]>, string> = {
+const variantClasses: Record<
+  NonNullable<PillButtonProps["variant"]>,
+  string
+> = {
   solid:
     "bg-primary-container text-on-primary-container shadow-[0_8px_20px_-12px_rgba(0,213,255,0.6)] hover:bg-primary-fixed hover:shadow-[0_10px_24px_-12px_rgba(0,213,255,0.7)]",
   outline:
@@ -33,7 +36,7 @@ export const PillButton = forwardRef<HTMLButtonElement, PillButtonProps>(
       ].join(" ")}
       {...props}
     />
-  )
+  ),
 );
 
 PillButton.displayName = "PillButton";

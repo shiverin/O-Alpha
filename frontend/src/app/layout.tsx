@@ -15,7 +15,6 @@ const jetBrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
 });
 
-
 export const metadata: Metadata = {
   title: "O(Alpha) - How it Works",
   description: "O(Alpha) system architecture and execution flow",
@@ -39,9 +38,7 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

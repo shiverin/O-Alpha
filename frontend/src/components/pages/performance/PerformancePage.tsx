@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LandingShell } from "../../layout/LandingShell";
-import StrategySelector, { type StrategyConfig } from "@/components/StrategySelector";
+import StrategySelector, {
+  type StrategyConfig,
+} from "@/components/StrategySelector";
 import { runBacktest, type EquityPoint, type BacktestRequest } from "@/lib/api";
 import { DEFAULT_EQUITY_CURVE } from "@/lib/mockData";
 import { useRegimeSimulation } from "@/hooks/useRegimeSimulation";
@@ -17,7 +19,7 @@ export function PerformancePage() {
 
   const [symbol, setSymbol] = useState("AAPL");
   const [strategyConfig, setStrategyConfig] = useState<StrategyConfig | null>(
-    null
+    null,
   );
 
   const { regimeLevels, bullStatus, volatileStatus, bearStatus } =
@@ -61,7 +63,7 @@ export function PerformancePage() {
       setError(
         err instanceof Error
           ? `${err.message} Showing fallback performance data.`
-          : "Failed to run backtest. Showing fallback performance data."
+          : "Failed to run backtest. Showing fallback performance data.",
       );
     } finally {
       setLoading(false);

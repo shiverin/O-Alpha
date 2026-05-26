@@ -1,6 +1,6 @@
 "use client";
 
-import { Container } from '@/components/ui/Container';
+import { Container } from "@/components/ui/Container";
 
 export function Hero() {
   return (
@@ -55,12 +55,13 @@ export function Hero() {
       <Container>
         <div className="max-w-3xl">
           <h1 className="font-headline-xl text-headline-xl text-on-background mb-6">
-            <span className="text-primary-container">Build</span> Your Own Trading Agent.
+            <span className="text-primary-container">Build</span> Your Own
+            Trading Agent.
           </h1>
           <p className="font-body-md text-body-md text-on-surface-variant text-lg max-w-2xl">
             O(Alpha) translates your strategic intent into autonomous execution.
-            High-frequency capability meets institutional-grade intelligence, now
-            in your control.
+            High-frequency capability meets institutional-grade intelligence,
+            now in your control.
           </p>
         </div>
       </Container>
@@ -79,8 +80,12 @@ export function Hero() {
         }
 
         @keyframes tickerScroll {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-50%);
+          }
         }
       `}</style>
     </section>

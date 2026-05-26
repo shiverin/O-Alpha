@@ -5,7 +5,7 @@ import { EquityCurveChart } from "@/components/EquityCurveChart";
 import type { EquityPoint } from "@/lib/api";
 
 const metricTabs = ["1W", "1M", "YTD"] as const;
-type TimeframeTab = typeof metricTabs[number];
+type TimeframeTab = (typeof metricTabs)[number];
 
 interface TelemetryMetricsProps {
   data: EquityPoint[];
@@ -41,7 +41,8 @@ export default function TelemetryMetrics({
 
     const firstEquity = finalData[0].equity;
     const lastEquity = finalData[finalData.length - 1].equity;
-    const pctReturn = firstEquity === 0 ? 0 : ((lastEquity - firstEquity) / firstEquity) * 100;
+    const pctReturn =
+      firstEquity === 0 ? 0 : ((lastEquity - firstEquity) / firstEquity) * 100;
 
     return { displayData: finalData, displayReturnPct: pctReturn };
   }, [data, activeTab]);
@@ -51,7 +52,9 @@ export default function TelemetryMetrics({
   return (
     <section className="w-full">
       <div className="flex items-center gap-2 mb-8">
-        <span className="material-symbols-outlined text-sm text-on-surface-variant">monitoring</span>
+        <span className="material-symbols-outlined text-sm text-on-surface-variant">
+          monitoring
+        </span>
         <span className="text-[10px] uppercase tracking-[0.2em] text-on-surface-variant font-medium">
           Real-Time Metrics
         </span>
@@ -66,7 +69,9 @@ export default function TelemetryMetrics({
               <span className="text-[10px] font-medium tracking-[0.2em] text-on-surface-variant uppercase block mb-2">
                 Cumulative P&L ({activeTab})
               </span>
-              <span className={`text-4xl sm:text-5xl font-light tracking-tight transition-colors duration-500 ${isPositive ? "text-primary-container" : "text-error"}`}>
+              <span
+                className={`text-4xl sm:text-5xl font-light tracking-tight transition-colors duration-500 ${isPositive ? "text-primary-container" : "text-error"}`}
+              >
                 {isPositive ? "+" : ""}
                 {displayReturnPct.toFixed(2)}%
               </span>
@@ -98,7 +103,10 @@ export default function TelemetryMetrics({
                 </span>
               </div>
             ) : displayData.length > 0 ? (
-              <div key={activeTab} className="absolute inset-0 animate-in fade-in duration-1000 ease-out">
+              <div
+                key={activeTab}
+                className="absolute inset-0 animate-in fade-in duration-1000 ease-out"
+              >
                 <EquityCurveChart data={displayData} />
               </div>
             ) : (

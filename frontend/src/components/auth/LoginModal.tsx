@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { Panel } from '@/components/ui/Panel';
-import { Icon } from '@/components/ui/Icon';
+import { Panel } from "@/components/ui/Panel";
+import { Icon } from "@/components/ui/Icon";
 import { api } from "@/lib/api";
 import { setToken } from "@/lib/auth";
 
@@ -23,7 +23,10 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = useMemo(() => username.length > 0 && password.length > 0, [username, password]);
+  const canSubmit = useMemo(
+    () => username.length > 0 && password.length > 0,
+    [username, password],
+  );
 
   useEffect(() => {
     setMounted(true);
@@ -50,7 +53,10 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
 
   const createLocalDemoToken = (): string => {
     const encode = (value: object) =>
-      btoa(JSON.stringify(value)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+      btoa(JSON.stringify(value))
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/g, "");
 
     const now = Math.floor(Date.now() / 1000);
     const header = encode({ alg: "HS256", typ: "JWT" });
@@ -68,7 +74,10 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
     if (err instanceof TypeError) {
       return true;
     }
-    return err instanceof Error && /Failed to fetch|NetworkError|Request failed \(5\d\d\)/i.test(err.message);
+    return (
+      err instanceof Error &&
+      /Failed to fetch|NetworkError|Request failed \(5\d\d\)/i.test(err.message)
+    );
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -80,8 +89,11 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
 
     try {
       // FIX: Changed payload key from 'email' to 'username' to align with true username auth
-      const response = await api.post<{ token: string; user: { id: number; email: string } }>("/auth/login", {
-        username, 
+      const response = await api.post<{
+        token: string;
+        user: { id: number; email: string };
+      }>("/auth/login", {
+        username,
         password,
       });
 
@@ -107,8 +119,11 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
 
     try {
       // FIX: Keeping demo logic explicitly matching whatever key your endpoint expects
-      const response = await api.post<{ token: string; user: { id: number; email: string } }>("/auth/login", {
-        username: "demouser", 
+      const response = await api.post<{
+        token: string;
+        user: { id: number; email: string };
+      }>("/auth/login", {
+        username: "demouser",
         password: "demopass123",
       });
 
@@ -152,25 +167,33 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
 
         <div className="relative z-10 flex flex-col items-center p-6 sm:p-8">
           <div className="mb-6 flex flex-col items-center text-center">
-            <h1 className="mb-1 text-2xl font-bold text-on-background">Log In</h1>
+            <h1 className="mb-1 text-2xl font-bold text-on-background">
+              Log In
+            </h1>
           </div>
 
           <form className="w-full space-y-5" onSubmit={handleSubmit}>
             <div className="space-y-3">
               <div className="group relative">
-                <Icon name="badge" className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant transition-colors group-focus-within:text-primary-container" />
+                <Icon
+                  name="badge"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant transition-colors group-focus-within:text-primary-container"
+                />
                 {/* FIX: Set type to "text" since "username" isn't a valid HTML input type */}
                 <input
                   className="w-full rounded-t-lg border-x-0 border-b border-t-0 border-outline-variant/60 bg-surface-container-low py-3 pl-12 pr-4 font-body-md text-on-background transition-colors focus:border-primary-container focus:bg-surface-container-highest focus:ring-0"
                   placeholder="Username"
-                  type="text" 
+                  type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
                 />
               </div>
               <div className="group relative">
-                <Icon name="key" className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant transition-colors group-focus-within:text-primary-container" />
+                <Icon
+                  name="key"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant transition-colors group-focus-within:text-primary-container"
+                />
                 <input
                   className="w-full rounded-t-lg border-x-0 border-b border-t-0 border-outline-variant/60 bg-surface-container-low py-3 pl-12 pr-12 font-body-md text-on-background transition-colors focus:border-primary-container focus:bg-surface-container-highest focus:ring-0"
                   placeholder="Password"
@@ -204,13 +227,16 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
                 />
                 Remember Me
               </label>
-              <button className="text-primary-container transition-colors hover:text-white" type="button">
+              <button
+                className="text-primary-container transition-colors hover:text-white"
+                type="button"
+              >
                 Reset Password
               </button>
             </div>
 
             <button
-              className={`w-full rounded-full bg-primary-container px-8 py-3 text-base font-semibold text-background transition-transform duration-200 hover:scale-[1.02] ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`w-full rounded-full bg-primary-container px-8 py-3 text-base font-semibold text-background transition-transform duration-200 hover:scale-[1.02] ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
               type="submit"
               disabled={loading}
             >
@@ -224,7 +250,7 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
             </div>
 
             <button
-              className={`flex w-full items-center justify-center gap-2 rounded-full border border-outline-variant/60 px-8 py-3 text-base font-medium text-on-background transition-colors hover:bg-surface-container-high ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`flex w-full items-center justify-center gap-2 rounded-full border border-outline-variant/60 px-8 py-3 text-base font-medium text-on-background transition-colors hover:bg-surface-container-high ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
               type="button"
               onClick={handleBypass}
               disabled={loading}

@@ -11,12 +11,22 @@ type LandingShellProps = {
   onLoginModalOpenChange?: Dispatch<SetStateAction<boolean>>;
 };
 
-export function LandingShell({ children, activePath, className, loginModalOpen, onLoginModalOpenChange }: LandingShellProps) {
+export function LandingShell({
+  children,
+  activePath,
+  className,
+  loginModalOpen,
+  onLoginModalOpenChange,
+}: LandingShellProps) {
   return (
     <div
       className={`text-on-background min-h-screen flex flex-col relative overflow-x-hidden bg-background ${className ?? ""}`}
     >
-      <SiteHeader activePath={activePath} loginModalOpen={loginModalOpen} onLoginModalOpenChange={onLoginModalOpenChange} />
+      <SiteHeader
+        activePath={activePath}
+        loginModalOpen={loginModalOpen}
+        onLoginModalOpenChange={onLoginModalOpenChange}
+      />
       {children}
       <SiteFooter />
     </div>

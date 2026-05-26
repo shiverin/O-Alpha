@@ -33,7 +33,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       ].join(" ")}
       {...props}
     />
-  )
+  ),
 );
 
 Button.displayName = "Button";

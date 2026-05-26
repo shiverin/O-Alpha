@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 
 export interface StrategyConfig {
   strategy: string;
@@ -16,13 +16,24 @@ interface StrategySelectorProps {
 }
 
 // 1. Added 'onCommit' to the Slider props
-const Slider = ({ 
-  label, value, min, max, step, onChange, onCommit, prefix = "" 
-}: { 
-  label: string, value: number, min: string, max: string, step: string, 
-  onChange: (v: number) => void, 
-  onCommit: () => void, 
-  prefix?: string 
+const Slider = ({
+  label,
+  value,
+  min,
+  max,
+  step,
+  onChange,
+  onCommit,
+  prefix = "",
+}: {
+  label: string;
+  value: number;
+  min: string;
+  max: string;
+  step: string;
+  onChange: (v: number) => void;
+  onCommit: () => void;
+  prefix?: string;
 }) => {
   const minVal = parseFloat(min);
   const maxVal = parseFloat(max);
@@ -31,13 +42,22 @@ const Slider = ({
   return (
     <div className="group flex flex-col gap-3">
       <div className="flex justify-between items-end">
-        <span className="text-sm font-light tracking-wide text-white/50 group-hover:text-white/70 transition-colors">{label}</span>
-        <span className="text-sm font-mono text-white/90">{prefix}{value}</span>
+        <span className="text-sm font-light tracking-wide text-white/50 group-hover:text-white/70 transition-colors">
+          {label}
+        </span>
+        <span className="text-sm font-mono text-white/90">
+          {prefix}
+          {value}
+        </span>
       </div>
-      
+
       <div className="relative flex items-center h-5">
         <input
-          type="range" min={min} max={max} step={step} value={value}
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
           // 2. onChange ONLY updates local visual state (instant, buttery smooth)
           onChange={(e) => onChange(parseFloat(e.target.value))}
           // 3. onPointerUp fires when you let go of the mouse/touchscreen (commits data)
@@ -57,7 +77,7 @@ const Slider = ({
             [&::-moz-range-thumb]:hover:scale-125 [&::-moz-range-thumb]:hover:shadow-[0_0_15px_rgba(255,255,255,0.6)]
             [&::-moz-range-thumb]:active:scale-90"
           style={{
-            background: `linear-gradient(to right, rgba(255,255,255,0.9) ${percent}%, rgba(255,255,255,0.1) ${percent}%)`
+            background: `linear-gradient(to right, rgba(255,255,255,0.9) ${percent}%, rgba(255,255,255,0.1) ${percent}%)`,
           }}
         />
       </div>
@@ -65,9 +85,11 @@ const Slider = ({
   );
 };
 
-export default function StrategySelector({ onConfigChange }: StrategySelectorProps) {
-  const [strategy, setStrategy] = useState('KALMAN');
-  
+export default function StrategySelector({
+  onConfigChange,
+}: StrategySelectorProps) {
+  const [strategy, setStrategy] = useState("KALMAN");
+
   // Local States
   const [qNoise, setQNoise] = useState(0.01);
   const [rNoise, setRNoise] = useState(0.5);
@@ -76,41 +98,61 @@ export default function StrategySelector({ onConfigChange }: StrategySelectorPro
   const [slowPeriod, setSlowPeriod] = useState(30);
 
   useEffect(() => {
-    onConfigChange({ strategy, qNoise, rNoise, zThresh, fastPeriod, slowPeriod });
+    onConfigChange({
+      strategy,
+      qNoise,
+      rNoise,
+      zThresh,
+      fastPeriod,
+      slowPeriod,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleUpdate = (updatedFields: Partial<StrategyConfig>) => {
-    const nextState = { 
-      strategy, qNoise, rNoise, zThresh, fastPeriod, slowPeriod, ...updatedFields 
+    const nextState = {
+      strategy,
+      qNoise,
+      rNoise,
+      zThresh,
+      fastPeriod,
+      slowPeriod,
+      ...updatedFields,
     };
     onConfigChange(nextState);
   };
 
   return (
     <div className="w-full bg-transparent flex flex-col gap-8 py-2">
-      
       {/* Header & Segmented Engine Toggle */}
       <div className="flex flex-col gap-4">
-        <span className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-medium">Simulation Engine</span>
-        
+        <span className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-medium">
+          Simulation Engine
+        </span>
+
         <div className="flex p-1 bg-white/5 rounded-lg border border-white/[0.05] backdrop-blur-xl">
           <button
-            onClick={() => { setStrategy('KALMAN'); handleUpdate({ strategy: 'KALMAN' }); }}
+            onClick={() => {
+              setStrategy("KALMAN");
+              handleUpdate({ strategy: "KALMAN" });
+            }}
             className={`flex-1 text-xs py-2.5 rounded-md transition-all duration-300 ease-out font-medium tracking-wide ${
-              strategy === 'KALMAN' 
-                ? 'bg-white/10 text-white shadow-sm' 
-                : 'text-white/30 hover:text-white/60'
+              strategy === "KALMAN"
+                ? "bg-white/10 text-white shadow-sm"
+                : "text-white/30 hover:text-white/60"
             }`}
           >
             Kalman Filter
           </button>
           <button
-            onClick={() => { setStrategy('MA_CROSSOVER'); handleUpdate({ strategy: 'MA_CROSSOVER' }); }}
+            onClick={() => {
+              setStrategy("MA_CROSSOVER");
+              handleUpdate({ strategy: "MA_CROSSOVER" });
+            }}
             className={`flex-1 text-xs py-2.5 rounded-md transition-all duration-300 ease-out font-medium tracking-wide ${
-              strategy === 'MA_CROSSOVER' 
-                ? 'bg-white/10 text-white shadow-sm' 
-                : 'text-white/30 hover:text-white/60'
+              strategy === "MA_CROSSOVER"
+                ? "bg-white/10 text-white shadow-sm"
+                : "text-white/30 hover:text-white/60"
             }`}
           >
             Momentum
@@ -120,49 +162,60 @@ export default function StrategySelector({ onConfigChange }: StrategySelectorPro
 
       {/* Dynamic Settings Configuration */}
       <div className="flex flex-col gap-8 min-h-[220px]">
-        {strategy === 'KALMAN' && (
+        {strategy === "KALMAN" && (
           <div className="flex flex-col gap-8 animate-in fade-in zoom-in-95 duration-500 ease-out">
-            <Slider 
-              label="Process Noise" 
-              min="0.001" max="0.1" step="0.001" 
-              value={qNoise} 
+            <Slider
+              label="Process Noise"
+              min="0.001"
+              max="0.1"
+              step="0.001"
+              value={qNoise}
               // 4. Update local state immediately for visual feedback
-              onChange={(v) => setQNoise(v)} 
+              onChange={(v) => setQNoise(v)}
               // 5. Tell the parent to update ONLY when dragging stops
-              onCommit={() => handleUpdate({ qNoise })} 
+              onCommit={() => handleUpdate({ qNoise })}
             />
-            <Slider 
-              label="Noise Rejection" 
-              min="0.1" max="5.0" step="0.1" 
-              value={rNoise} 
-              onChange={(v) => setRNoise(v)} 
-              onCommit={() => handleUpdate({ rNoise })} 
+            <Slider
+              label="Noise Rejection"
+              min="0.1"
+              max="5.0"
+              step="0.1"
+              value={rNoise}
+              onChange={(v) => setRNoise(v)}
+              onCommit={() => handleUpdate({ rNoise })}
             />
-            <Slider 
-              label="Execution Threshold" 
-              min="1.0" max="4.0" step="0.1" 
-              value={zThresh} prefix="±"
-              onChange={(v) => setZThresh(v)} 
-              onCommit={() => handleUpdate({ zThresh })} 
+            <Slider
+              label="Execution Threshold"
+              min="1.0"
+              max="4.0"
+              step="0.1"
+              value={zThresh}
+              prefix="±"
+              onChange={(v) => setZThresh(v)}
+              onCommit={() => handleUpdate({ zThresh })}
             />
           </div>
         )}
 
-        {strategy === 'MA_CROSSOVER' && (
+        {strategy === "MA_CROSSOVER" && (
           <div className="flex flex-col gap-8 animate-in fade-in zoom-in-95 duration-500 ease-out">
-            <Slider 
-              label="Fast MA Window" 
-              min="2" max="50" step="1" 
-              value={fastPeriod} 
-              onChange={(v) => setFastPeriod(v)} 
-              onCommit={() => handleUpdate({ fastPeriod })} 
+            <Slider
+              label="Fast MA Window"
+              min="2"
+              max="50"
+              step="1"
+              value={fastPeriod}
+              onChange={(v) => setFastPeriod(v)}
+              onCommit={() => handleUpdate({ fastPeriod })}
             />
-            <Slider 
-              label="Slow MA Window" 
-              min="10" max="200" step="1" 
-              value={slowPeriod} 
-              onChange={(v) => setSlowPeriod(v)} 
-              onCommit={() => handleUpdate({ slowPeriod })} 
+            <Slider
+              label="Slow MA Window"
+              min="10"
+              max="200"
+              step="1"
+              value={slowPeriod}
+              onChange={(v) => setSlowPeriod(v)}
+              onCommit={() => handleUpdate({ slowPeriod })}
             />
           </div>
         )}

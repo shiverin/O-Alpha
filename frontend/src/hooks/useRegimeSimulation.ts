@@ -25,21 +25,22 @@ export function useRegimeSimulation() {
 
     const interval = window.setInterval(() => {
       setRegimeLevels((current) => {
-        const shock = () => (Math.random() < 0.28 ? Math.random() * 40 - 20 : 0);
+        const shock = () =>
+          Math.random() < 0.28 ? Math.random() * 40 - 20 : 0;
 
         return {
           bull: Math.round(
-            clamp(current.bull + (Math.random() * 26 - 13) + shock(), 18, 98)
+            clamp(current.bull + (Math.random() * 26 - 13) + shock(), 18, 98),
           ),
           volatile: Math.round(
             clamp(
               current.volatile + (Math.random() * 30 - 15) + shock(),
               6,
-              95
-            )
+              95,
+            ),
           ),
           bear: Math.round(
-            clamp(current.bear + (Math.random() * 26 - 13) + shock(), 4, 88)
+            clamp(current.bear + (Math.random() * 26 - 13) + shock(), 4, 88),
           ),
         };
       });

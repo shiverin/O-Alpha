@@ -175,7 +175,9 @@ export function PricingPage() {
                             : "material-symbols-outlined text-outline-variant text-[16px] mt-1"
                       }
                       style={
-                        feature.filled ? { fontVariationSettings: "'FILL' 1" } : undefined
+                        feature.filled
+                          ? { fontVariationSettings: "'FILL' 1" }
+                          : undefined
                       }
                     >
                       {feature.icon}

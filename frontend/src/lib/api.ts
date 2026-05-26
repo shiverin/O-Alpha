@@ -1,15 +1,17 @@
 // @/lib/api.ts
 
-import { getToken } from '@/lib/auth';
+import { getToken } from "@/lib/auth";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:8080";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ??
+  "http://localhost:8080";
 
 export interface BacktestRequest {
   symbol: string;
   start: string;
   end: string;
   strategy_type?: string; // "MA_CROSSOVER" or "KALMAN"
-  timeframe?: string;     // e.g., "1Day"
+  timeframe?: string; // e.g., "1Day"
   // Kalman-specific parameters
   q_noise?: number;
   r_noise?: number;
@@ -38,20 +40,20 @@ export interface BacktestResult {
 
 // Helper function to get auth headers
 const getAuthHeaders = (): HeadersInit => {
-  const token = typeof window !== 'undefined' ? getToken() : null;
+  const token = typeof window !== "undefined" ? getToken() : null;
   const headers: HeadersInit = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
   return headers;
 };
 
 export async function runBacktest(
-  payload: BacktestRequest
+  payload: BacktestRequest,
 ): Promise<BacktestResult> {
   const res = await fetch(`${API_BASE}/api/v1/backtest`, {
     method: "POST",
@@ -126,5 +128,5 @@ export const api = {
     }
 
     return res.json();
-  }
+  },
 };

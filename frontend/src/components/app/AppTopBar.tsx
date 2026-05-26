@@ -30,7 +30,11 @@ export function AppTopBar({ title, onSignOut }: AppTopBarProps) {
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((open) => !open)}
           >
-            <Icon name={menuOpen ? "close" : "menu"} size="small" color="text-on-background" />
+            <Icon
+              name={menuOpen ? "close" : "menu"}
+              size="small"
+              color="text-on-background"
+            />
           </button>
 
           <button
@@ -71,8 +75,18 @@ export function AppTopBar({ title, onSignOut }: AppTopBarProps) {
                     : "text-on-surface-variant hover:text-on-background hover:bg-surface-container-high/40")
                 }
               >
-                <Icon name={item.icon} size="small" color={active ? "text-primary-container" : "text-on-surface-variant"} />
-                <span className="text-sm font-light tracking-wide">{item.label}</span>
+                <Icon
+                  name={item.icon}
+                  size="small"
+                  color={
+                    active
+                      ? "text-primary-container"
+                      : "text-on-surface-variant"
+                  }
+                />
+                <span className="text-sm font-light tracking-wide">
+                  {item.label}
+                </span>
               </Link>
             );
           })}

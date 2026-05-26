@@ -1,19 +1,19 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get('oa-auth')?.value;
+  const token = request.cookies.get("oa-auth")?.value;
   const { pathname } = request.nextUrl;
 
-  const protectedPaths = ['/app'];
+  const protectedPaths = ["/app"];
   //const publicPaths = ['/login', '/', '/demo', '/mission', '/pricing', '/performance'];
 
-  const isProtected = protectedPaths.some(path => pathname.startsWith(path));
+  const isProtected = protectedPaths.some((path) => pathname.startsWith(path));
   //const isPublic = publicPaths.some(path => pathname.startsWith(path));
 
   if (!token && isProtected) {
     const url = request.nextUrl.clone();
-    url.pathname = '/';
+    url.pathname = "/";
     return NextResponse.redirect(url);
   }
 
@@ -21,5 +21,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/api|_next/static|favicon.ico|public).*)', ],
+  matcher: ["/((?!_next/api|_next/static|favicon.ico|public).*)"],
 };
