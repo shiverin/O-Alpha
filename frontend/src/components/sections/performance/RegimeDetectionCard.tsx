@@ -26,7 +26,9 @@ export default function RegimeDetectionCard({
       <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-primary-container/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
       <div className="flex items-center gap-2 mb-6">
-        <span className="material-symbols-outlined text-sm text-on-surface-variant">radar</span>
+        <span className="material-symbols-outlined text-sm text-on-surface-variant">
+          radar
+        </span>
         <span className="text-[10px] uppercase tracking-[0.2em] text-on-surface-variant font-medium">
           Regime Detection
         </span>

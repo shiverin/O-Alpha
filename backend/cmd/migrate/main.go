@@ -18,14 +18,9 @@ func main() {
 		log.Fatal().Err(err).Msg("load config")
 	}
 
-	// Try running migrations normally first
+	// Just run migrations. If they fail, stop immediately.
 	if err := db.RunMigrations(cfg.DatabaseURL, cfg.MigrationsPath); err != nil {
-		// If we get an error, try force reset
-		log.Warn().Msg("Migration failed, attempting force reset...")
-		if err := db.ForceResetMigrations(cfg.DatabaseURL, cfg.MigrationsPath); err != nil {
-			log.Fatal().Err(err).Msg("force reset migrations")
-		}
-		log.Info().Msg("Force reset completed successfully")
+		log.Fatal().Err(err).Msg("Migration failed")
 	}
 
 	log.Info().Str("path", cfg.MigrationsPath).Msg("migrations applied")

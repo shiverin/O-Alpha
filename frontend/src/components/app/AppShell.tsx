@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Container } from '@/components/ui/Container';
-import { Icon } from '@/components/ui/Icon';
+import { Container } from "@/components/ui/Container";
+import { Icon } from "@/components/ui/Icon";
 import { AppTopBar } from "@/components/app/AppTopBar";
 import { removeToken } from "@/lib/auth";
 import { appNavItems } from "@/components/app/appNav";
@@ -25,12 +25,10 @@ export function AppShell({
 
   return (
     <div className="min-h-screen flex bg-background text-on-background font-body">
-      
       {/* =========================================
           LEFT SIDEBAR (MINIMALIST TERMINAL DOCK)
       ========================================= */}
       <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full w-64 border-r border-outline-variant/20 bg-surface-container-lowest/40 backdrop-blur-md">
-        
         {/* Minimalist Header without the Box Panel Container */}
         <div className="px-7 pt-10 pb-12 flex items-center gap-2">
           <span className="text-lg font-light tracking-[0.15em] text-on-background">
@@ -52,10 +50,14 @@ export function AppShell({
                     : "text-on-surface-variant hover:bg-white/[0.02] hover:text-on-background"
                 }`}
               >
-                <div className={`transition-transform duration-300 group-hover:scale-105 ${active ? 'text-primary-container' : 'text-on-surface-variant/70 group-hover:text-on-surface'}`}>
+                <div
+                  className={`transition-transform duration-300 group-hover:scale-105 ${active ? "text-primary-container" : "text-on-surface-variant/70 group-hover:text-on-surface"}`}
+                >
                   <Icon name={item.icon} size="small" />
                 </div>
-                <span className="text-sm font-light tracking-wide">{item.label}</span>
+                <span className="text-sm font-light tracking-wide">
+                  {item.label}
+                </span>
               </Link>
             );
           })}
@@ -84,7 +86,6 @@ export function AppShell({
           </Container>
         </main>
       </div>
-
     </div>
   );
 }

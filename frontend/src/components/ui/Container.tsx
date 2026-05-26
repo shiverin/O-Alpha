@@ -1,11 +1,11 @@
-import React from 'react'
+import React from "react";
 
 interface ContainerProps {
-  children: React.ReactNode
-  className?: string
-  fluid?: boolean
-  px?: 'mobile' | 'desktop' | 'none'
-  maxWidth?: string | number
+  children: React.ReactNode;
+  className?: string;
+  fluid?: boolean;
+  px?: "mobile" | "desktop" | "none";
+  maxWidth?: string | number;
 }
 
 /**
@@ -20,37 +20,37 @@ interface ContainerProps {
  */
 export const Container = ({
   children,
-  className = '',
+  className = "",
   fluid = false,
-  px = 'desktop',
-  maxWidth = fluid ? undefined : '[1440px]',
+  px = "desktop",
+  maxWidth = fluid ? undefined : "[1440px]",
 }: ContainerProps) => {
   // Padding classes
-  let pxClass = ''
+  let pxClass = "";
   switch (px) {
-    case 'mobile':
-      pxClass = 'px-margin-mobile'
-      break
-    case 'desktop':
-      pxClass = 'px-margin-desktop'
-      break
-    case 'none':
-      pxClass = 'px-0'
-      break
+    case "mobile":
+      pxClass = "px-margin-mobile";
+      break;
+    case "desktop":
+      pxClass = "px-margin-desktop";
+      break;
+    case "none":
+      pxClass = "px-0";
+      break;
   }
 
   // Width/max-width classes
-  let widthClass = 'w-full'
+  let widthClass = "w-full";
   if (!fluid && maxWidth) {
-    widthClass += ` max-w-${typeof maxWidth === 'number' ? `[${maxWidth}px]` : maxWidth}`
+    widthClass += ` max-w-${typeof maxWidth === "number" ? `[${maxWidth}px]` : maxWidth}`;
   }
 
   // Centering (only when not fluid and has max-width)
-  const mxClass = !fluid ? 'mx-auto' : ''
+  const mxClass = !fluid ? "mx-auto" : "";
 
   return (
     <div className={`${pxClass} ${widthClass} ${mxClass} ${className}`}>
       {children}
     </div>
-  )
-}
+  );
+};

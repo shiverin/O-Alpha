@@ -16,7 +16,11 @@ export function HomePageClient() {
   }, [searchParams]);
 
   return (
-    <LandingShell activePath="/" loginModalOpen={showLoginModal} onLoginModalOpenChange={setShowLoginModal}>
+    <LandingShell
+      activePath="/"
+      loginModalOpen={showLoginModal}
+      onLoginModalOpenChange={setShowLoginModal}
+    >
       <HomeContent />
     </LandingShell>
   );

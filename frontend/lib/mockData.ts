@@ -12,7 +12,9 @@ const buildFallbackEquityCurve = (): EquityPoint[] => {
     const equity = trend + cycle + pullback;
 
     return {
-      time: new Date(now - (points - idx) * 5 * 24 * 60 * 60 * 1000).toISOString(),
+      time: new Date(
+        now - (points - idx) * 5 * 24 * 60 * 60 * 1000,
+      ).toISOString(),
       equity: Number(equity.toFixed(2)),
     };
   });

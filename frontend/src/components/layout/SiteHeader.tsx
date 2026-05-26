@@ -30,15 +30,20 @@ const navLinks: NavLink[] = [
   { label: "Mission", href: "/mission" },
 ];
 
-export function SiteHeader({ activePath, loginModalOpen: externalLoginOpen, onLoginModalOpenChange }: SiteHeaderProps) {
+export function SiteHeader({
+  activePath,
+  loginModalOpen: externalLoginOpen,
+  onLoginModalOpenChange,
+}: SiteHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [internalLoginOpen, setInternalLoginOpen] = useState(false);
-  
-  const loginOpen = externalLoginOpen !== undefined ? externalLoginOpen : internalLoginOpen;
+
+  const loginOpen =
+    externalLoginOpen !== undefined ? externalLoginOpen : internalLoginOpen;
   const setLoginOpen = onLoginModalOpenChange || setInternalLoginOpen;
-  
+
   const router = useRouter();
-  const pathname = usePathname(); 
+  const pathname = usePathname();
 
   const links = navLinks.map((link) => ({
     ...link,
@@ -49,7 +54,6 @@ export function SiteHeader({ activePath, loginModalOpen: externalLoginOpen, onLo
     <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-xl border-b border-outline-variant/30">
       <div className="flex justify-between items-center px-16 md:px-margin-desktop py-4 max-w-[1440px] mx-auto">
         <div className="flex items-center gap-2 md:gap-12">
-
           <Link href="/" className="flex items-center gap-2 md:gap-3">
             <BrandMark className="-ml-0.5" logoSize="md" showText={false} />
           </Link>
@@ -59,13 +63,14 @@ export function SiteHeader({ activePath, loginModalOpen: externalLoginOpen, onLo
                 key={link.label}
                 href={link.href}
                 className={`
-                  ${link.active
-                    ? "font-body-md text-body-md text-primary-container border-b-2 border-primary-container pb-1"
-                    : "font-body-md text-body-md text-on-surface hover:text-primary-container"}
+                  ${
+                    link.active
+                      ? "font-body-md text-body-md text-primary-container border-b-2 border-primary-container pb-1"
+                      : "font-body-md text-body-md text-on-surface hover:text-primary-container"
+                  }
                   transition-colors duration-300
                 `}
               >
-   
                 {link.label}
               </Link>
             ))}
@@ -78,9 +83,15 @@ export function SiteHeader({ activePath, loginModalOpen: externalLoginOpen, onLo
           onClick={() => setMenuOpen((open) => !open)}
         >
           {menuOpen ? (
-            <XMarkIcon className="h-5 w-5" style={{ color: "#ffffff", fill: "#ffffff" }} />
+            <XMarkIcon
+              className="h-5 w-5"
+              style={{ color: "#ffffff", fill: "#ffffff" }}
+            />
           ) : (
-            <Bars3Icon className="h-5 w-5" style={{ color: "#ffffff", fill: "#ffffff" }} />
+            <Bars3Icon
+              className="h-5 w-5"
+              style={{ color: "#ffffff", fill: "#ffffff" }}
+            />
           )}
         </button>
         <div className="hidden md:flex items-center gap-3">
@@ -122,9 +133,11 @@ export function SiteHeader({ activePath, loginModalOpen: externalLoginOpen, onLo
               href={link.href}
               onClick={() => setMenuOpen(false)}
               className={`
-                ${link.active
-                  ? "font-body-md text-body-md text-primary-container"
-                  : "font-body-md text-body-md text-on-surface-variant"}
+                ${
+                  link.active
+                    ? "font-body-md text-body-md text-primary-container"
+                    : "font-body-md text-body-md text-on-surface-variant"
+                }
               `}
             >
               {/* FIXED: Removed nested <a> tag */}
@@ -154,7 +167,11 @@ export function SiteHeader({ activePath, loginModalOpen: externalLoginOpen, onLo
           </div>
         </div>
       </div>
-      <LoginModal isOpen={loginOpen} onClose={() => setLoginOpen(false)} redirectPath={pathname} />
+      <LoginModal
+        isOpen={loginOpen}
+        onClose={() => setLoginOpen(false)}
+        redirectPath={pathname}
+      />
     </nav>
   );
 }

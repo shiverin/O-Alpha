@@ -6,7 +6,9 @@ export default function RiskArchitectureCard() {
       <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-secondary-fixed/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
       <div className="flex items-center gap-2 mb-8">
-        <span className="material-symbols-outlined text-sm text-on-surface-variant">shield</span>
+        <span className="material-symbols-outlined text-sm text-on-surface-variant">
+          shield
+        </span>
         <span className="text-[10px] uppercase tracking-[0.2em] text-on-surface-variant font-medium">
           Risk Architecture
         </span>
@@ -18,7 +20,8 @@ export default function RiskArchitectureCard() {
             Kalman Filtering
           </h3>
           <p className="text-sm font-light leading-relaxed text-on-surface-variant group-hover/item:text-on-surface transition-colors duration-300">
-            Extracts true signal from market noise, enabling precise entry points even in low-liquidity environments.
+            Extracts true signal from market noise, enabling precise entry
+            points even in low-liquidity environments.
           </p>
         </div>
 
@@ -29,7 +32,8 @@ export default function RiskArchitectureCard() {
             Convex Optimization
           </h3>
           <p className="text-sm font-light leading-relaxed text-on-surface-variant group-hover/item:text-on-surface transition-colors duration-300">
-            Portfolio weights are solved continuously to maximize expected return subject to strict variance constraints.
+            Portfolio weights are solved continuously to maximize expected
+            return subject to strict variance constraints.
           </p>
         </div>
       </div>

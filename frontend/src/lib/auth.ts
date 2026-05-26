@@ -1,7 +1,7 @@
-import { jwtDecode } from 'jwt-decode';
+import { jwtDecode } from "jwt-decode";
 
-const AUTH_COOKIE_NAME = 'oa-auth';
-const TOKEN_STORAGE_KEY = 'token';
+const AUTH_COOKIE_NAME = "oa-auth";
+const TOKEN_STORAGE_KEY = "token";
 
 export interface User {
   id: number;
@@ -21,7 +21,9 @@ export function setToken(token: string): void {
  * Get the JWT token from cookies
  */
 export function getToken(): string | null {
-  const match = document.cookie.match(new RegExp(`(^| )${AUTH_COOKIE_NAME}=([^;]+)`));
+  const match = document.cookie.match(
+    new RegExp(`(^| )${AUTH_COOKIE_NAME}=([^;]+)`),
+  );
   if (match) {
     return match[2];
   }
@@ -46,7 +48,7 @@ export function decodeToken(token: string): User | null {
     const decoded = jwtDecode<{ user_id: number; email: string }>(token);
     return {
       id: decoded.user_id,
-      email: decoded.email
+      email: decoded.email,
     };
   } catch {
     // FIXED: Removed the unused 'err' variable

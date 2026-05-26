@@ -1,0 +1,77 @@
+name: O(Alpha) CI/CD Engine
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  # ============================================================================
+  # STAGE 1: QUALITY CONTROL & ASSURANCE (RUNS ON PR & MERGE)
+  # ============================================================================
+  quality-control:
+    name: Verify Code Quality
+    runs-on: ubuntu-latest
+    
+    # FIX 1: Enforce that all shell commands inside this job run within the frontend folder
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm' 
+          # FIX 2: Explicitly point the cache engine to your nested lockfile location
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      - name: Run Formatting Validation (Prettier)
+        run: npm run format:check
+
+      - name: Run Code Linting Rules (ESLint)
+        run: npm run lint
+
+      - name: Run Static Type-Check (TypeScript)
+        run: npm run typecheck
+
+  # ============================================================================
+  # STAGE 2: TEST SERVER DEPLOYMENT GATE (RUNS ONLY ON OPEN PULL REQUESTS)
+  # ============================================================================
+  test-deployment:
+    name: Verify Test Server Build
+    needs: quality-control
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    
+    # FIX 1: Apply matching folder defaults here as well
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      - name: Execute Test Server Compilation (Dry-Run Build)
+        run: npm run build
+        env:
+          NODE_ENV: production

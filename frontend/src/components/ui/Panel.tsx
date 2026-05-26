@@ -1,9 +1,9 @@
-import React from 'react'
+import React from "react";
 
 interface PanelProps {
-  children: React.ReactNode
-  className?: string
-  variant?: 'default' | 'elevated' | 'inset'
+  children: React.ReactNode;
+  className?: string;
+  variant?: "default" | "elevated" | "inset";
 }
 
 /**
@@ -15,24 +15,30 @@ interface PanelProps {
  *   elevated: higher elevation on hover
  *   inset: inner shadow effect
  */
-export const Panel = ({ children, className = '', variant = 'default' }: PanelProps) => {
-  const baseClasses = 'bg-surface-container-high/80 border border-outline-variant/50 rounded-2xl'
+export const Panel = ({
+  children,
+  className = "",
+  variant = "default",
+}: PanelProps) => {
+  const baseClasses =
+    "bg-surface-container-high/80 border border-outline-variant/50 rounded-2xl";
 
-  let variantClasses = ''
+  let variantClasses = "";
   switch (variant) {
-    case 'elevated':
-      variantClasses = 'hover:bg-surface-container-highest/80 transition-colors duration-300'
-      break
-    case 'inset':
-      variantClasses = 'inset-shadow-[0px_0px_0px_1px_rgb(0,0,0,0.05)]'
-      break
+    case "elevated":
+      variantClasses =
+        "hover:bg-surface-container-highest/80 transition-colors duration-300";
+      break;
+    case "inset":
+      variantClasses = "inset-shadow-[0px_0px_0px_1px_rgb(0,0,0,0.05)]";
+      break;
     default:
-      variantClasses = ''
+      variantClasses = "";
   }
 
   return (
     <div className={`${baseClasses} ${variantClasses} ${className}`}>
       {children}
     </div>
-  )
-}
+  );
+};

@@ -61,7 +61,7 @@ export function MissionPage() {
         <section className="max-w-[1440px] mx-auto px-margin-mobile md:px-margin-desktop mb-32">
           <div className="mb-16">
             <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background">
-              Our Vision 
+              Our Vision
             </h2>
             <p className="font-body-md text-body-md text-on-surface-variant max-w-2xl mt-4">
               A seamless translation layer between human intent and algorithmic
@@ -124,7 +124,9 @@ export function MissionPage() {
                     <h3 className="font-headline-lg-mobile text-headline-lg-mobile text-on-background mb-1">
                       {member.name}
                     </h3>
-                    <div className={`font-data-sm text-data-sm ${member.roleTone}`}>
+                    <div
+                      className={`font-data-sm text-data-sm ${member.roleTone}`}
+                    >
                       {member.role}
                     </div>
                   </div>

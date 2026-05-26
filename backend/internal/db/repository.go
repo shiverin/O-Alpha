@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -152,4 +153,70 @@ func (r *Repository) ValidateData(ctx context.Context, symbol string, start, end
 	}
 
 	return report, nil
+}
+
+// SaveStrategyConfig persists a strategy configuration and returns its generated id.
+func (r *Repository) SaveStrategyConfig(ctx context.Context, userID int64, name, strategyType string, parameters map[string]interface{}) (int64, error) {
+	// FIX: Use standard json.Marshal instead of pgtype.JSONB
+	paramsBytes, err := json.Marshal(parameters)
+	if err != nil {
+		return 0, fmt.Errorf("marshal strategy parameters: %w", err)
+	}
+
+	var id int64
+	const q = `
+        INSERT INTO strategy_configs (user_id, name, strategy_type, parameters)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id`
+
+	// Pass paramsBytes directly; pgx automatically treats []byte as JSONB
+	err = r.db.QueryRow(ctx, q, userID, name, strategyType, paramsBytes).Scan(&id)
+	if err != nil {
+		return 0, fmt.Errorf("insert strategy config: %w", err)
+	}
+	return id, nil
+}
+
+// SaveBacktestRun persists a backtest execution with its metrics.
+func (r *Repository) SaveBacktestRun(ctx context.Context, userID, configID int64, req models.BacktestRequest, result *models.BacktestResult) error {
+	endDate := time.Now().UTC()
+	startDate := endDate.Add(-365 * 24 * time.Hour)
+	if req.Start != nil {
+		startDate = req.Start.UTC()
+	}
+	if req.End != nil {
+		endDate = req.End.UTC()
+	}
+
+	// FIX: Use standard json.Marshal instead of pgtype.JSONB
+	equityCurveBytes, err := json.Marshal(result.EquityCurve)
+	if err != nil {
+		return fmt.Errorf("marshal equity curve: %w", err)
+	}
+
+	var configIDArg *int64
+	if configID > 0 {
+		configIDArg = &configID
+	}
+
+	const q = `
+        INSERT INTO backtest_runs (
+            user_id, strategy_config_id, symbol, timeframe,
+            start_time, end_time, initial_cash,
+            final_equity, total_return_pct, sharpe_ratio, max_drawdown_pct, num_trades,
+            equity_curve, created_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())`
+
+	// Pass equityCurveBytes directly
+	_, err = r.db.Exec(ctx, q,
+		userID, configIDArg, req.Symbol, req.Timeframe,
+		startDate, endDate, req.InitialCash,
+		result.FinalEquity, result.TotalReturn, result.Sharpe, result.MaxDrawdown, result.NumTrades,
+		equityCurveBytes,
+	)
+	if err != nil {
+		return fmt.Errorf("insert backtest run: %w", err)
+	}
+	return nil
 }

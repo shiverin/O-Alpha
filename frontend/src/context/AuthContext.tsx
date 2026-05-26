@@ -1,8 +1,8 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from 'react';
-import {api} from '@/lib/api';
-import { decodeToken, getToken, removeToken, type User } from '@/lib/auth';
+import { createContext, useContext, useEffect, useState } from "react";
+import { api } from "@/lib/api";
+import { decodeToken, getToken, removeToken, type User } from "@/lib/auth";
 
 interface AuthContextType {
   user: User | null;
@@ -32,10 +32,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const response = await api.get<{ id: number; email: string }>('/auth/me');
+        const response = await api.get<{ id: number; email: string }>(
+          "/auth/me",
+        );
         setUser({ id: response.id, email: response.email });
       } catch (err) {
-        const isNetworkError = err instanceof TypeError || (err instanceof Error && /Failed to fetch|NetworkError/i.test(err.message));
+        const isNetworkError =
+          err instanceof TypeError ||
+          (err instanceof Error &&
+            /Failed to fetch|NetworkError/i.test(err.message));
 
         if (decoded && isNetworkError) {
           // Keep token-backed session for local/demo mode when backend is down.
@@ -54,7 +59,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await api.post<{ token: string; user: { id: number; email: string } }>('/auth/login', { email, password });
+      const response = await api.post<{
+        token: string;
+        user: { id: number; email: string };
+      }>("/auth/login", { email, password });
       // Token will be stored by the API interceptor in headers
       setUser({ id: response.user.id, email: response.user.email });
     } catch (error) {
@@ -64,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await api.post('/auth/logout', {});
+      await api.post("/auth/logout", {});
     } catch {
     } finally {
       setUser(null);
@@ -78,17 +86,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logout,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

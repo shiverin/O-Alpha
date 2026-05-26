@@ -33,7 +33,7 @@ const config: Config = {
         "primary-fixed": "#6fe6ff",
         "secondary-container": "#ffd34d",
         "on-error-container": "#ffd7d7",
-        "tertiary": "#e6edf5",
+        tertiary: "#e6edf5",
         outline: "rgba(255,255,255,0.16)",
         "on-tertiary": "#2c3642",
         "surface-container": "#121b24",
@@ -86,13 +86,28 @@ const config: Config = {
         "headline-xl": ["var(--font-inter)", "system-ui", "sans-serif"],
       },
       fontSize: {
-        "headline-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "600" }],
-        "data-sm": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "400" }],
+        "headline-lg-mobile": [
+          "24px",
+          { lineHeight: "32px", fontWeight: "600" },
+        ],
+        "data-sm": [
+          "12px",
+          { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "400" },
+        ],
         "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
         "data-lg": ["20px", { lineHeight: "28px", fontWeight: "500" }],
-        "label-caps": ["11px", { lineHeight: "16px", letterSpacing: "0.1em", fontWeight: "700" }],
-        "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "600" }],
-        "headline-xl": ["48px", { lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "700" }],
+        "label-caps": [
+          "11px",
+          { lineHeight: "16px", letterSpacing: "0.1em", fontWeight: "700" },
+        ],
+        "headline-lg": [
+          "32px",
+          { lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "600" },
+        ],
+        "headline-xl": [
+          "48px",
+          { lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "700" },
+        ],
       },
     },
   },

@@ -21,9 +21,9 @@ const DropdownMenuShortcut = ({
       className={cn("ml-auto text-xs tracking-widest opacity-60", className)}
       {...props}
     />
-  )
-}
-DropdownMenuShortcut.displayName = "DropdownMenuShortcut"
+  );
+};
+DropdownMenuShortcut.displayName = "DropdownMenuShortcut";
 const DropdownMenuGroup = RadixUI.Group;
 const DropdownMenuSub = RadixUI.Sub;
 const DropdownMenuSubTrigger = RadixUI.SubTrigger;

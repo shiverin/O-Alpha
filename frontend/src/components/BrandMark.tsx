@@ -6,12 +6,18 @@ type BrandMarkProps = {
   showText?: boolean;
 };
 
-const logoSizeClasses: Record<NonNullable<BrandMarkProps["logoSize"]>, string> = {
+const logoSizeClasses: Record<
+  NonNullable<BrandMarkProps["logoSize"]>,
+  string
+> = {
   sm: "h-9 w-9",
   md: "h-11 w-11",
 };
 
-const logoSizePixels: Record<NonNullable<BrandMarkProps["logoSize"]>, number> = {
+const logoSizePixels: Record<
+  NonNullable<BrandMarkProps["logoSize"]>,
+  number
+> = {
   sm: 36,
   md: 44,
 };

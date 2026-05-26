@@ -10,7 +10,7 @@ import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
-  DropdownMenuItem
+  DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
 export function UserProfile() {
@@ -33,7 +33,10 @@ export function UserProfile() {
   if (!user) {
     return (
       <>
-        <a href="/" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
+        <a
+          href="/"
+          className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+        >
           Sign in
         </a>
       </>
@@ -43,15 +46,17 @@ export function UserProfile() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="flex items-center space-x-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex items-center space-x-2"
+        >
           <Avatar name={user.email} className="h-8 w-8" />
           <span className="hidden md:block">{user.email}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-48" align="end" sideOffset={4}>
-        <DropdownMenuItem onClick={handleLogout}>
-          Sign out
-        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleLogout}>Sign out</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
