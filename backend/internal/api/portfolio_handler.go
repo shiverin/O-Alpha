@@ -1,8 +1,9 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
+
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -51,8 +52,11 @@ func (h *Handler) GetExecutionStream(c *gin.Context) {
 	}
 
 	limit := 50
+
 	if queryLimit := c.Query("limit"); queryLimit != "" {
-		fmt.Sscanf(queryLimit, "%d", &limit)
+		if parsed, err := strconv.Atoi(queryLimit); err == nil {
+			limit = parsed
+		}
 	}
 
 	trades, err := h.PortfolioRepo.GetExecutionStream(c.Request.Context(), userID, limit)
@@ -73,7 +77,9 @@ func (h *Handler) GetSystemAlerts(c *gin.Context) {
 
 	limit := 10
 	if queryLimit := c.Query("limit"); queryLimit != "" {
-		fmt.Sscanf(queryLimit, "%d", &limit)
+		if parsed, err := strconv.Atoi(queryLimit); err == nil {
+			limit = parsed
+		}
 	}
 
 	alerts, err := h.PortfolioRepo.GetSystemAlerts(c.Request.Context(), userID, limit)
@@ -97,7 +103,9 @@ func (h *Handler) GetPortfolioHistory(c *gin.Context) {
 	// Default lookback point resolution for sparklines
 	limit := 30
 	if queryLimit := c.Query("limit"); queryLimit != "" {
-		fmt.Sscanf(queryLimit, "%d", &limit)
+		if parsed, err := strconv.Atoi(queryLimit); err == nil {
+			limit = parsed
+		}
 	}
 
 	history, err := h.PortfolioRepo.GetPortfolioHistory(c.Request.Context(), userID, limit)
