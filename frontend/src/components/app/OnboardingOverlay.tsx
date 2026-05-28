@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { settingsApi } from "@/lib/api";
+import { settingsApi, api } from "@/lib/api";
 
 interface OnboardingOverlayProps {
   userID: number;
-  onComplete: () => void;
+  onComplete: (riskProfile: string) => void; // Upgraded context passing channel
 }
 
 export default function OnboardingOverlay({ userID, onComplete }: OnboardingOverlayProps) {
@@ -46,10 +46,10 @@ export default function OnboardingOverlay({ userID, onComplete }: OnboardingOver
     // ✅ BRANCH 1: LOCAL STORAGE BYPASS GATE FOR DEMO SESSIONS (userID: 999)
     // ─────────────────────────────────────────────────────────────
     if (userID === 999) {
-      await new Promise((resolve) => setTimeout(resolve, 800)); // Maintain premium snappy loading simulation
+      await new Promise((resolve) => setTimeout(resolve, 800)); 
       localStorage.setItem("oa_demo_risk_posture", riskProfile);
       setIsSaving(false);
-      onComplete();
+      onComplete(riskProfile);
       return;
     }
 
@@ -87,9 +87,14 @@ export default function OnboardingOverlay({ userID, onComplete }: OnboardingOver
     }
 
     try {
+      // 1. Persist the quantitative configuration profile settings
       await settingsApi.save(configPayload);
+
+      // 2. Fire an isolated network call directly to your dedicated user onboarding handler endpoint
+      await api.post("/api/v1/user/onboarding/complete", { user_id: userID });
+
       setIsSaving(false);
-      onComplete();
+      onComplete(riskProfile); // Bubble the config name to update parent state variables instantly
     } catch {
       setIsSaving(false);
       alert("Failed to synchronize execution parameters with the server.");
@@ -106,17 +111,15 @@ export default function OnboardingOverlay({ userID, onComplete }: OnboardingOver
 
         {step === 1 && (
           <div className="flex flex-col items-center text-center py-10 max-w-2xl mx-auto">
-            <div className="h-16 w-16 rounded-2xl flex items-center justify-center mb-8 bg-white/[0.02] border border-outline-variant/20">
-              <span className="material-symbols-outlined text-primary-fixed-dim text-3xl animate-pulse">token</span>
-            </div>
+            <span className="material-symbols-outlined text-primary-fixed-dim text-3xl animate-pulse mb-4">token</span>
             <h1 className="text-3xl sm:text-4xl font-light tracking-tight text-on-surface mb-4">
               Welcome to <span className="text-primary-fixed-dim font-normal">O(Alpha)</span>
             </h1>
             <p className="text-sm sm:text-base font-light text-on-surface-variant/70 leading-relaxed mb-10">
-              Deploy your quant-level autonomous agent infrastructure. Initialize corporate engine posture metrics below to open up your telemetry overview terminal.
+              Deploy your agent.
             </p>
             <button onClick={() => setStep(2)} className="px-8 py-3.5 bg-primary-container text-void-black font-mono font-medium text-xs tracking-wider uppercase rounded-full shadow-lg hover:bg-primary-fixed transition-all duration-300">
-              Begin Configuration
+              Begin
             </button>
           </div>
         )}

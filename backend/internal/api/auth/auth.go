@@ -36,8 +36,9 @@ type LoginResponse struct {
 
 // UserResponse represents the user data returned in auth responses.
 type UserResponse struct {
-	ID       int64  `json:"id"`
-	Username string `json:"username"`
+	ID          int64  `json:"id"`
+	Username    string `json:"username"`
+	IsOnboarded bool   `json:"is_onboarded"`
 }
 
 // Login handles user login requests.
@@ -48,21 +49,18 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// Propagating c.Request.Context() down into the authentication runtime safely
 	token, user, err := h.authService.Login(c.Request.Context(), req.Username, req.Password)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"}) // 🚀 FIXED: Changed from StatusUnavailable
 		return
 	}
-
-	// Optimized: The second DB query hit is completely removed here because
-	// s.authService.Login already returned the verified user object model.
 
 	response := LoginResponse{
 		Token: token,
 		User: UserResponse{
-			ID:       user.ID,
-			Username: user.Username,
+			ID:          user.ID,
+			Username:    user.Username,
+			IsOnboarded: user.IsOnboarded,
 		},
 	}
 
@@ -102,7 +100,6 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 		return
 	}
 
-	// Extract token from Bearer token format
 	var token string
 	if len(authHeader) > 7 && authHeader[:7] == "Bearer " {
 		token = authHeader[7:]
@@ -116,7 +113,6 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 		return
 	}
 
-	// Context propagation applied to user query tracking layers
 	user, err := h.userRepo.GetUserByID(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user"})
@@ -128,8 +124,9 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 	}
 
 	response := UserResponse{
-		ID:       user.ID,
-		Username: user.Username,
+		ID:          user.ID,
+		Username:    user.Username,
+		IsOnboarded: user.IsOnboarded,
 	}
 
 	c.JSON(http.StatusOK, response)

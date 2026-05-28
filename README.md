@@ -20,7 +20,7 @@ Quant research and paper-trading platform with a Go backend and Next.js frontend
 ```bash
 make setup-local
 # Update .env with your Supabase credentials
-go run ./cmd/api/main.go      # Terminal 1
+make run-api                   # Terminal 1
 npm run dev                    # Terminal 2
 ```
 

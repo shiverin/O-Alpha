@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { decodeToken, getToken, removeToken, type User } from "@/lib/auth";
+import { setToken, decodeToken, getToken, removeToken, type User } from "@/lib/auth";
 
 interface AuthContextType {
   user: User | null;
@@ -32,10 +32,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const response = await api.get<{ id: number; username: string }>(
+        // 🚀 UPDATED: Added is_onboarded type tracking to matching API layout response
+        const response = await api.get<{ id: number; username: string; is_onboarded: boolean }>(
           "/auth/me",
         );
-        setUser({ id: response.id, username: response.username });
+        setUser({ 
+          id: response.id, 
+          username: response.username, 
+          is_onboarded: response.is_onboarded 
+        });
       } catch (err) {
         const isNetworkError =
           err instanceof TypeError ||
@@ -59,12 +64,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (username: string, password: string) => {
     try {
+      // 🚀 UPDATED: Extended the layout schema specification to preserve onboarding metrics
       const response = await api.post<{
         token: string;
-        user: { id: number; username: string };
+        user: { id: number; username: string; is_onboarded: boolean };
       }>("/auth/login", { username, password });
-      // Token will be stored by the API interceptor in headers
-      setUser({ id: response.user.id, username: response.user.username });
+      
+      // Explicitly persist the token securely
+      setToken(response.token); 
+      
+      setUser({ 
+        id: response.user.id, 
+        username: response.user.username, 
+        is_onboarded: response.user.is_onboarded 
+      });
     } catch (error) {
       throw error;
     }
@@ -74,7 +87,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await api.post("/auth/logout", {});
     } catch {
+      // Absorb tracking network logging variances silently
     } finally {
+      removeToken(); // Guard clean tracking clear states
       setUser(null);
     }
   };

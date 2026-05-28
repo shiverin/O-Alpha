@@ -164,3 +164,13 @@ export const settingsApi = {
     return api.post<{ status: string }, typeof payload>("/api/v1/user/settings", payload);
   }
 };
+
+
+export const userApi = {
+  completeOnboarding: async (userID: number): Promise<{ status: string }> => {
+    return api.post<{ status: string }, { user_id: number }>(
+      "/api/v1/user/onboarding/complete", 
+      { user_id: userID }
+    );
+  }
+};

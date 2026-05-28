@@ -5,8 +5,9 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Panel } from "@/components/ui/Panel";
 import { Icon } from "@/components/ui/Icon";
-import { api } from "@/lib/api";
+//import { api } from "@/lib/api";
 import { setToken } from "@/lib/auth";
+import { useAuth } from "@/context/AuthContext"; 
 
 type LoginModalProps = {
   isOpen: boolean;
@@ -15,6 +16,7 @@ type LoginModalProps = {
 };
 
 export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
+  const { login } = useAuth();
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -80,7 +82,7 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
   //   );
   // };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!canSubmit) return;
 
@@ -88,15 +90,9 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
     setError(null);
 
     try {
-      const response = await api.post<{
-        token: string;
-        user: { id: number; username: string };
-      }>("/auth/login", {
-        username,
-        password,
-      });
-
-      setToken(response.token);
+      // Consume the context logic directly
+      await login(username, password); 
+      
       router.push(redirectPath || "/app/dashboard");
       onClose();
     } catch (err) {

@@ -64,7 +64,6 @@ logs:
 db-shell:
 	docker compose exec timescale psql -U oalpha -d oalpha
 
-# ✅ Cleaned Recipes: Pointing explicitly to main.go entry files with auto-exported envs
 migrate:
 	cd backend && MIGRATIONS_PATH=file://../migrations go run ./cmd/migrate/main.go
 

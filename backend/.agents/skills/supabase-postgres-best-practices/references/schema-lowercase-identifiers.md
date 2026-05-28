@@ -1,3 +1,4 @@
+go run ./cmd/api/main.go   
 ---
 title: Use Lowercase Identifiers for Compatibility
 impact: MEDIUM

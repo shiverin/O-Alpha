@@ -12,6 +12,7 @@ type User struct {
 	ID           int64     `json:"id"`
 	Username     string    `json:"username"`
 	PasswordHash string    `json:"-"` // never JSON encoded
+	IsOnboarded  bool      `json:"is_onboarded"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }
