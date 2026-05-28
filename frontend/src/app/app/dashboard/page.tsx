@@ -1,28 +1,78 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import useSWR from "swr";
 import { AppShell } from "@/components/app/AppShell";
 import OnboardingOverlay from "@/components/app/OnboardingOverlay";
 import { settingsApi } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { mockExecutionLogs, allocationSegments } from "@/lib/mockAppData";
 
-export default function DashboardPage() {
-  const [isAgentActive, setIsAgentActive] = useState(true);
-  const [showOnboarding, setShowOnboarding] = useState(false);
+// ─────────────────────────────────────────────────────────────
+// 📐 STRONGLY-TYPED INTERFACES FOR SERVER DOCK ALIGNMENT
+// ─────────────────────────────────────────────────────────────
+interface ServerPortfolioSummary {
+  total_asset_value: number;
+  change_percent_24h: number;
+  change_dollar_24h: number;
+  estimated_annual_yield: number;
+  target_progress_percent: number;
+  timestamp: string;
+}
 
-  const [riskTolerance, setRiskTolerance] = useState(80);
-  const [volatilityCap, setVolatilityCap] = useState(30);
-  const [leverageMultiplier, setLeverageMultiplier] = useState(50);
+interface ServerTradeLog {
+  id: number;
+  timestamp: string;
+  action: string;
+  symbol: string;
+  price: number;
+  qty: number;
+  slippage: number;
+  status: string;
+}
+
+interface MockLogItem {
+  time: string;
+  asset: string;
+  side: string;
+  price: string;
+  primary?: boolean;
+  highlight?: boolean;
+}
+
+const fetcher = <T,>(url: string): Promise<T> => 
+  fetch(url).then((res) => {
+    if (!res.ok) {
+      throw new Error(`Network response error: ${res.status}`);
+    }
+    return res.json();
+  });
+
+export default function DashboardPage() {
+  const [isAgentActive, setIsAgentActive] = useState<boolean>(true);
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
+
+  const [riskTolerance, setRiskTolerance] = useState<number>(80);
+  const [volatilityCap, setVolatilityCap] = useState<number>(30);
+  const [leverageMultiplier, setLeverageMultiplier] = useState<number>(50);
 
   const { user } = useAuth();
   const currentUserID = user?.id || 999;
 
+  // 📡 DYNAMIC SERVER TELEMETRY FETCHERS
+  const { data: serverSummary } = useSWR<ServerPortfolioSummary>(
+    currentUserID !== 999 ? `http://localhost:8080/api/v1/user/portfolio/summary?user_id=${currentUserID}` : null,
+    fetcher
+  );
+
+  const { data: serverTrades } = useSWR<ServerTradeLog[]>(
+    currentUserID !== 999 ? `http://localhost:8080/api/v1/user/portfolio/trades?user_id=${currentUserID}&limit=8` : null,
+    fetcher
+  );
+
+  // Hydrate configurations based on registered profile postures
   useEffect(() => {
     const fetchAndCheckRegistrationPosture = async () => {
-      // ─────────────────────────────────────────────────────────────
-      // ✅ BRANCH 1: DEMO SESSIONS EVALUATE LOCAL STORAGE STACKS
-      // ─────────────────────────────────────────────────────────────
       if (currentUserID === 999) {
         const demoBlueprint = localStorage.getItem("oa_demo_risk_posture");
         if (!demoBlueprint) {
@@ -33,9 +83,6 @@ export default function DashboardPage() {
         return;
       }
 
-      // ─────────────────────────────────────────────────────────────
-      // 🌍 BRANCH 2: REAL SESSIONS RUN DIRECT DATABASE QUERIES
-      // ─────────────────────────────────────────────────────────────
       try {
         const response = await settingsApi.check(currentUserID);
         if (!response.found || !response.settings) {
@@ -68,7 +115,6 @@ export default function DashboardPage() {
   };
 
   const handleOnboardingComplete = () => {
-    // Check demo identity tags during dismissal loops to update telemetry sliders instantly
     if (currentUserID === 999) {
       const demoBlueprint = localStorage.getItem("oa_demo_risk_posture") || "moderate";
       configureDashboardFromBlueprint(demoBlueprint);
@@ -76,7 +122,6 @@ export default function DashboardPage() {
       return;
     }
 
-    // Production refetch logic path
     settingsApi.check(currentUserID).then((response) => {
       if (response.settings) {
         configureDashboardFromBlueprint(response.settings.risk_profile);
@@ -89,15 +134,21 @@ export default function DashboardPage() {
     return `${(1.0 + (leverageMultiplier / 100) * 4).toFixed(1)}x`;
   }, [leverageMultiplier]);
 
+  // 🔀 MERGE GATEWAYS: Resolve whether we format database payloads or mock vectors
+  // ✅ Optional chaining and checking for 'change_dollar_24h' prevents the crash
+  const displayPnL = currentUserID === 999 || !serverSummary || serverSummary.change_dollar_24h === undefined
+    ? "+$12,450.89" 
+    : `${serverSummary.change_dollar_24h >= 0 ? "+" : ""}$${serverSummary.change_dollar_24h.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+
   return (
-    <AppShell title="System Overview">
+    <AppShell title="Overview">
       {showOnboarding && <OnboardingOverlay userID={currentUserID} onComplete={handleOnboardingComplete} />}
 
       <div className="w-full bg-transparent flex flex-col gap-6 md:gap-10 animate-in fade-in duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-2">
           <div>
             <p className="text-xs sm:text-sm font-light text-on-surface-variant/70 mt-1">
-              Real-time telemetry and execution analytics.
+              Real-time dashboard
             </p>
           </div>
 
@@ -109,8 +160,9 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* Bento widgets remain intact below */}
+        {/* Bento Widgets Layer Grid Matrix */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start">
+          
           {/* MAIN BALANCES TERMINAL CARD */}
           <div className="md:col-span-12 xl:col-span-8 group relative flex flex-col h-auto min-h-[380px] sm:h-[460px] bg-surface-container-low border border-outline-variant/30 rounded-[32px] p-5 sm:p-8 overflow-hidden hover:bg-surface-container transition-all duration-700 hover:shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
             <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-primary-container/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
@@ -123,7 +175,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex-grow flex flex-col justify-center relative z-10">
               <span className="text-[10px] font-medium tracking-[0.2em] text-on-surface-variant uppercase block mb-1">Current P&L (24h)</span>
-              <h2 className="text-4xl sm:text-5xl xl:text-6xl font-light tracking-tight text-primary-fixed">+$12,450.89</h2>
+              <h2 className="text-4xl sm:text-5xl xl:text-6xl font-light tracking-tight text-primary-fixed">{displayPnL}</h2>
               <div className="mt-6 sm:mt-8 h-28 sm:h-36 w-full relative flex items-end border-b border-outline-variant/20">
                 <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
                   <path d="M 0 85 Q 15 95 30 75 T 60 55 T 90 20 L 100 15" fill="none" stroke="#00f0ff" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" style={{ filter: "drop-shadow(0 0 8px rgba(0,240,255,0.4))" }} />
@@ -140,7 +192,7 @@ export default function DashboardPage() {
             <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-secondary-fixed-dim/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
             <div className="mb-6 xl:mb-8 border-b border-outline-variant/20 pb-4 flex items-center justify-between">
               <h3 className="text-[10px] font-medium tracking-[0.2em] text-on-surface uppercase">Strategy Controls</h3>
-              <span className="text-[9px] text-primary-container uppercase tracking-wider animate-pulse">Sync Active</span>
+              <span className="text-[9px] text-primary-container uppercase tracking-wider">Sync Active</span>
             </div>
             <div className="flex flex-col gap-6 flex-grow justify-center py-4 xl:py-0">
               <div className="flex flex-col gap-2">
@@ -178,14 +230,27 @@ export default function DashboardPage() {
                 <span className="w-20 sm:w-24 text-right">PRICE</span>
               </div>
               <div className="space-y-1">
-                {mockExecutionLogs.map((log, index) => (
-                  <div key={index} className={`flex justify-between py-1 px-0.5 rounded transition-colors duration-200 hover:bg-white/[0.02] ${log.primary ? "text-primary-fixed-dim" : log.highlight ? "text-secondary-fixed" : ""}`}>
-                    <span className="w-12 sm:w-16 opacity-60">{log.time}</span>
-                    <span className="w-16 sm:w-20 font-medium tracking-wide">{log.asset}</span>
-                    <span className="w-12 sm:w-16">{log.side}</span>
-                    <span className="w-20 sm:w-24 text-right tracking-tight">{log.price}</span>
-                  </div>
-                ))}
+                {currentUserID === 999 || !serverTrades
+                  ? mockExecutionLogs.map((log: MockLogItem, index: number) => (
+                      <div key={index} className={`flex justify-between py-1 px-0.5 rounded transition-colors duration-200 hover:bg-white/[0.02] ${log.primary ? "text-primary-fixed-dim" : log.highlight ? "text-secondary-fixed" : ""}`}>
+                        <span className="w-12 sm:w-16 opacity-60">{log.time}</span>
+                        <span className="w-16 sm:w-20 font-medium tracking-wide">{log.asset}</span>
+                        <span className="w-12 sm:w-16">{log.side}</span>
+                        <span className="w-20 sm:w-24 text-right tracking-tight">{log.price}</span>
+                      </div>
+                    ))
+                  : serverTrades.map((log: ServerTradeLog, index: number) => {
+                      const displayTime = log.timestamp ? new Date(log.timestamp).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "Live";
+                      const textClass = log.action.startsWith("BUY") ? "text-primary-fixed-dim" : "text-error";
+                      return (
+                        <div key={index} className="flex justify-between py-1 px-0.5 rounded transition-colors duration-200 hover:bg-white/[0.02]">
+                          <span className="w-12 sm:w-16 opacity-60">{displayTime}</span>
+                          <span className="w-16 sm:w-20 font-medium tracking-wide text-on-surface">{log.symbol}</span>
+                          <span className={`w-12 sm:w-16 ${textClass}`}>{log.action.split("_")[0]}</span>
+                          <span className="w-20 sm:w-24 text-right tracking-tight text-on-surface-variant">${log.price.toFixed(2)}</span>
+                        </div>
+                      );
+                    })}
               </div>
             </div>
           </div>
@@ -202,7 +267,9 @@ export default function DashboardPage() {
                 </svg>
                 <div className="absolute flex flex-col items-center justify-center text-center">
                   <span className="text-[9px] font-medium tracking-widest text-on-surface-variant/50">TOTAL AUM</span>
-                  <span className="text-xl font-light tracking-tight text-on-surface">$2.4M</span>
+                  <span className="text-xl font-light tracking-tight text-on-surface">
+                    ${currentUserID === 999 || !serverSummary ? "2.4M" : (serverSummary.total_asset_value / 1000000).toFixed(1) + "M"}
+                  </span>
                 </div>
               </div>
               <div className="flex flex-col gap-3 flex-grow justify-center w-full max-w-[200px]">
@@ -218,6 +285,7 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+          
         </div>
       </div>
     </AppShell>

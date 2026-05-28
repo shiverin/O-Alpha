@@ -154,11 +154,10 @@ export default function AgentSettingsPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-2 border-b border-outline-variant/10">
           <div>
             <h1 className="text-2xl sm:text-3xl font-light tracking-tight text-on-surface">
-              Agent Configuration
+              Configuration
             </h1>
             <p className="text-xs sm:text-sm font-light text-on-surface-variant/70 mt-1">
-              Adjust core risk frameworks and execution boundaries for the
-              O(Alpha) trading core.
+              Adjust settings for your O(Alpha).
             </p>
           </div>
 
@@ -181,7 +180,7 @@ export default function AgentSettingsPage() {
         ========================================= */}
         <div className="flex flex-col gap-2">
           <span className="text-[10px] font-mono tracking-[0.2em] text-on-surface-variant/40 uppercase block mb-1">
-            System Posture Blueprint
+            Risk Profiles
           </span>
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full">
