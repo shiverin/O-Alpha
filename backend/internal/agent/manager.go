@@ -44,6 +44,7 @@ func (m *AgentManager) StartAgent(
 	strat backtest.Strategy,
 	paperTrade bool,
 	initialCash float64,
+	agentRunID int64,
 	useWebSocket bool,
 ) error {
 	m.mu.Lock()
@@ -65,6 +66,7 @@ func (m *AgentManager) StartAgent(
 		timeframe,
 		paperTrade,
 		initialCash,
+		agentRunID,
 		useWebSocket,
 	)
 

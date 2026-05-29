@@ -11,11 +11,15 @@ interface TelemetryMetricsProps {
   data: EquityPoint[];
   loading: boolean;
   currentReturnPct?: number;
+  sharpeRatio?: number | null;
+  maxDrawdown?: number | null;
 }
 
 export default function TelemetryMetrics({
   data,
   loading,
+  sharpeRatio,
+  maxDrawdown,
 }: TelemetryMetricsProps) {
   const [activeTab, setActiveTab] = useState<TimeframeTab>("YTD");
 
@@ -48,6 +52,21 @@ export default function TelemetryMetrics({
   }, [data, activeTab]);
 
   const isPositive = displayReturnPct >= 0;
+  const normalizedSharpeRatio =
+    typeof sharpeRatio === "number" && Number.isFinite(sharpeRatio)
+      ? sharpeRatio
+      : null;
+  const normalizedMaxDrawdown =
+    typeof maxDrawdown === "number" && Number.isFinite(maxDrawdown)
+      ? maxDrawdown
+      : null;
+  const maxDrawdownPct =
+    normalizedMaxDrawdown === null
+      ? null
+      : Math.abs(normalizedMaxDrawdown) * 100;
+  const drawdownWidth = maxDrawdownPct
+    ? `${Math.min(maxDrawdownPct, 100)}%`
+    : "0%";
 
   return (
     <section className="w-full">
@@ -126,7 +145,9 @@ export default function TelemetryMetrics({
             </span>
             <div className="flex items-baseline gap-3">
               <span className="text-4xl font-light tracking-tight text-on-surface">
-                2.4
+                {normalizedSharpeRatio === null
+                  ? "--"
+                  : normalizedSharpeRatio.toFixed(2)}
               </span>
             </div>
           </div>
@@ -139,12 +160,17 @@ export default function TelemetryMetrics({
             </span>
             <div className="flex items-baseline gap-3 mb-5">
               <span className="text-4xl font-light tracking-tight text-on-surface">
-                -4.2%
+                {maxDrawdownPct === null
+                  ? "--"
+                  : `-${maxDrawdownPct.toFixed(2)}%`}
               </span>
             </div>
 
             <div className="w-full bg-outline-variant/20 h-[2px] rounded-full overflow-hidden relative">
-              <div className="absolute left-0 top-0 h-full w-[15%] bg-secondary-fixed rounded-full" />
+              <div
+                className="absolute left-0 top-0 h-full bg-secondary-fixed rounded-full"
+                style={{ width: drawdownWidth }}
+              />
             </div>
           </div>
         </div>

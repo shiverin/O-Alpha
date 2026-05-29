@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+const defaultPaperInitialCash = 100000.0
 
 type TradeLog struct {
 	ID        int64     `json:"id"`
@@ -51,58 +54,107 @@ type PortfolioRepository struct {
 	db *pgxpool.Pool
 }
 
+type accountBalance struct {
+	ID          int64
+	Cash        float64
+	RealizedPnL float64
+	InitialCash float64
+}
+
 func NewPortfolioRepository(db *pgxpool.Pool) *PortfolioRepository {
 	return &PortfolioRepository{db: db}
 }
 
-// RecordLongFill stores a filled long-side trade and updates the user's open position atomically.
-func (r *PortfolioRepository) RecordLongFill(ctx context.Context, userID int64, action, symbol string, price, qty, slippage float64) error {
+// RecordLongFill stores a filled long-side order and updates cash, positions, and ledger entries atomically.
+func (r *PortfolioRepository) RecordLongFill(ctx context.Context, userID, agentRunID int64, action, symbol string, price, qty, slippage float64) error {
+	symbol = normalizeSymbol(symbol)
+	action = strings.ToUpper(strings.TrimSpace(action))
+	if symbol == "" {
+		return fmt.Errorf("fill symbol is required")
+	}
+	if price <= 0 {
+		return fmt.Errorf("fill price must be positive")
+	}
+	if qty <= 0 {
+		return fmt.Errorf("fill quantity must be positive")
+	}
+
+	side, err := longActionSide(action)
+	if err != nil {
+		return err
+	}
+
 	tx, err := r.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return fmt.Errorf("begin portfolio fill transaction: %w", err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
-	const tradeQ = `
-		INSERT INTO trades (user_id, action, symbol, price, qty, slippage, status)
-		VALUES ($1, $2, $3, $4, $5, $6, 'FILLED')`
-	if _, err := tx.Exec(ctx, tradeQ, userID, action, symbol, price, qty, slippage); err != nil {
-		return fmt.Errorf("insert trade fill: %w", err)
+	if err := ensureAssetTx(ctx, tx, symbol); err != nil {
+		return err
 	}
 
+	account, err := ensureDefaultPaperAccountTx(ctx, tx, userID, defaultPaperInitialCash)
+	if err != nil {
+		return err
+	}
+
+	var agentRunIDArg *int64
+	if agentRunID > 0 {
+		agentRunIDArg = &agentRunID
+	}
+
+	var orderID int64
+	const orderQ = `
+		INSERT INTO orders (
+			user_id, account_id, agent_run_id, symbol, side, position_side,
+			order_type, time_in_force, qty, status, submitted_at, filled_at
+		)
+		VALUES ($1, $2, $3, $4, $5, 'long', 'market', 'day', $6, 'filled', NOW(), NOW())
+		RETURNING id`
+	if err := tx.QueryRow(ctx, orderQ, userID, account.ID, agentRunIDArg, symbol, side, qty).Scan(&orderID); err != nil {
+		return fmt.Errorf("insert filled order: %w", err)
+	}
+
+	var fillID int64
+	const fillQ = `
+		INSERT INTO fills (
+			order_id, user_id, account_id, symbol, side, position_side,
+			price, qty, slippage
+		)
+		VALUES ($1, $2, $3, $4, $5, 'long', $6, $7, $8)
+		RETURNING id`
+	if err := tx.QueryRow(ctx, fillQ, orderID, userID, account.ID, symbol, side, price, qty, slippage).Scan(&fillID); err != nil {
+		return fmt.Errorf("insert fill: %w", err)
+	}
+
+	gross := price * qty
 	switch action {
 	case "BUY_LONG":
-		const upsertPositionQ = `
-			INSERT INTO positions (user_id, symbol, qty, avg_entry_price, current_price)
-			VALUES ($1, $2, $3, $4, $4)
-			ON CONFLICT (user_id, symbol) DO UPDATE SET
-				qty = positions.qty + EXCLUDED.qty,
-				avg_entry_price = CASE
-					WHEN positions.qty + EXCLUDED.qty <= 0 THEN EXCLUDED.avg_entry_price
-					ELSE ((positions.qty * positions.avg_entry_price) + (EXCLUDED.qty * EXCLUDED.avg_entry_price)) / (positions.qty + EXCLUDED.qty)
-				END,
-				current_price = EXCLUDED.current_price`
-		if _, err := tx.Exec(ctx, upsertPositionQ, userID, symbol, qty, price); err != nil {
-			return fmt.Errorf("upsert bought position: %w", err)
+		if account.Cash < gross {
+			return fmt.Errorf("insufficient cash for %s buy: need %.2f, have %.2f", symbol, gross, account.Cash)
+		}
+		newCash := account.Cash - gross
+		if err := updateAccountCashTx(ctx, tx, userID, account.ID, newCash, 0); err != nil {
+			return err
+		}
+		if err := insertCashLedgerTx(ctx, tx, userID, account.ID, "trade_buy", -gross, newCash, orderID, fillID, fmt.Sprintf("Bought %.8f %s", qty, symbol)); err != nil {
+			return err
+		}
+		if err := upsertBoughtPositionTx(ctx, tx, userID, account.ID, symbol, price, qty); err != nil {
+			return err
 		}
 	case "SELL_LONG":
-		const reducePositionQ = `
-			UPDATE positions
-			SET qty = qty - $4, current_price = $3
-			WHERE user_id = $1 AND symbol = $2`
-		tag, err := tx.Exec(ctx, reducePositionQ, userID, symbol, price, qty)
+		realizedPnL, err := reduceSoldPositionTx(ctx, tx, account.ID, symbol, price, qty)
 		if err != nil {
-			return fmt.Errorf("reduce sold position: %w", err)
+			return err
 		}
-		if tag.RowsAffected() == 0 {
-			return fmt.Errorf("cannot sell missing position %s", symbol)
+		newCash := account.Cash + gross
+		if err := updateAccountCashTx(ctx, tx, userID, account.ID, newCash, realizedPnL); err != nil {
+			return err
 		}
-
-		const deleteFlatPositionQ = `
-			DELETE FROM positions
-			WHERE user_id = $1 AND symbol = $2 AND qty <= 0`
-		if _, err := tx.Exec(ctx, deleteFlatPositionQ, userID, symbol); err != nil {
-			return fmt.Errorf("delete flat position: %w", err)
+		if err := insertCashLedgerTx(ctx, tx, userID, account.ID, "trade_sell", gross, newCash, orderID, fillID, fmt.Sprintf("Sold %.8f %s", qty, symbol)); err != nil {
+			return err
 		}
 	default:
 		return fmt.Errorf("unsupported trade action %s", action)
@@ -114,21 +166,52 @@ func (r *PortfolioRepository) RecordLongFill(ctx context.Context, userID int64, 
 	return nil
 }
 
-// MarkPositionPrice updates the current price used for unrealized P&L on an open position.
+// MarkPositionPrice updates the current price used for unrealized P&L on open positions.
 func (r *PortfolioRepository) MarkPositionPrice(ctx context.Context, userID int64, symbol string, currentPrice float64) error {
+	symbol = normalizeSymbol(symbol)
+	if symbol == "" {
+		return fmt.Errorf("position symbol is required")
+	}
+	if currentPrice < 0 {
+		return fmt.Errorf("position price cannot be negative")
+	}
+
 	const q = `
 		UPDATE positions
 		SET current_price = $3
-		WHERE user_id = $1 AND symbol = $2`
+		WHERE user_id = $1 AND symbol = $2 AND qty > 0`
 	if _, err := r.db.Exec(ctx, q, userID, symbol, currentPrice); err != nil {
 		return fmt.Errorf("mark position price: %w", err)
 	}
 	return nil
 }
 
-// SavePortfolioSnapshot records account equity with a best-effort 24h change baseline.
-func (r *PortfolioRepository) SavePortfolioSnapshot(ctx context.Context, userID int64, totalAssetValue, targetValue float64) error {
-	previousValue, err := r.snapshotComparisonValue(ctx, userID)
+// SavePortfolioSnapshot records canonical account equity from persisted cash and positions.
+func (r *PortfolioRepository) SavePortfolioSnapshot(ctx context.Context, userID int64, _ float64, targetValue float64) error {
+	tx, err := r.db.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("begin portfolio snapshot transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	account, err := ensureDefaultPaperAccountTx(ctx, tx, userID, defaultPaperInitialCash)
+	if err != nil {
+		return err
+	}
+
+	var positionsValue, unrealizedPnL float64
+	const positionsQ = `
+		SELECT
+			COALESCE(SUM(qty * current_price), 0),
+			COALESCE(SUM((current_price - avg_entry_price) * qty), 0)
+		FROM positions
+		WHERE account_id = $1 AND position_side = 'long' AND qty > 0`
+	if err := tx.QueryRow(ctx, positionsQ, account.ID).Scan(&positionsValue, &unrealizedPnL); err != nil {
+		return fmt.Errorf("query portfolio mark-to-market: %w", err)
+	}
+
+	totalAssetValue := account.Cash + positionsValue
+	previousValue, err := snapshotComparisonValueTx(ctx, tx, account.ID)
 	if err != nil {
 		return err
 	}
@@ -141,6 +224,9 @@ func (r *PortfolioRepository) SavePortfolioSnapshot(ctx context.Context, userID 
 	}
 	changePercent = clampNumericPct(changePercent)
 
+	if targetValue <= 0 {
+		targetValue = account.InitialCash
+	}
 	targetProgress := 0.0
 	if targetValue > 0 {
 		targetProgress = (totalAssetValue / targetValue) * 100
@@ -150,29 +236,52 @@ func (r *PortfolioRepository) SavePortfolioSnapshot(ctx context.Context, userID 
 	const q = `
 		INSERT INTO portfolio_snapshots (
 			user_id,
+			account_id,
+			cash_value,
+			positions_value,
 			total_asset_value,
+			realized_pnl,
+			unrealized_pnl,
 			change_percent_24h,
 			change_dollar_24h,
 			estimated_annual_yield,
 			target_progress_percent
 		)
-		VALUES ($1, $2, $3, $4, $5, $6)`
-	if _, err := r.db.Exec(ctx, q, userID, totalAssetValue, changePercent, changeDollar, 0, targetProgress); err != nil {
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
+	if _, err := tx.Exec(
+		ctx,
+		q,
+		userID,
+		account.ID,
+		account.Cash,
+		positionsValue,
+		totalAssetValue,
+		account.RealizedPnL,
+		unrealizedPnL,
+		changePercent,
+		changeDollar,
+		0,
+		targetProgress,
+	); err != nil {
 		return fmt.Errorf("insert portfolio snapshot: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit portfolio snapshot transaction: %w", err)
 	}
 	return nil
 }
 
-func (r *PortfolioRepository) snapshotComparisonValue(ctx context.Context, userID int64) (float64, error) {
+func snapshotComparisonValueTx(ctx context.Context, tx pgx.Tx, accountID int64) (float64, error) {
 	const dayOldQ = `
 		SELECT total_asset_value
 		FROM portfolio_snapshots
-		WHERE user_id = $1 AND timestamp <= NOW() - INTERVAL '24 hours'
+		WHERE account_id = $1 AND timestamp <= NOW() - INTERVAL '24 hours'
 		ORDER BY timestamp DESC
 		LIMIT 1`
 
 	var value float64
-	err := r.db.QueryRow(ctx, dayOldQ, userID).Scan(&value)
+	err := tx.QueryRow(ctx, dayOldQ, accountID).Scan(&value)
 	if err == nil {
 		return value, nil
 	}
@@ -183,10 +292,10 @@ func (r *PortfolioRepository) snapshotComparisonValue(ctx context.Context, userI
 	const latestQ = `
 		SELECT total_asset_value
 		FROM portfolio_snapshots
-		WHERE user_id = $1
+		WHERE account_id = $1
 		ORDER BY timestamp DESC
 		LIMIT 1`
-	err = r.db.QueryRow(ctx, latestQ, userID).Scan(&value)
+	err = tx.QueryRow(ctx, latestQ, accountID).Scan(&value)
 	if err == nil {
 		return value, nil
 	}
@@ -206,13 +315,28 @@ func clampNumericPct(value float64) float64 {
 	return value
 }
 
-// GetExecutionStream returns the latest persisted trades.
+// GetExecutionStream returns the latest persisted fills with order status.
 func (r *PortfolioRepository) GetExecutionStream(ctx context.Context, userID int64, limit int) ([]TradeLog, error) {
 	const q = `
-		SELECT id, timestamp, action, symbol, price, qty, slippage, status
-		FROM trades
-		WHERE user_id = $1
-		ORDER BY timestamp DESC
+		SELECT
+			f.id,
+			f.filled_at,
+			CASE
+				WHEN f.side = 'buy' AND f.position_side = 'long' THEN 'BUY_LONG'
+				WHEN f.side = 'sell' AND f.position_side = 'long' THEN 'SELL_LONG'
+				WHEN f.side = 'sell' AND f.position_side = 'short' THEN 'SELL_SHORT'
+				WHEN f.side = 'buy' AND f.position_side = 'short' THEN 'COVER_SHORT'
+				ELSE upper(f.side)
+			END,
+			f.symbol,
+			f.price,
+			f.qty,
+			f.slippage,
+			upper(o.status)
+		FROM fills f
+		JOIN orders o ON o.id = f.order_id
+		WHERE f.user_id = $1
+		ORDER BY f.filled_at DESC
 		LIMIT $2`
 
 	rows, err := r.db.Query(ctx, q, userID, limit)
@@ -237,7 +361,8 @@ func (r *PortfolioRepository) GetActivePositions(ctx context.Context, userID int
 	const q = `
 		SELECT symbol, qty, avg_entry_price, current_price
 		FROM positions
-		WHERE user_id = $1`
+		WHERE user_id = $1 AND qty > 0
+		ORDER BY updated_at DESC`
 
 	rows, err := r.db.Query(ctx, q, userID)
 	if err != nil {
@@ -325,7 +450,6 @@ func (r *PortfolioRepository) GetPortfolioHistory(ctx context.Context, userID in
 	}
 	defer rows.Close()
 
-	// Return [] instead of null for empty history responses.
 	history := make([]PortfolioSummary, 0)
 	for rows.Next() {
 		var s PortfolioSummary
@@ -344,4 +468,171 @@ func (r *PortfolioRepository) GetPortfolioHistory(ctx context.Context, userID in
 	}
 
 	return history, rows.Err()
+}
+
+func longActionSide(action string) (string, error) {
+	switch action {
+	case "BUY_LONG":
+		return "buy", nil
+	case "SELL_LONG":
+		return "sell", nil
+	default:
+		return "", fmt.Errorf("unsupported trade action %s", action)
+	}
+}
+
+func ensureAssetTx(ctx context.Context, tx pgx.Tx, symbol string) error {
+	symbol = normalizeSymbol(symbol)
+	if symbol == "" {
+		return fmt.Errorf("asset symbol is required")
+	}
+
+	const q = `
+		INSERT INTO assets (symbol, name, asset_class)
+		VALUES ($1, $1, 'equity')
+		ON CONFLICT (symbol) DO NOTHING`
+	if _, err := tx.Exec(ctx, q, symbol); err != nil {
+		return fmt.Errorf("upsert asset %s: %w", symbol, err)
+	}
+	return nil
+}
+
+func ensureDefaultPaperAccountTx(ctx context.Context, tx pgx.Tx, userID int64, initialCash float64) (*accountBalance, error) {
+	if initialCash <= 0 {
+		initialCash = defaultPaperInitialCash
+	}
+
+	const selectQ = `
+		SELECT id, cash_balance, realized_pnl, initial_cash
+		FROM accounts
+		WHERE user_id = $1
+			AND account_type = 'paper'
+			AND provider = 'internal'
+			AND provider_account_id = ''
+		ORDER BY id
+		LIMIT 1
+		FOR UPDATE`
+
+	var account accountBalance
+	err := tx.QueryRow(ctx, selectQ, userID).Scan(&account.ID, &account.Cash, &account.RealizedPnL, &account.InitialCash)
+	if err == nil {
+		return &account, nil
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("query paper account: %w", err)
+	}
+
+	const insertQ = `
+		INSERT INTO accounts (
+			user_id, account_type, provider, provider_account_id,
+			initial_cash, cash_balance
+		)
+		VALUES ($1, 'paper', 'internal', '', $2, $2)
+		RETURNING id, cash_balance, realized_pnl, initial_cash`
+	if err := tx.QueryRow(ctx, insertQ, userID, initialCash).Scan(&account.ID, &account.Cash, &account.RealizedPnL, &account.InitialCash); err != nil {
+		return nil, fmt.Errorf("insert paper account: %w", err)
+	}
+
+	const ledgerQ = `
+		INSERT INTO cash_ledger (
+			user_id, account_id, event_type, amount, balance_after, description
+		)
+		VALUES ($1, $2, 'initial_deposit', $3, $3, 'Initial paper cash provisioning')`
+	if _, err := tx.Exec(ctx, ledgerQ, userID, account.ID, account.Cash); err != nil {
+		return nil, fmt.Errorf("insert initial cash ledger entry: %w", err)
+	}
+
+	return &account, nil
+}
+
+func updateAccountCashTx(ctx context.Context, tx pgx.Tx, userID, accountID int64, newCash, realizedPnLDelta float64) error {
+	const q = `
+		UPDATE accounts
+		SET cash_balance = $3,
+			realized_pnl = realized_pnl + $4
+		WHERE id = $1 AND user_id = $2`
+	tag, err := tx.Exec(ctx, q, accountID, userID, newCash, realizedPnLDelta)
+	if err != nil {
+		return fmt.Errorf("update account cash: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("paper account %d was not found for user %d", accountID, userID)
+	}
+	return nil
+}
+
+func insertCashLedgerTx(ctx context.Context, tx pgx.Tx, userID, accountID int64, eventType string, amount, balanceAfter float64, orderID, fillID int64, description string) error {
+	const q = `
+		INSERT INTO cash_ledger (
+			user_id, account_id, event_type, amount, balance_after,
+			related_order_id, related_fill_id, description
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+	if _, err := tx.Exec(ctx, q, userID, accountID, eventType, amount, balanceAfter, orderID, fillID, description); err != nil {
+		return fmt.Errorf("insert cash ledger entry: %w", err)
+	}
+	return nil
+}
+
+func upsertBoughtPositionTx(ctx context.Context, tx pgx.Tx, userID, accountID int64, symbol string, price, qty float64) error {
+	const q = `
+		INSERT INTO positions (
+			user_id, account_id, symbol, position_side, qty,
+			avg_entry_price, current_price
+		)
+		VALUES ($1, $2, $3, 'long', $4, $5, $5)
+		ON CONFLICT (account_id, symbol, position_side) DO UPDATE SET
+			qty = positions.qty + EXCLUDED.qty,
+			avg_entry_price = CASE
+				WHEN positions.qty + EXCLUDED.qty <= 0 THEN EXCLUDED.avg_entry_price
+				ELSE ((positions.qty * positions.avg_entry_price) + (EXCLUDED.qty * EXCLUDED.avg_entry_price)) / (positions.qty + EXCLUDED.qty)
+			END,
+			current_price = EXCLUDED.current_price`
+	if _, err := tx.Exec(ctx, q, userID, accountID, symbol, qty, price); err != nil {
+		return fmt.Errorf("upsert bought position: %w", err)
+	}
+	return nil
+}
+
+func reduceSoldPositionTx(ctx context.Context, tx pgx.Tx, accountID int64, symbol string, price, qty float64) (float64, error) {
+	const selectQ = `
+		SELECT qty, avg_entry_price
+		FROM positions
+		WHERE account_id = $1 AND symbol = $2 AND position_side = 'long'
+		FOR UPDATE`
+
+	var heldQty, avgEntryPrice float64
+	err := tx.QueryRow(ctx, selectQ, accountID, symbol).Scan(&heldQty, &avgEntryPrice)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, fmt.Errorf("cannot sell missing position %s", symbol)
+		}
+		return 0, fmt.Errorf("query sold position: %w", err)
+	}
+	if heldQty+1e-8 < qty {
+		return 0, fmt.Errorf("cannot sell %.8f %s with only %.8f held", qty, symbol, heldQty)
+	}
+
+	realizedPnL := (price - avgEntryPrice) * qty
+	remainingQty := heldQty - qty
+	if remainingQty <= 1e-8 {
+		const deleteQ = `
+			DELETE FROM positions
+			WHERE account_id = $1 AND symbol = $2 AND position_side = 'long'`
+		if _, err := tx.Exec(ctx, deleteQ, accountID, symbol); err != nil {
+			return 0, fmt.Errorf("delete closed position: %w", err)
+		}
+		return realizedPnL, nil
+	}
+
+	const updateQ = `
+		UPDATE positions
+		SET qty = $3,
+			current_price = $4,
+			realized_pnl = realized_pnl + $5
+		WHERE account_id = $1 AND symbol = $2 AND position_side = 'long'`
+	if _, err := tx.Exec(ctx, updateQ, accountID, symbol, remainingQty, price, realizedPnL); err != nil {
+		return 0, fmt.Errorf("reduce sold position: %w", err)
+	}
+	return realizedPnL, nil
 }

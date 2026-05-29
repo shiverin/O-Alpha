@@ -28,11 +28,12 @@ export interface EquityPoint {
 export interface BacktestResult {
   symbol: string;
   equity_curve: EquityPoint[];
+  final_equity: number;
   sharpe: number;
   sortino: number;
   max_drawdown: number;
   total_return: number;
-  annual_return: number;
+  annual_return?: number;
   num_trades: number;
 }
 
@@ -183,11 +184,11 @@ export interface AgentControlPayload {
 export const agentApi = {
   start: async (
     payload: AgentControlPayload,
-  ): Promise<{ status: string; symbol: string }> => {
-    return api.post<{ status: string; symbol: string }, AgentControlPayload>(
-      "/api/v1/agent/start",
-      payload,
-    );
+  ): Promise<{ status: string; symbol: string; run_id: number }> => {
+    return api.post<
+      { status: string; symbol: string; run_id: number },
+      AgentControlPayload
+    >("/api/v1/agent/start", payload);
   },
   stop: async (symbol: string): Promise<{ status: string; symbol: string }> => {
     return api.post<{ status: string; symbol: string }, { symbol: string }>(

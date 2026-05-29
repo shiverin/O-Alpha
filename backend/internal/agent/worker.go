@@ -27,6 +27,7 @@ type AgentWorker struct {
 	timeframe      string
 	paperTrade     bool
 	initialCash    float64
+	agentRunID     int64
 	account        *PaperAccount
 	ticker         *time.Ticker
 	stopOnce       sync.Once
@@ -51,6 +52,7 @@ func NewAgentWorker(
 	timeframe string,
 	paperTrade bool,
 	initialCash float64,
+	agentRunID int64,
 	useWebSocket bool,
 ) *AgentWorker {
 	wCtx, cancel := context.WithCancel(ctx)
@@ -66,6 +68,7 @@ func NewAgentWorker(
 		timeframe:     timeframe,
 		paperTrade:    paperTrade,
 		initialCash:   initialCash,
+		agentRunID:    agentRunID,
 		account:       NewPaperAccount(initialCash),
 		doneCh:        make(chan struct{}),
 		errCh:         make(chan error, 1),
@@ -355,7 +358,7 @@ func (w *AgentWorker) recordPaperFill(action string, price, qty float64) error {
 	if w.portfolioRepo == nil || w.userID <= 0 {
 		return nil
 	}
-	if err := w.portfolioRepo.RecordLongFill(w.ctx, w.userID, action, w.symbol, price, qty, 0); err != nil {
+	if err := w.portfolioRepo.RecordLongFill(w.ctx, w.userID, w.agentRunID, action, w.symbol, price, qty, 0); err != nil {
 		return fmt.Errorf("persist paper fill: %w", err)
 	}
 	return nil

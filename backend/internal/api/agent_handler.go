@@ -45,7 +45,7 @@ func (h *Handler) LaunchLiveAgent(c *gin.Context) {
 		req.Timeframe = "1Hour"
 	}
 	if req.InitialCash <= 0 {
-		req.InitialCash = 50000.0
+		req.InitialCash = 100000.0
 	}
 
 	var strat backtest.Strategy
@@ -78,7 +78,36 @@ func (h *Handler) LaunchLiveAgent(c *gin.Context) {
 		return
 	}
 
-	err := h.AgentManager.StartAgent(
+	if h.AgentManager.IsAgentRunning(userID, req.Symbol) {
+		c.JSON(http.StatusConflict, gin.H{"error": "agent is already running for this symbol"})
+		return
+	}
+
+	parameters := map[string]interface{}{
+		"strategy_type": req.StrategyType,
+		"q_noise":       req.QNoise,
+		"r_noise":       req.RNoise,
+		"z_threshold":   req.ZThreshold,
+		"fast_period":   req.FastPeriod,
+		"slow_period":   req.SlowPeriod,
+	}
+	runID, err := h.AgentRepo.CreateAgentRun(
+		c.Request.Context(),
+		userID,
+		req.Symbol,
+		req.StrategyType,
+		req.Timeframe,
+		"paper",
+		req.InitialCash,
+		req.UseWebSocket,
+		parameters,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = h.AgentManager.StartAgent(
 		c.Request.Context(),
 		userID,
 		req.Symbol,
@@ -86,14 +115,23 @@ func (h *Handler) LaunchLiveAgent(c *gin.Context) {
 		strat,
 		true,
 		req.InitialCash,
+		runID,
 		req.UseWebSocket,
 	)
 	if err != nil {
+		_ = h.AgentRepo.MarkAgentRunFailed(c.Request.Context(), runID, err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "activated", "symbol": req.Symbol})
+	if err := h.AgentRepo.MarkAgentRunRunning(c.Request.Context(), runID); err != nil {
+		_ = h.AgentManager.StopAgent(userID, req.Symbol)
+		_ = h.AgentRepo.MarkAgentRunFailed(c.Request.Context(), runID, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "activated", "symbol": req.Symbol, "run_id": runID})
 }
 
 // TerminateLiveAgent stops a user-scoped worker.
@@ -120,6 +158,10 @@ func (h *Handler) TerminateLiveAgent(c *gin.Context) {
 	err := h.AgentManager.StopAgent(userID, req.Symbol)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.AgentRepo.MarkLatestAgentRunStopped(c.Request.Context(), userID, req.Symbol, "user_requested"); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 

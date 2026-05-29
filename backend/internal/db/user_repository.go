@@ -61,11 +61,23 @@ func (r *UserRepository) CreateUser(ctx context.Context, user *models.User) erro
 
 	user.ID = id
 
-	const portfolioQuery = `
-		INSERT INTO portfolio_snapshots (user_id)
-		VALUES ($1)`
+	account, err := ensureDefaultPaperAccountTx(ctx, tx, id, defaultPaperInitialCash)
+	if err != nil {
+		return fmt.Errorf("failed to provision baseline paper account: %w", err)
+	}
 
-	_, err = tx.Exec(ctx, portfolioQuery, id)
+	const portfolioQuery = `
+		INSERT INTO portfolio_snapshots (
+			user_id,
+			account_id,
+			cash_value,
+			positions_value,
+			total_asset_value,
+			target_progress_percent
+		)
+		VALUES ($1, $2, $3, 0, $3, 100)`
+
+	_, err = tx.Exec(ctx, portfolioQuery, id, account.ID, account.Cash)
 	if err != nil {
 		return fmt.Errorf("failed to provision baseline account portfolio snapshot: %w", err)
 	}
@@ -82,7 +94,7 @@ func (r *UserRepository) GetUserByUsername(ctx context.Context, username string)
 	const q = `
         SELECT id, username, password_hash, is_onboarded, created_at, updated_at
         FROM users
-        WHERE username = $1`
+        WHERE lower(username) = lower($1)`
 
 	var u models.User
 	err := r.db.QueryRow(ctx, q, username).Scan(
