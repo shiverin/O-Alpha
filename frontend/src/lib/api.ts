@@ -150,7 +150,9 @@ export interface SettingsCheckResponse {
 
 export const settingsApi = {
   check: async (userID: number): Promise<SettingsCheckResponse> => {
-    return api.get<SettingsCheckResponse>(`/api/v1/user/settings?user_id=${userID}`);
+    return api.get<SettingsCheckResponse>(
+      `/api/v1/user/settings?user_id=${userID}`,
+    );
   },
   save: async (payload: {
     user_id: number;
@@ -161,6 +163,9 @@ export const settingsApi = {
     take_profit_pct: number;
     rebalance_freq: string;
   }): Promise<{ status: string }> => {
-    return api.post<{ status: string }, typeof payload>("/api/v1/user/settings", payload);
-  }
+    return api.post<{ status: string }, typeof payload>(
+      "/api/v1/user/settings",
+      payload,
+    );
+  },
 };

@@ -44,12 +44,12 @@ go run ./cmd/alpaca-test
 
 ## Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| `Missing required env vars` | Run: `export $(cat ../.env \| grep -v '^#' \| xargs)` |
-| `404 Not Found` | Check ALPACA_BASE_URL is `https://data.alpaca.markets` |
-| `Unauthorized` | Verify ALPACA_API_KEY and ALPACA_API_SECRET in .env |
-| Connection timeout | Check internet connection and firewall |
+| Issue                       | Solution                                               |
+| --------------------------- | ------------------------------------------------------ |
+| `Missing required env vars` | Run: `export $(cat ../.env \| grep -v '^#' \| xargs)`  |
+| `404 Not Found`             | Check ALPACA_BASE_URL is `https://data.alpaca.markets` |
+| `Unauthorized`              | Verify ALPACA_API_KEY and ALPACA_API_SECRET in .env    |
+| Connection timeout          | Check internet connection and firewall                 |
 
 ## Running Individual Tests
 
