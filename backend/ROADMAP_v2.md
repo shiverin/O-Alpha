@@ -5,6 +5,7 @@ This updated roadmap incorporates learnings from completed educational foundatio
 ## ✅ Completed Foundation Work
 
 Through educational PRs, we have established:
+
 - **Strategy Interface**: Pluggable strategy pattern with Moving Average Crossover implementation
 - **Comprehensive Testing**: Unit tests for strategies and backtesting engine
 - **Frontend-Backend Connection**: Interactive backtesting with real API calls
@@ -17,7 +18,7 @@ Through educational PRs, we have established:
 Based on current progress assessment:
 
 1. **Authentication & Authorization** - Critical for multi-user security
-2. **Data Persistence** - Essential for user history and progress tracking  
+2. **Data Persistence** - Essential for user history and progress tracking
 3. **Infrastructure & DevOps** - Required for reliable deployment
 4. **Core Trading Features** - Building upon established strategy foundation
 5. **Production Readiness** - Monitoring, scaling, and observability
@@ -27,6 +28,7 @@ Based on current progress assessment:
 **Goal**: Solidify the educational foundation into production-ready components
 
 ### Backend Focus
+
 - [ ] Implement JWT-based authentication system
 - [ ] Add password hashing and secure credential storage
 - [ ] Create authentication middleware for API protection
@@ -34,6 +36,7 @@ Based on current progress assessment:
 - [ ] Add role-based access control (user/admin tiers)
 
 ### Frontend Focus
+
 - [ ] Replace mock login with real JWT authentication flow
 - [ ] Add protected routes and redirect logic
 - [ ] Implement user profile and settings pages
@@ -41,12 +44,14 @@ Based on current progress assessment:
 - [ ] Create login validation and error handling UI
 
 ### Database Focus
+
 - [ ] Design and implement `users` table with secure fields
 - [ ] Add `sessions` table for session tracking (optional)
 - [ ] Implement password reset flow infrastructure
 - [ ] Add user preferences and configuration storage
 
 ### DevOps Focus
+
 - [ ] Create `.env.example` with all required variables
 - [ ] Add configuration validation and error reporting
 - [ ] Implement basic health check endpoints
@@ -57,10 +62,11 @@ Based on current progress assessment:
 **Goal**: Enable users to save, retrieve, and analyze their trading strategies and backtests
 
 ### Backend Focus
+
 - [ ] Design `backtest_runs` table with comprehensive metadata
 - [ ] Create `strategy_configs` table for saved strategy parameters
 - [ ] Implement repository layer for backtest persistence
-- [ ] Add API endpoints: 
+- [ ] Add API endpoints:
   - POST `/api/v1/backtest/runs` (save backtest)
   - GET `/api/v1/backtest/runs` (list user's backtests)
   - GET `/api/v1/backtest/runs/:id` (get specific backtest)
@@ -69,6 +75,7 @@ Based on current progress assessment:
 - [ ] Implement soft delete for strategy configurations
 
 ### Frontend Focus
+
 - [ ] Create `/app/history` page to list past backtests
 - [ ] Design backtest runcard component showing key metrics
 - [ ] Implement backtest detail view with equity curve and trade list
@@ -77,6 +84,7 @@ Based on current progress assessment:
 - [ ] Create strategy manager UI to save/load configurations
 
 ### Testing Focus
+
 - [ ] Add integration tests for authentication flows
 - [ ] Implement repository layer tests with testcontainers
 - [ ] Add API contract tests for history endpoints
@@ -87,6 +95,7 @@ Based on current progress assessment:
 **Goal**: Provide meaningful insights and simulate live trading experience
 
 ### Backend Focus
+
 - [ ] Implement performance metrics calculator (Sharpe, Max DD, Win Rate, etc.)
 - [ ] Add equity curve generation and storage optimization
 - [ ] Create trade-level analytics (MFE/MAE, duration analysis, etc.)
@@ -99,6 +108,7 @@ Based on current progress assessment:
   - Account summary and P&L
 
 ### Frontend Focus
+
 - [ ] Create `/app/paper-trading` dashboard
 - [ ] Implement real-time P&L display and position tracker
 - [ ] Add order form with quantity, price, and order type selection
@@ -108,6 +118,7 @@ Based on current progress assessment:
 - [ ] Add paper trading controls (reset, pause, speed)
 
 ### Integration Focus
+
 - [ ] Connect strategy engine to paper trading for signal execution
 - [ ] Add scheduled rebalancing based on strategy signals
 - [ ] Implement risk controls per strategy (position limits, etc.)
@@ -118,6 +129,7 @@ Based on current progress assessment:
 **Goal**: Enable live market data, advanced strategies, and production readiness
 
 ### Backend Focus
+
 - [ ] Implement WebSocket market data connector (Alpaca/alternative)
 - [ ] Add Redis pub/sub for distributing market updates
 - [ ] Create market data normalization and validation layer
@@ -126,6 +138,7 @@ Based on current progress assessment:
 - [ ] Create market data REST endpoints for historical retrieval
 
 ### Frontend Focus
+
 - [ ] Implement live market data hooks (`useMarketWS`)
 - [ ] Add real-time price tickers and last trade displays
 - [ ] Create market depth/level 2 visualization (if available)
@@ -133,6 +146,7 @@ Based on current progress assessment:
 - [ ] Add alert system for price levels and strategy signals
 
 ### Advanced Strategies
+
 - [ ] Implement Regime Detection Strategy (volatility + trend based)
 - [ ] Add Kalman Pairs Strategy foundation
 - [ ] Create strategy registry system for dynamic loading
@@ -140,6 +154,7 @@ Based on current progress assessment:
 - [ ] Implement strategy performance tracking and comparison
 
 ### Production Readiness
+
 - [ ] Add comprehensive test coverage (>80% unit, integration tests)
 - [ ] Implement rate limiting and abuse prevention
 - [ ] Add Request/Response logging and audit trails
@@ -149,6 +164,7 @@ Based on current progress assessment:
 - [ ] Add error tracking and alerting integration
 
 ### DevOps & Infrastructure
+
 - [ ] Create production-ready Dockerfiles (multi-stage builds)
 - [ ] Add docker-compose with full stack (postgres, redis, api, frontend)
 - [ ] Implement nginx reverse proxy for SSL termination
@@ -162,6 +178,7 @@ Based on current progress assessment:
 **Goal**: Prepare for user acquisition and scale the platform
 
 ### User Experience
+
 - [ ] Implement onboarding flow for new users
 - [ ] Create guided tutorial for first backtest
 - [ ] Add tooltips and contextual help throughout UI
@@ -169,6 +186,7 @@ Based on current progress assessment:
 - [ ] Add keyboard shortcuts and accessibility improvements
 
 ### Analytics & Reporting
+
 - [ ] Create performance reporting suite (PDF/email exports)
 - [ ] Add benchmark comparisons (SPY, buy/hold, etc.)
 - [ ] Implement strategy comparison tools
@@ -176,6 +194,7 @@ Based on current progress assessment:
 - [ ] Create rolling performance windows (30/90/365 day)
 
 ### Community & Sharing
+
 - [ ] Implement strategy sharing (public/private toggles)
 - [ ] Add commenting and discussion on shared strategies
 - [ ] Create leaderboard for top performing strategies
@@ -183,6 +202,7 @@ Based on current progress assessment:
 - [ ] Implement version control for strategy configurations
 
 ### Administration & Operations
+
 - [ ] Create admin dashboard for platform metrics
 - [ ] Add user management (activate/deactivate, role changes)
 - [ ] Implement usage analytics and active user tracking
@@ -191,6 +211,7 @@ Based on current progress assessment:
 - [ ] Add announcement/banner system for platform updates
 
 ### Monetization Preparation
+
 - [ ] Implement subscription tier framework (Free/Pro/Enterprise)
 - [ ] Add feature gating based on subscription level
 - [ ] Create billing integration hooks (Stripe/Paddle)
@@ -200,6 +221,7 @@ Based on current progress assessment:
 ## 📋 Success Metrics & Milestones
 
 ### Phase 0 Completion Criteria
+
 - [ ] Secure user authentication with JWT
 - [ ] All API endpoints protected except auth/public
 - [ ] Passwords hashed with bcrypt/scrypt
@@ -207,6 +229,7 @@ Based on current progress assessment:
 - [ ] Health checks return 200 for all services
 
 ### Phase 1 Completion Criteria
+
 - [ ] Users can save and retrieve backtest histories
 - [ ] Strategy configurations persist across sessions
 - [ ] History page shows key performance metrics
@@ -214,6 +237,7 @@ Based on current progress assessment:
 - [ ] Database migrations are versioned and tested
 
 ### Phase 2 Completion Criteria
+
 - [ ] Paper trading simulates realistic order execution
 - [ ] Performance metrics calculate correctly
 - [ ] Users can transition from backtesting to paper trading
@@ -221,6 +245,7 @@ Based on current progress assessment:
 - [ ] Strategy engine connects to paper trading signals
 
 ### Phase 3 Completion Criteria
+
 - [ ] Live market data flows through WebSocket connections
 - [ ] Strategies can execute on live signals (paper)
 - [ ] System handles market data volatility and disconnects
@@ -228,6 +253,7 @@ Based on current progress assessment:
 - [ ] Performance meets latency requirements (<100ms API)
 
 ### Phase 4 Completion Criteria
+
 - [ ] Onboarding flow converts visitors to active users
 - [ ] Sharing features generate community engagement
 - [ ] Admin dashboard provides operational visibility
@@ -237,18 +263,21 @@ Based on current progress assessment:
 ## 🔄 Continuous Improvement
 
 ### Weekly
+
 - Review progress against roadmap
 - Update progress.md with accomplishments
 - Identify and prioritize new gaps
 - Refine technical debt backlog
 
 ### Monthly
+
 - Demonstrate completed features to stakeholders
 - Gather user feedback and adjust priorities
 - Plan next month's objectives
 - Conduct retrospectives on process and quality
 
 ### Quarterly
+
 - Review and update architectural decisions
 - Plan major feature initiatives
 - Assess technical architecture scalability

@@ -47,7 +47,11 @@ export function removeToken(): void {
 export function decodeToken(token: string): User | null {
   try {
     // Extended target type to parse out the backend claims payload parameters safely
-    const decoded = jwtDecode<{ user_id: number; username: string; is_onboarded?: boolean }>(token);
+    const decoded = jwtDecode<{
+      user_id: number;
+      username: string;
+      is_onboarded?: boolean;
+    }>(token);
     return {
       id: decoded.user_id,
       username: decoded.username,

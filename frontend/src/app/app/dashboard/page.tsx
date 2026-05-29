@@ -6,7 +6,11 @@ import { AppShell } from "@/components/app/AppShell";
 import OnboardingOverlay from "@/components/app/OnboardingOverlay";
 import { settingsApi } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
-import { ServerPortfolioSummary, ServerTradeLog, SnapshotPoint } from "@/types/dashboard";
+import {
+  ServerPortfolioSummary,
+  ServerTradeLog,
+  SnapshotPoint,
+} from "@/types/dashboard";
 
 // Import custom dashboard widgets
 import BalanceCard from "@/components/sections/dashboard/BalanceCard";
@@ -14,7 +18,7 @@ import StrategyControls from "@/components/sections/dashboard/StrategyControls";
 import ExecutionLog from "@/components/sections/dashboard/ExecutionLog";
 import PortfolioAllocation from "@/components/sections/dashboard/PortfolioAllocation";
 
-const fetcher = <T,>(url: string): Promise<T> => 
+const fetcher = <T,>(url: string): Promise<T> =>
   fetch(url).then((res) => {
     if (!res.ok) throw new Error(`Network response error: ${res.status}`);
     return res.json();
@@ -33,19 +37,25 @@ export default function DashboardPage() {
 
   // 📡 DYNAMIC SERVER TELEMETRY FETCHERS
   const { data: serverSummary } = useSWR<ServerPortfolioSummary>(
-    currentUserID !== 999 ? `http://localhost:8080/api/v1/user/portfolio/summary?user_id=${currentUserID}` : null,
-    fetcher
+    currentUserID !== 999
+      ? `http://localhost:8080/api/v1/user/portfolio/summary?user_id=${currentUserID}`
+      : null,
+    fetcher,
   );
 
   const { data: serverTrades } = useSWR<ServerTradeLog[]>(
-    currentUserID !== 999 ? `http://localhost:8080/api/v1/user/portfolio/trades?user_id=${currentUserID}&limit=8` : null,
-    fetcher
+    currentUserID !== 999
+      ? `http://localhost:8080/api/v1/user/portfolio/trades?user_id=${currentUserID}&limit=8`
+      : null,
+    fetcher,
   );
 
-    // 📡 Add this query under your existing SWR hooks to retrieve up to 30 historical timeline frames
+  // 📡 Add this query under your existing SWR hooks to retrieve up to 30 historical timeline frames
   const { data: snapshotHistory } = useSWR<SnapshotPoint[]>(
-    currentUserID !== 999 ? `http://localhost:8080/api/v1/user/portfolio/history?user_id=${currentUserID}&limit=30` : null,
-    fetcher
+    currentUserID !== 999
+      ? `http://localhost:8080/api/v1/user/portfolio/history?user_id=${currentUserID}&limit=30`
+      : null,
+    fetcher,
   );
   // Synchronize layout posture configurations seamlessly
   useEffect(() => {
@@ -110,7 +120,11 @@ export default function DashboardPage() {
   }, [leverageMultiplier]);
 
   const displayPnL = useMemo(() => {
-    if (currentUserID === 999 || !serverSummary || serverSummary.change_dollar_24h === undefined) {
+    if (
+      currentUserID === 999 ||
+      !serverSummary ||
+      serverSummary.change_dollar_24h === undefined
+    ) {
       return "+$12,450.89";
     }
     const prefix = serverSummary.change_dollar_24h >= 0 ? "+" : "";
@@ -127,7 +141,12 @@ export default function DashboardPage() {
 
   return (
     <AppShell title="Overview">
-      {showOnboarding && <OnboardingOverlay userID={currentUserID} onComplete={handleOnboardingComplete} />}
+      {showOnboarding && (
+        <OnboardingOverlay
+          userID={currentUserID}
+          onComplete={handleOnboardingComplete}
+        />
+      )}
 
       <div className="w-full bg-transparent flex flex-col gap-6 md:gap-10 animate-in fade-in duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-2">
@@ -147,9 +166,13 @@ export default function DashboardPage() {
 
         {/* Bento Widgets Layer Grid Matrix */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start">
-          <BalanceCard isAgentActive={isAgentActive} displayPnL={displayPnL} historyData={snapshotHistory} />
-          
-          <StrategyControls 
+          <BalanceCard
+            isAgentActive={isAgentActive}
+            displayPnL={displayPnL}
+            historyData={snapshotHistory}
+          />
+
+          <StrategyControls
             riskTolerance={riskTolerance}
             setRiskTolerance={setRiskTolerance}
             volatilityCap={volatilityCap}
@@ -159,9 +182,15 @@ export default function DashboardPage() {
             calculatedLeverageText={calculatedLeverageText}
           />
 
-          <ExecutionLog currentUserID={currentUserID} serverTrades={serverTrades} />
+          <ExecutionLog
+            currentUserID={currentUserID}
+            serverTrades={serverTrades}
+          />
 
-          <PortfolioAllocation currentUserID={currentUserID} serverSummary={serverSummary} />
+          <PortfolioAllocation
+            currentUserID={currentUserID}
+            serverSummary={serverSummary}
+          />
         </div>
       </div>
     </AppShell>

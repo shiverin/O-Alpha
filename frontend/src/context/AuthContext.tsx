@@ -2,7 +2,13 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { setToken, decodeToken, getToken, removeToken, type User } from "@/lib/auth";
+import {
+  setToken,
+  decodeToken,
+  getToken,
+  removeToken,
+  type User,
+} from "@/lib/auth";
 
 interface AuthContextType {
   user: User | null;
@@ -33,13 +39,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       try {
         // 🚀 UPDATED: Added is_onboarded type tracking to matching API layout response
-        const response = await api.get<{ id: number; username: string; is_onboarded: boolean }>(
-          "/auth/me",
-        );
-        setUser({ 
-          id: response.id, 
-          username: response.username, 
-          is_onboarded: response.is_onboarded 
+        const response = await api.get<{
+          id: number;
+          username: string;
+          is_onboarded: boolean;
+        }>("/auth/me");
+        setUser({
+          id: response.id,
+          username: response.username,
+          is_onboarded: response.is_onboarded,
         });
       } catch (err) {
         const isNetworkError =
@@ -69,14 +77,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         token: string;
         user: { id: number; username: string; is_onboarded: boolean };
       }>("/auth/login", { username, password });
-      
+
       // Explicitly persist the token securely
-      setToken(response.token); 
-      
-      setUser({ 
-        id: response.user.id, 
-        username: response.user.username, 
-        is_onboarded: response.user.is_onboarded 
+      setToken(response.token);
+
+      setUser({
+        id: response.user.id,
+        username: response.user.username,
+        is_onboarded: response.user.is_onboarded,
       });
     } catch (error) {
       throw error;

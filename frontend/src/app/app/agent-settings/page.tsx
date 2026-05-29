@@ -36,13 +36,49 @@ export default function AgentSettingsPage() {
     const loadCurrentConfigurationState = async () => {
       // Branch A: Load fields from localized storage blocks for sandbox demo states
       if (currentUserID === 999) {
-        const demoProfile = localStorage.getItem("oa_demo_risk_posture") || "moderate";
+        const demoProfile =
+          localStorage.getItem("oa_demo_risk_posture") || "moderate";
         setRiskProfile(demoProfile);
-        setLeverage(Number(localStorage.getItem("oa_demo_leverage")) || (demoProfile === "conservative" ? 1 : demoProfile === "aggressive" ? 4 : 2));
-        setMaxPositions(Number(localStorage.getItem("oa_demo_max_positions")) || (demoProfile === "conservative" ? 3 : demoProfile === "aggressive" ? 12 : 6));
-        setStopLoss(Number(localStorage.getItem("oa_demo_stop_loss_pct")) || (demoProfile === "conservative" ? 1.5 : demoProfile === "aggressive" ? 4.0 : 2.5));
-        setTakeProfit(Number(localStorage.getItem("oa_demo_take_profit_pct")) || (demoProfile === "conservative" ? 3.0 : demoProfile === "aggressive" ? 12.0 : 5.0));
-        setRebalanceFreq(localStorage.getItem("oa_demo_rebalance_freq") || (demoProfile === "conservative" ? "weekly" : demoProfile === "aggressive" ? "hourly" : "daily"));
+        setLeverage(
+          Number(localStorage.getItem("oa_demo_leverage")) ||
+            (demoProfile === "conservative"
+              ? 1
+              : demoProfile === "aggressive"
+                ? 4
+                : 2),
+        );
+        setMaxPositions(
+          Number(localStorage.getItem("oa_demo_max_positions")) ||
+            (demoProfile === "conservative"
+              ? 3
+              : demoProfile === "aggressive"
+                ? 12
+                : 6),
+        );
+        setStopLoss(
+          Number(localStorage.getItem("oa_demo_stop_loss_pct")) ||
+            (demoProfile === "conservative"
+              ? 1.5
+              : demoProfile === "aggressive"
+                ? 4.0
+                : 2.5),
+        );
+        setTakeProfit(
+          Number(localStorage.getItem("oa_demo_take_profit_pct")) ||
+            (demoProfile === "conservative"
+              ? 3.0
+              : demoProfile === "aggressive"
+                ? 12.0
+                : 5.0),
+        );
+        setRebalanceFreq(
+          localStorage.getItem("oa_demo_rebalance_freq") ||
+            (demoProfile === "conservative"
+              ? "weekly"
+              : demoProfile === "aggressive"
+                ? "hourly"
+                : "daily"),
+        );
         return;
       }
 

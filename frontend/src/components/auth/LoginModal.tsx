@@ -7,7 +7,7 @@ import { Panel } from "@/components/ui/Panel";
 import { Icon } from "@/components/ui/Icon";
 //import { api } from "@/lib/api";
 import { setToken } from "@/lib/auth";
-import { useAuth } from "@/context/AuthContext"; 
+import { useAuth } from "@/context/AuthContext";
 
 type LoginModalProps = {
   isOpen: boolean;
@@ -82,7 +82,7 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
   //   );
   // };
 
-const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!canSubmit) return;
 
@@ -91,8 +91,8 @@ const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 
     try {
       // Consume the context logic directly
-      await login(username, password); 
-      
+      await login(username, password);
+
       router.push(redirectPath || "/app/dashboard");
       onClose();
     } catch (err) {

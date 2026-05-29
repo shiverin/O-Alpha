@@ -43,37 +43,43 @@ const fetcher = <T,>(path: string): Promise<T> => api.get<T>(path);
 export default function ActivityPage() {
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
   const [tradeLimit, setTradeLimit] = useState<number>(15); // 🚀 FIXED: Dynamic pagination limit state
-  
+
   const { user } = useAuth();
   const currentUserID = user?.id || 999;
 
   // 📡 GRANULAR NETWORK DATA ACCESS OPERATIONS (Swapped to secure relative pathing context)
   const { data: serverTrades } = useSWR<TradeLogItem[]>(
-    currentUserID !== 999 ? `/api/v1/user/portfolio/trades?user_id=${currentUserID}&limit=${tradeLimit}` : null,
-    fetcher
+    currentUserID !== 999
+      ? `/api/v1/user/portfolio/trades?user_id=${currentUserID}&limit=${tradeLimit}`
+      : null,
+    fetcher,
   );
 
   const { data: serverAlerts } = useSWR<SystemAlertItem[]>(
-    currentUserID !== 999 ? `/api/v1/user/portfolio/alerts?user_id=${currentUserID}&limit=10` : null,
-    fetcher
+    currentUserID !== 999
+      ? `/api/v1/user/portfolio/alerts?user_id=${currentUserID}&limit=10`
+      : null,
+    fetcher,
   );
 
   // Safely intercept execution paths to enforce precise array presence mapping
-  const rawTrades: TradeLogItem[] = currentUserID === 999 ? mockExecutionStream : (serverTrades || []);
-  const rawAlerts: SystemAlertItem[] = currentUserID === 999 ? mockSystemAlerts : (serverAlerts || []);
+  const rawTrades: TradeLogItem[] =
+    currentUserID === 999 ? mockExecutionStream : serverTrades || [];
+  const rawAlerts: SystemAlertItem[] =
+    currentUserID === 999 ? mockSystemAlerts : serverAlerts || [];
 
   // 🎛️ FILTER CONDITION LOGIC MATRIX
   const filteredTrades = rawTrades.filter((item: TradeLogItem) => {
     if (activeFilter === "ALL") return true;
     if (activeFilter === "FILLS") return item.status === "FILLED";
-    if (activeFilter === "ERRORS") return item.status === "REJECTED" || item.status === "ERROR";
+    if (activeFilter === "ERRORS")
+      return item.status === "REJECTED" || item.status === "ERROR";
     return true;
   });
 
   return (
     <AppShell title="Activity Console">
       <div className="w-full bg-transparent flex flex-col gap-6 md:gap-10 animate-in fade-in duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]">
-        
         {/* SECTION 1: OVERHEAD AUDIT STATUS META */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-2">
           <div>
@@ -94,10 +100,8 @@ export default function ActivityPage() {
 
         {/* SECTION 2: RESPONSIVE ASYMMETRIC BENTO DOCK */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 md:gap-8 items-start">
-          
           {/* LEFT: MASTER EXECUTION STREAM TIMELINE */}
           <div className="md:col-span-12 xl:col-span-8 flex flex-col gap-4 sm:gap-6">
-            
             {/* Context Filter Panel */}
             <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-surface-container-low border border-outline-variant/20 backdrop-blur-md">
               <div className="flex gap-2">
@@ -111,12 +115,18 @@ export default function ActivityPage() {
                         : "border border-transparent text-on-surface-variant/60 hover:text-on-surface"
                     }`}
                   >
-                    {filter === "ALL" ? "All Actions" : filter === "FILLS" ? "Fills Only" : "Errors"}
+                    {filter === "ALL"
+                      ? "All Actions"
+                      : filter === "FILLS"
+                        ? "Fills Only"
+                        : "Errors"}
                   </button>
                 ))}
               </div>
               <div className="flex items-center gap-2 font-mono text-[11px] tracking-wide text-on-surface-variant/60 select-none">
-                <span className="material-symbols-outlined text-[16px]">filter_list</span>
+                <span className="material-symbols-outlined text-[16px]">
+                  filter_list
+                </span>
                 <span>Filter by Asset</span>
               </div>
             </div>
@@ -124,7 +134,14 @@ export default function ActivityPage() {
             {/* Structured Cyber Terminal Display Box */}
             <div className="group relative rounded-[24px] bg-surface-container-low border border-outline-variant/30 overflow-hidden hover:shadow-[0_20px_40px_rgba(0,0,0,0.2)] transition-all duration-700">
               <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-primary-fixed-dim/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-              <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
+              <div
+                className="absolute inset-0 opacity-[0.03] pointer-events-none"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)",
+                  backgroundSize: "20px 20px",
+                }}
+              />
 
               <div className="overflow-x-auto w-full">
                 <table className="w-full text-left border-collapse min-w-[750px]">
@@ -133,52 +150,95 @@ export default function ActivityPage() {
                       <th className="py-4 px-6 font-medium">TIMESTAMP (UTC)</th>
                       <th className="py-4 px-6 font-medium">ACTION</th>
                       <th className="py-4 px-6 font-medium">ASSET</th>
-                      <th className="py-4 px-6 font-medium text-right">PRICE</th>
+                      <th className="py-4 px-6 font-medium text-right">
+                        PRICE
+                      </th>
                       <th className="py-4 px-6 font-medium text-right">SIZE</th>
-                      <th className="py-4 px-6 font-medium text-right">SLIPPAGE</th>
+                      <th className="py-4 px-6 font-medium text-right">
+                        SLIPPAGE
+                      </th>
                       <th className="py-4 px-6 font-medium">STATUS</th>
                     </tr>
                   </thead>
                   <tbody className="font-mono text-[11px] tracking-wide text-on-surface/90 divide-y divide-outline-variant/10">
                     {filteredTrades.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="py-8 text-center text-on-surface-variant/40 tracking-wider uppercase">
+                        <td
+                          colSpan={7}
+                          className="py-8 text-center text-on-surface-variant/40 tracking-wider uppercase"
+                        >
                           No transaction execution records discovered.
                         </td>
                       </tr>
                     ) : (
                       filteredTrades.map((log: TradeLogItem, index: number) => {
-                        const displayTime = log.timestamp && log.timestamp.includes("T") 
-                          ? new Date(log.timestamp).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" }) 
-                          : log.timestamp;
-                        
-                        const actionColor = log.actionColorClass || (log.action.startsWith("BUY") ? "text-primary-fixed-dim" : "text-error");
+                        const displayTime =
+                          log.timestamp && log.timestamp.includes("T")
+                            ? new Date(log.timestamp).toLocaleTimeString(
+                                undefined,
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  second: "2-digit",
+                                },
+                              )
+                            : log.timestamp;
+
+                        const actionColor =
+                          log.actionColorClass ||
+                          (log.action.startsWith("BUY")
+                            ? "text-primary-fixed-dim"
+                            : "text-error");
                         const sizeValue = log.qty || log.size || "--";
-                        
-                        const statusColor = log.statusColorClass || (
-                          log.status === "FILLED" || log.status === "COMPLETE"
-                            ? "border-primary-fixed-dim/30 text-primary-fixed-dim bg-primary-fixed-dim/5" 
+
+                        const statusColor =
+                          log.statusColorClass ||
+                          (log.status === "FILLED" || log.status === "COMPLETE"
+                            ? "border-primary-fixed-dim/30 text-primary-fixed-dim bg-primary-fixed-dim/5"
                             : log.status === "PENDING"
-                            ? "border-secondary-fixed/30 text-secondary-fixed bg-secondary-fixed/5"
-                            : "border-error/30 text-error bg-error/5"
-                        );
+                              ? "border-secondary-fixed/30 text-secondary-fixed bg-secondary-fixed/5"
+                              : "border-error/30 text-error bg-error/5");
 
                         return (
-                          <tr key={index} className="transition-colors duration-150 hover:bg-white/[0.01] cursor-default">
-                            <td className="py-4 px-6 text-on-surface-variant/60">{displayTime}</td>
-                            <td className="py-4 px-6"><span className={actionColor}>{log.action}</span></td>
-                            <td className="py-4 px-6 font-medium text-on-surface">{log.symbol || log.asset || "PORTFOLIO"}</td>
-                            <td className="py-4 px-6 text-right text-on-surface-variant">
-                              {typeof log.price === "number" ? `$${log.price.toFixed(2)}` : log.price}
-                            </td>
-                            <td className="py-4 px-6 text-right text-on-surface-variant">{sizeValue}</td>
-                            <td className={`py-4 px-6 text-right ${log.action.startsWith("BUY") ? "text-primary-fixed-dim" : "text-on-surface-variant/40"}`}>
-                              {typeof log.slippage === "number" ? `${(log.slippage * 100).toFixed(2)}%` : log.slippage}
+                          <tr
+                            key={index}
+                            className="transition-colors duration-150 hover:bg-white/[0.01] cursor-default"
+                          >
+                            <td className="py-4 px-6 text-on-surface-variant/60">
+                              {displayTime}
                             </td>
                             <td className="py-4 px-6">
-                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-sm border font-medium text-[9px] tracking-wider ${statusColor}`}>
-                                {(log.status === "FILLED" || log.status === "COMPLETE") && <span className="w-1 h-1 rounded-full bg-primary-fixed-dim shadow-[0_0_6px_#00dbe9]" />}
-                                {log.status === "PENDING" && <span className="w-1 h-1 rounded-full bg-secondary-fixed" />}
+                              <span className={actionColor}>{log.action}</span>
+                            </td>
+                            <td className="py-4 px-6 font-medium text-on-surface">
+                              {log.symbol || log.asset || "PORTFOLIO"}
+                            </td>
+                            <td className="py-4 px-6 text-right text-on-surface-variant">
+                              {typeof log.price === "number"
+                                ? `$${log.price.toFixed(2)}`
+                                : log.price}
+                            </td>
+                            <td className="py-4 px-6 text-right text-on-surface-variant">
+                              {sizeValue}
+                            </td>
+                            <td
+                              className={`py-4 px-6 text-right ${log.action.startsWith("BUY") ? "text-primary-fixed-dim" : "text-on-surface-variant/40"}`}
+                            >
+                              {typeof log.slippage === "number"
+                                ? `${(log.slippage * 100).toFixed(2)}%`
+                                : log.slippage}
+                            </td>
+                            <td className="py-4 px-6">
+                              <span
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-sm border font-medium text-[9px] tracking-wider ${statusColor}`}
+                              >
+                                {(log.status === "FILLED" ||
+                                  log.status === "COMPLETE") && (
+                                  <span className="w-1 h-1 rounded-full bg-primary-fixed-dim shadow-[0_0_6px_#00dbe9]" />
+                                )}
+                                {log.status === "PENDING" && (
+                                  <span className="w-1 h-1 rounded-full bg-secondary-fixed" />
+                                )}
                                 {log.status}
                               </span>
                             </td>
@@ -193,12 +253,14 @@ export default function ActivityPage() {
               {/* History Expansion Control */}
               {rawTrades.length >= tradeLimit && (
                 <div className="p-4 border-t border-outline-variant/20 bg-void-black/20 flex justify-center">
-                  <button 
+                  <button
                     onClick={() => setTradeLimit((prev) => prev + 15)} // 🚀 FIXED: Increments limit state to update SWR query pool dynamically
                     className="text-primary-fixed-dim font-mono text-[11px] tracking-wider uppercase hover:text-primary transition-colors flex items-center gap-1.5 duration-300"
                   >
                     Load More History
-                    <span className="material-symbols-outlined text-[16px] mt-0.5">expand_more</span>
+                    <span className="material-symbols-outlined text-[16px] mt-0.5">
+                      expand_more
+                    </span>
                   </button>
                 </div>
               )}
@@ -211,8 +273,12 @@ export default function ActivityPage() {
               <div className="absolute top-0 right-0 w-32 h-32 bg-error/5 rounded-full blur-3xl pointer-events-none" />
 
               <div className="flex items-center gap-3 mb-6 border-b border-outline-variant/20 pb-4">
-                <div className="text-error"><Icon name="warning" /></div>
-                <h2 className="text-sm font-light tracking-wide text-on-surface">System Alerts</h2>
+                <div className="text-error">
+                  <Icon name="warning" />
+                </div>
+                <h2 className="text-sm font-light tracking-wide text-on-surface">
+                  System Alerts
+                </h2>
               </div>
 
               <div className="flex flex-col gap-4">
@@ -223,19 +289,40 @@ export default function ActivityPage() {
                 ) : (
                   rawAlerts.map((alert: SystemAlertItem, idx: number) => {
                     const alertKey = alert.id || idx;
-                    const borderTypeClass = alert.borderClass || (alert.alert_type === "CRITICAL" ? "border-l-error" : alert.alert_type === "WARNING" ? "border-l-secondary-fixed" : "border-l-primary-fixed-dim");
-                    const iconTypeLabel = alert.iconName || (alert.alert_type === "CRITICAL" ? "warning" : "info");
-                    const timestampLabel = alert.timeLabel || (alert.created_at ? new Date(alert.created_at).toLocaleTimeString() : "Live");
+                    const borderTypeClass =
+                      alert.borderClass ||
+                      (alert.alert_type === "CRITICAL"
+                        ? "border-l-error"
+                        : alert.alert_type === "WARNING"
+                          ? "border-l-secondary-fixed"
+                          : "border-l-primary-fixed-dim");
+                    const iconTypeLabel =
+                      alert.iconName ||
+                      (alert.alert_type === "CRITICAL" ? "warning" : "info");
+                    const timestampLabel =
+                      alert.timeLabel ||
+                      (alert.created_at
+                        ? new Date(alert.created_at).toLocaleTimeString()
+                        : "Live");
 
                     return (
-                      <div key={alertKey} className={`flex gap-4 p-4 rounded-xl bg-void-black/20 border border-outline-variant/10 border-l-2 ${borderTypeClass}`}>
+                      <div
+                        key={alertKey}
+                        className={`flex gap-4 p-4 rounded-xl bg-void-black/20 border border-outline-variant/10 border-l-2 ${borderTypeClass}`}
+                      >
                         <div className="mt-0.5 shrink-0 text-on-surface-variant/60">
                           <Icon name={iconTypeLabel} size="small" />
                         </div>
                         <div>
-                          <div className="font-mono text-[11px] font-medium tracking-wide text-on-surface mb-1">{alert.title}</div>
-                          <p className="text-xs font-light leading-relaxed text-on-surface-variant/70">{alert.description}</p>
-                          <div className="font-mono text-[9px] text-on-surface-variant/40 tracking-wider mt-2.5">{timestampLabel}</div>
+                          <div className="font-mono text-[11px] font-medium tracking-wide text-on-surface mb-1">
+                            {alert.title}
+                          </div>
+                          <p className="text-xs font-light leading-relaxed text-on-surface-variant/70">
+                            {alert.description}
+                          </p>
+                          <div className="font-mono text-[9px] text-on-surface-variant/40 tracking-wider mt-2.5">
+                            {timestampLabel}
+                          </div>
                         </div>
                       </div>
                     );
@@ -244,7 +331,6 @@ export default function ActivityPage() {
               </div>
             </div>
           </div>
-          
         </div>
       </div>
     </AppShell>
