@@ -2,7 +2,7 @@
 
 This updated roadmap incorporates learnings from completed educational foundations and addresses identified gaps from the current progress state.
 
-## ✅ Completed Foundation Work
+## Completed Foundation Work
 
 Through educational PRs, we have established:
 
@@ -13,7 +13,7 @@ Through educational PRs, we have established:
 - **Agent Settings**: Configuration UI for trading parameters
 - **Code Quality**: Proper .gitignore, clean architecture separation
 
-## 🔄 Updated Priorities
+## Updated Priorities
 
 Based on current progress assessment:
 
@@ -23,7 +23,7 @@ Based on current progress assessment:
 4. **Core Trading Features** - Building upon established strategy foundation
 5. **Production Readiness** - Monitoring, scaling, and observability
 
-## 📅 Phase 0: Foundation Stabilization (Weeks 1-2)
+## Phase 0: Foundation Stabilization (Weeks 1-2)
 
 **Goal**: Solidify the educational foundation into production-ready components
 
@@ -57,7 +57,7 @@ Based on current progress assessment:
 - [ ] Implement basic health check endpoints
 - [ ] Add structured logging with severity levels
 
-## 📈 Phase 1: Persistence & History (Weeks 3-4)
+## Phase 1: Persistence & History (Weeks 3-4)
 
 **Goal**: Enable users to save, retrieve, and analyze their trading strategies and backtests
 
@@ -90,7 +90,7 @@ Based on current progress assessment:
 - [ ] Add API contract tests for history endpoints
 - [ ] Implement frontend E2E tests for auth → backtest → history flow
 
-## 📊 Phase 2: Enhanced Analytics & Paper Trading (Weeks 5-8)
+## Phase 2: Enhanced Analytics & Paper Trading (Weeks 5-8)
 
 **Goal**: Provide meaningful insights and simulate live trading experience
 
@@ -124,7 +124,7 @@ Based on current progress assessment:
 - [ ] Implement risk controls per strategy (position limits, etc.)
 - [ ] Add performance attribution analysis
 
-## 📡 Phase 3: Live Data & Advanced Features (Weeks 9-12)
+## Phase 3: Live Data & Advanced Features (Weeks 9-12)
 
 **Goal**: Enable live market data, advanced strategies, and production readiness
 
@@ -173,7 +173,7 @@ Based on current progress assessment:
 - [ ] Implement blue-green deployment strategy
 - [ ] Add resource monitoring and autoscaling preparation
 
-## 🎯 Phase 4: Product & Scale (Weeks 13-16)
+## Phase 4: Product & Scale (Weeks 13-16)
 
 **Goal**: Prepare for user acquisition and scale the platform
 
@@ -218,7 +218,7 @@ Based on current progress assessment:
 - [ ] Add usage tracking for metered billing
 - [ ] Implement trial period and conversion flow
 
-## 📋 Success Metrics & Milestones
+## Success Metrics & Milestones
 
 ### Phase 0 Completion Criteria
 
@@ -260,7 +260,7 @@ Based on current progress assessment:
 - [ ] System scales to support target user base
 - [ ] Platform readiness for beta/user testing
 
-## 🔄 Continuous Improvement
+## Continuous Improvement
 
 ### Weekly
 
@@ -283,7 +283,7 @@ Based on current progress assessment:
 - Assess technical architecture scalability
 - Review security posture and compliance needs
 
-## 📝 Implementation Notes
+## Implementation Notes
 
 1. **Maintain Backward Compatibility**: All API changes should be versioned
 2. **Feature Flags**: Implement flag system for risky releases
@@ -293,7 +293,7 @@ Based on current progress assessment:
 6. **Security Review**: Conduct periodic security assessments
 7. **Performance Testing**: Load test critical paths before release
 
-## 🚫 Explicitly Out of Scope (for now)
+## Explicitly Out of Scope (for now)
 
 - Advanced order types (trailing stop, bracket orders)
 - Complex options strategies

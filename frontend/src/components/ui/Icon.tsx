@@ -30,7 +30,6 @@ export const Icon = ({
   title,
   variant,
 }: IconProps) => {
-  // Default size
   let sizeClass = "text-base";
   if (typeof size === "string") {
     switch (size) {
@@ -45,14 +44,11 @@ export const Icon = ({
         break;
     }
   } else if (typeof size === "number") {
-    // Custom size in pixels
     sizeClass = `text-[${size}px]`;
   }
 
-  // Color from variant (deprecated) or color prop
   let colorClass = "";
   if (variant) {
-    // Deprecated variant prop
     switch (variant) {
       case "primary":
         colorClass = "text-primary-container";
@@ -67,7 +63,6 @@ export const Icon = ({
   } else if (color) {
     colorClass = color;
   } else {
-    // Default color
     colorClass = "text-primary-container";
   }
 

@@ -34,7 +34,6 @@ export const getBorderStyle = (
   intensity: "light" | "medium" | "strong" | number = "medium",
 ): string => {
   if (typeof intensity === "number") {
-    // Clamp between 0-100
     const clamped = Math.max(0, Math.min(100, intensity));
     return `border border-outline-variant/${clamped}`;
   }
@@ -78,7 +77,6 @@ export const getContainerStyle = (
   px: "mobile" | "desktop" | "none" = "desktop",
   maxWidth: string | number = "[1440px]",
 ): string => {
-  // Padding
   let pxClass = "";
   switch (px) {
     case "mobile":
@@ -92,13 +90,11 @@ export const getContainerStyle = (
       break;
   }
 
-  // Width
   let widthClass = "w-full";
   if (!fluid && maxWidth) {
     widthClass += ` max-w-${typeof maxWidth === "number" ? `[${maxWidth}px]` : maxWidth}`;
   }
 
-  // Centering
   const mxClass = !fluid ? "mx-auto" : "";
 
   return `${pxClass} ${widthClass} ${mxClass}`.trim();

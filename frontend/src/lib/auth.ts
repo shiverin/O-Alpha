@@ -6,14 +6,13 @@ const TOKEN_STORAGE_KEY = "token";
 export interface User {
   id: number;
   username: string;
-  is_onboarded: boolean; // 🚀 Added to match dynamic database telemetry flags
+  is_onboarded: boolean;
 }
 
 /**
  * Set the JWT token in a cookie and localStorage
  */
 export function setToken(token: string): void {
-  // Store token in a cookie that expires in 24 hours
   document.cookie = `${AUTH_COOKIE_NAME}=${token}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax`;
   localStorage.setItem(TOKEN_STORAGE_KEY, token);
 }
@@ -46,7 +45,6 @@ export function removeToken(): void {
  */
 export function decodeToken(token: string): User | null {
   try {
-    // Extended target type to parse out the backend claims payload parameters safely
     const decoded = jwtDecode<{
       user_id: number;
       username: string;
@@ -55,7 +53,7 @@ export function decodeToken(token: string): User | null {
     return {
       id: decoded.user_id,
       username: decoded.username,
-      is_onboarded: !!decoded.is_onboarded, // Safe double-negation forces fallback to false if omitted
+      is_onboarded: Boolean(decoded.is_onboarded),
     };
   } catch {
     return null;
@@ -69,7 +67,6 @@ export function isAuthenticated(): boolean {
   const token = getToken();
   if (!token) return false;
 
-  // Check if token is expired by decoding and checking exp
   try {
     const decoded = jwtDecode<{ exp: number }>(token);
     return decoded.exp * 1000 > Date.now();

@@ -17,9 +17,8 @@ func NewRouter(h *Handler, cfg *config.Config) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Recovery(), gin.Logger())
 
-	// Configure Cross-Origin Resource Sharing (CORS) rules for the frontend dashboard interface
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowOrigins:     cfg.CORSAllowedOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -27,15 +26,12 @@ func NewRouter(h *Handler, cfg *config.Config) *gin.Engine {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	// Initialize authentication tracking services natively from handler connections
 	userRepo := db.NewUserRepository(h.repo.GetDB())
 	authService := auth.NewAuthService(userRepo, cfg.JWTSecret, 24*time.Hour)
 	authHandler := apiAuth.NewAuthHandler(authService, userRepo)
 
-	// Global System Health Telemetry Verification Endpoint
 	r.GET("/health", h.Health)
 
-	// User Session Authentication Groups
 	authGroup := r.Group("/auth")
 	{
 		authGroup.POST("/login", authHandler.Login)
@@ -44,27 +40,28 @@ func NewRouter(h *Handler, cfg *config.Config) *gin.Engine {
 		authGroup.GET("/me", authHandler.GetCurrentUser)
 	}
 
-	// Quantitative Core Analytical Endpoints (V1 Public Demo Scope)
+	authenticatedV1 := AuthMiddleware(authService)
+
 	v1 := r.Group("/api/v1")
 	{
-		// Historical Engine Simulation Interface
 		v1.POST("/backtest", h.RunBacktest)
 
-		// Live Agent Manager Orchestration Controllers
-		v1.POST("/agent/start", h.LaunchLiveAgent)
-		v1.POST("/agent/stop", h.TerminateLiveAgent)
+		protected := v1.Group("")
+		protected.Use(authenticatedV1)
 
-		// User Database Configuration Triggers
-		v1.GET("/user/settings", h.GetUserSettings)
-		v1.POST("/user/settings", h.SaveUserSettings)
+		protected.POST("/agent/start", h.LaunchLiveAgent)
+		protected.POST("/agent/stop", h.TerminateLiveAgent)
 
-		v1.POST("/user/onboarding/complete", h.CompleteUserOnboarding)
+		protected.GET("/user/settings", h.GetUserSettings)
+		protected.POST("/user/settings", h.SaveUserSettings)
 
-		v1.GET("/user/portfolio/summary", h.GetPortfolioSummary)  // Overview widgets & sparklines
-		v1.GET("/user/portfolio/history", h.GetPortfolioHistory)
-		v1.GET("/user/portfolio/positions", h.GetActivePositions) // Open positions data grid & allocations ring
-		v1.GET("/user/portfolio/trades", h.GetExecutionStream)    // Live audit trail history
-		v1.GET("/user/portfolio/alerts", h.GetSystemAlerts)       // Safety & risk banner warnings
+		protected.POST("/user/onboarding/complete", h.CompleteUserOnboarding)
+
+		protected.GET("/user/portfolio/summary", h.GetPortfolioSummary)
+		protected.GET("/user/portfolio/history", h.GetPortfolioHistory)
+		protected.GET("/user/portfolio/positions", h.GetActivePositions)
+		protected.GET("/user/portfolio/trades", h.GetExecutionStream)
+		protected.GET("/user/portfolio/alerts", h.GetSystemAlerts)
 	}
 
 	return r

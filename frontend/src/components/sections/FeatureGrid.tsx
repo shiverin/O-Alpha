@@ -38,19 +38,15 @@ function FeatureCardView({ card }: { card: FeatureCard }) {
   const isPrimary = card.accent === "primary";
 
   return (
-    // Uses your surface-container tokens for a clean, theme-aware background
     <div className="group relative flex flex-col h-full bg-surface-container-low border border-outline-variant/30 rounded-[32px] p-8 overflow-hidden hover:bg-surface-container transition-colors duration-500 ease-out">
-      {/* Premium subtle top-edge glow on hover using your theme accents */}
       <div
         className={`absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent ${isPrimary ? "via-primary-container/60" : "via-secondary-fixed/60"} to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700`}
       />
 
-      {/* Ambient background glow mapped to primary/secondary tokens */}
       <div
         className={`absolute -top-24 -right-24 w-48 h-48 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none ${isPrimary ? "bg-primary-container/10" : "bg-secondary-fixed/10"}`}
       />
 
-      {/* Icon Wrapper */}
       <div className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-outline-variant/40 bg-surface-container-highest mb-8 group-hover:scale-110 transition-transform duration-500 ease-out">
         <Icon
           name={card.icon}
@@ -59,7 +55,6 @@ function FeatureCardView({ card }: { card: FeatureCard }) {
         />
       </div>
 
-      {/* Typography mapped to your 'on-surface' tokens */}
       <div className="relative z-10 flex flex-col flex-1">
         <h3 className="text-lg font-medium tracking-wide text-on-surface mb-4">
           {card.title}
@@ -112,7 +107,6 @@ export function FeatureGrid() {
 
   return (
     <section className="px-6 md:px-12 max-w-[1200px] mx-auto w-full py-24">
-      {/* Redesigned Header using theme typography tokens */}
       <div className="text-center mb-20 flex flex-col items-center">
         <span className="text-[10px] uppercase tracking-[0.3em] text-on-surface-variant font-medium mb-4 block">
           The Product
@@ -125,7 +119,6 @@ export function FeatureGrid() {
         </h2>
       </div>
 
-      {/* The Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
         {features.map((card, index) => (
           <div
@@ -134,7 +127,6 @@ export function FeatureGrid() {
               cardRefs.current[index] = element;
             }}
             data-index={index}
-            // Buttery smooth cascading slide-up reveal remains identical
             className={`h-full transform transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
               isVisible[index]
                 ? "translate-y-0 opacity-100 scale-100"

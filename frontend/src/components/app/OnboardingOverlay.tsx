@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { settingsApi, api } from "@/lib/api";
+import { settingsApi, userApi } from "@/lib/api";
 
 interface OnboardingOverlayProps {
   userID: number;
-  onComplete: (riskProfile: string) => void; // Upgraded context passing channel
+  onComplete: (riskProfile: string) => void;
 }
 
 export default function OnboardingOverlay({
@@ -48,9 +48,6 @@ export default function OnboardingOverlay({
   const handleInitializeCore = async () => {
     setIsSaving(true);
 
-    // ─────────────────────────────────────────────────────────────
-    // ✅ BRANCH 1: LOCAL STORAGE BYPASS GATE FOR DEMO SESSIONS (userID: 999)
-    // ─────────────────────────────────────────────────────────────
     if (userID === 999) {
       await new Promise((resolve) => setTimeout(resolve, 800));
       localStorage.setItem("oa_demo_risk_posture", riskProfile);
@@ -59,11 +56,7 @@ export default function OnboardingOverlay({
       return;
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // 🌍 BRANCH 2: PRODUCTION DATABASE SYNC PIPELINE (REAL USERS)
-    // ─────────────────────────────────────────────────────────────
     let configPayload = {
-      user_id: userID,
       risk_profile: riskProfile,
       leverage: 2,
       max_positions: 6,
@@ -93,14 +86,11 @@ export default function OnboardingOverlay({
     }
 
     try {
-      // 1. Persist the quantitative configuration profile settings
       await settingsApi.save(configPayload);
-
-      // 2. Fire an isolated network call directly to your dedicated user onboarding handler endpoint
-      await api.post("/api/v1/user/onboarding/complete", { user_id: userID });
+      await userApi.completeOnboarding();
 
       setIsSaving(false);
-      onComplete(riskProfile); // Bubble the config name to update parent state variables instantly
+      onComplete(riskProfile);
     } catch {
       setIsSaving(false);
       alert("Failed to synchronize execution parameters with the server.");

@@ -24,20 +24,17 @@ func NewUserRepository(db *pgxpool.Pool) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-// CreateUser inserts a user profile record and handles atomic provisioning of a baseline portfolio state.
+// CreateUser inserts a user and provisions the baseline portfolio snapshot atomically.
 func (r *UserRepository) CreateUser(ctx context.Context, user *models.User) error {
-	// Begin an isolated database transaction to guarantee cross-table atomicity
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to begin user registration transaction: %w", err)
 	}
 
-	// Ensure clean rollback protection if an execution error occurs before Commit() runs
 	defer func() {
 		_ = tx.Rollback(ctx)
 	}()
 
-	// User defaults are owned and managed cleanly by the database schema
 	const userQuery = `
 		INSERT INTO users (
 			username, 
@@ -55,7 +52,6 @@ func (r *UserRepository) CreateUser(ctx context.Context, user *models.User) erro
 		&user.UpdatedAt,
 	)
 	if err != nil {
-		// Detect unique constraint violations (Code 23505) and surface clean domain semantics
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			return ErrUsernameTaken
@@ -63,11 +59,8 @@ func (r *UserRepository) CreateUser(ctx context.Context, user *models.User) erro
 		return fmt.Errorf("insert user profile identity failed: %w", err)
 	}
 
-	// Assign the generated database reference parameters back into our structural model tracking object
 	user.ID = id
 
-	// 🚀 Clean DB-driven initialization. All metrics, asset balances, and timestamp
-	// allocations are generated dynamically on the database engine.
 	const portfolioQuery = `
 		INSERT INTO portfolio_snapshots (user_id)
 		VALUES ($1)`
@@ -77,7 +70,6 @@ func (r *UserRepository) CreateUser(ctx context.Context, user *models.User) erro
 		return fmt.Errorf("failed to provision baseline account portfolio snapshot: %w", err)
 	}
 
-	// Atomically commit all records across both tables to disk simultaneously
 	if err = tx.Commit(ctx); err != nil {
 		return fmt.Errorf("failed to commit atomic account provisioning transaction: %w", err)
 	}
@@ -102,7 +94,7 @@ func (r *UserRepository) GetUserByUsername(ctx context.Context, username string)
 		&u.UpdatedAt,
 	)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) { // High-performance sentinel checking
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("select user by username failed: %w", err)
@@ -127,7 +119,7 @@ func (r *UserRepository) GetUserByID(ctx context.Context, id int64) (*models.Use
 		&u.UpdatedAt,
 	)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) { // High-performance sentinel checking
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("select user by id failed: %w", err)

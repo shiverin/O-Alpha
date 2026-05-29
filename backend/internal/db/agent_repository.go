@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// AgentSettings maps directly to the schema definition inside your SQL migrations.
+// AgentSettings maps to a user's saved trading parameters.
 type AgentSettings struct {
 	UserID        int64     `json:"user_id"`
 	RiskProfile   string    `json:"risk_profile"`
@@ -22,17 +22,17 @@ type AgentSettings struct {
 	UpdatedAt     time.Time `json:"updated_at"`
 }
 
-// AgentRepository isolates trading parameter persistence routines from user authentication layers.
+// AgentRepository persists user trading parameters.
 type AgentRepository struct {
 	db *pgxpool.Pool
 }
 
-// NewAgentRepository creates a new instance of the agent configuration data accessor.
+// NewAgentRepository creates an agent settings repository.
 func NewAgentRepository(db *pgxpool.Pool) *AgentRepository {
 	return &AgentRepository{db: db}
 }
 
-// GetAgentSettings checks if a configuration blueprint exists for a target user ID.
+// GetAgentSettings returns saved settings for a user.
 func (r *AgentRepository) GetAgentSettings(ctx context.Context, userID int64) (*AgentSettings, error) {
 	const q = `
 		SELECT user_id, risk_profile, leverage, max_positions, stop_loss_pct, take_profit_pct, rebalance_freq, updated_at
@@ -44,7 +44,7 @@ func (r *AgentRepository) GetAgentSettings(ctx context.Context, userID int64) (*
 		&s.UserID, &s.RiskProfile, &s.Leverage, &s.MaxPositions, &s.StopLossPct, &s.TakeProfitPct, &s.RebalanceFreq, &s.UpdatedAt,
 	)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) { // High-performance sentinel checking
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("select agent settings: %w", err)
@@ -52,7 +52,7 @@ func (r *AgentRepository) GetAgentSettings(ctx context.Context, userID int64) (*
 	return &s, nil
 }
 
-// SaveAgentSettings handles both creation and running parameter syncs using an atomic upsert statement.
+// SaveAgentSettings creates or updates saved settings with an upsert.
 func (r *AgentRepository) SaveAgentSettings(ctx context.Context, s *AgentSettings) error {
 	const q = `
 		INSERT INTO agent_settings (user_id, risk_profile, leverage, max_positions, stop_loss_pct, take_profit_pct, rebalance_freq, updated_at)

@@ -27,7 +27,6 @@ export interface MockLogItem {
   highlight?: boolean;
 }
 
-// 📂 Add this inside app/dashboard/page.tsx (around lines 12-30)
 export interface SnapshotPoint {
   total_asset_value: number;
   timestamp: string;

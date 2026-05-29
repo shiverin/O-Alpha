@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// GetPortfolioSummary fetches high-level balance snap postures for main analytics widgets.
+// GetPortfolioSummary fetches the latest portfolio snapshot for dashboard views.
 func (h *Handler) GetPortfolioSummary(c *gin.Context) {
 	userID, ok := h.deriveUserIDQuery(c)
 	if !ok {
@@ -28,7 +28,7 @@ func (h *Handler) GetPortfolioSummary(c *gin.Context) {
 	c.JSON(http.StatusOK, summary)
 }
 
-// GetActivePositions returns open exposures and dynamic calculations for table charts.
+// GetActivePositions returns currently open portfolio positions.
 func (h *Handler) GetActivePositions(c *gin.Context) {
 	userID, ok := h.deriveUserIDQuery(c)
 	if !ok {
@@ -44,7 +44,7 @@ func (h *Handler) GetActivePositions(c *gin.Context) {
 	c.JSON(http.StatusOK, positions)
 }
 
-// GetExecutionStream isolates historical trade logging for the Activity Console grid.
+// GetExecutionStream returns the user's latest persisted trade records.
 func (h *Handler) GetExecutionStream(c *gin.Context) {
 	userID, ok := h.deriveUserIDQuery(c)
 	if !ok {
@@ -58,6 +58,7 @@ func (h *Handler) GetExecutionStream(c *gin.Context) {
 			limit = parsed
 		}
 	}
+	limit = clampLimit(limit, 50, 500)
 
 	trades, err := h.PortfolioRepo.GetExecutionStream(c.Request.Context(), userID, limit)
 	if err != nil {
@@ -68,7 +69,7 @@ func (h *Handler) GetExecutionStream(c *gin.Context) {
 	c.JSON(http.StatusOK, trades)
 }
 
-// GetSystemAlerts parses the security warning log stack for dashboard telemetry components.
+// GetSystemAlerts returns recent user-scoped alerts.
 func (h *Handler) GetSystemAlerts(c *gin.Context) {
 	userID, ok := h.deriveUserIDQuery(c)
 	if !ok {
@@ -81,6 +82,7 @@ func (h *Handler) GetSystemAlerts(c *gin.Context) {
 			limit = parsed
 		}
 	}
+	limit = clampLimit(limit, 10, 100)
 
 	alerts, err := h.PortfolioRepo.GetSystemAlerts(c.Request.Context(), userID, limit)
 	if err != nil {
@@ -91,22 +93,20 @@ func (h *Handler) GetSystemAlerts(c *gin.Context) {
 	c.JSON(http.StatusOK, alerts)
 }
 
-// 📂 internal/api/portfolio_handler.go
-
-// GetPortfolioHistory handles requests for historical equity coordinates
+// GetPortfolioHistory returns snapshots sorted chronologically for charting.
 func (h *Handler) GetPortfolioHistory(c *gin.Context) {
 	userID, ok := h.deriveUserIDQuery(c)
 	if !ok {
 		return
 	}
 
-	// Default lookback point resolution for sparklines
 	limit := 30
 	if queryLimit := c.Query("limit"); queryLimit != "" {
 		if parsed, err := strconv.Atoi(queryLimit); err == nil {
 			limit = parsed
 		}
 	}
+	limit = clampLimit(limit, 30, 365)
 
 	history, err := h.PortfolioRepo.GetPortfolioHistory(c.Request.Context(), userID, limit)
 	if err != nil {
@@ -115,4 +115,14 @@ func (h *Handler) GetPortfolioHistory(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, history)
+}
+
+func clampLimit(value, fallback, max int) int {
+	if value <= 0 {
+		return fallback
+	}
+	if value > max {
+		return max
+	}
+	return value
 }

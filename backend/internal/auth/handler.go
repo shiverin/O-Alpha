@@ -7,7 +7,6 @@ import (
 	"github.com/oalpha/internal/db"
 )
 
-// Notice we dropped the "auth." prefix here because we are ALREADY in the auth package!
 type AuthHandler struct {
 	authService *AuthService
 	userRepo    *db.UserRepository
@@ -32,14 +31,12 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// FIX: Expanded tuple decomposition to capture the user variable, matching the 3-return optimized signature
 	token, _, err := h.authService.Login(c.Request.Context(), req.Username, req.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
 
-	// Payload output remains completely identical to your required spec
 	c.JSON(http.StatusOK, gin.H{
 		"token": token,
 	})

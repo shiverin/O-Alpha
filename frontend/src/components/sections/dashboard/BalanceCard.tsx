@@ -18,9 +18,7 @@ export default function BalanceCard({
   displayPnL,
   historyData,
 }: BalanceCardProps) {
-  // 📐 MATHEMATICAL COMPUTE GRAPH ENGINE
   const chartCoordinates = useMemo(() => {
-    // Fallback Mock Layout Vector if data is empty or user is in Guest Sandbox (999) mode
     if (!historyData || historyData.length < 2) {
       return {
         pathString: "M 0 85 Q 15 95 30 75 T 60 55 T 90 20 L 100 15",
@@ -33,15 +31,13 @@ export default function BalanceCard({
     const maxVal = Math.max(...values);
     const valRange = maxVal - minVal === 0 ? 1 : maxVal - minVal;
 
-    // Map data points into coordinates fitting our 100x100 SVG viewbox grid bounds
-    // We leave 15% padding at top and bottom so the line never clips the edges
+    // Leave vertical padding so the sparkline never clips the SVG edges.
     const points = historyData.map((snapshot, index) => {
       const x = (index / (historyData.length - 1)) * 100;
       const y = 85 - ((snapshot.total_asset_value - minVal) / valRange) * 70;
       return { x, y };
     });
 
-    // Reduce coordinate matrices into a sequential SVG inline command string
     const pathString = points.reduce(
       (acc, p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `${acc} L ${p.x} ${p.y}`),
       "",
@@ -57,7 +53,6 @@ export default function BalanceCard({
     <div className="md:col-span-12 xl:col-span-8 group relative flex flex-col h-auto min-h-[380px] sm:h-[460px] bg-surface-container-low border border-outline-variant/30 rounded-[32px] p-5 sm:p-8 overflow-hidden hover:bg-surface-container transition-all duration-700 hover:shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
       <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-primary-container/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
-      {/* Upper Status Row Information HUD */}
       <div className="flex justify-between items-center mb-6 sm:mb-8 border-b border-outline-variant/20 pb-4 relative z-10">
         <div className="flex items-center gap-3">
           <div
@@ -72,7 +67,6 @@ export default function BalanceCard({
         </span>
       </div>
 
-      {/* Main Core Accounting Balance Readout Frames */}
       <div className="flex-grow flex flex-col justify-center relative z-10">
         <span className="text-[10px] font-medium tracking-[0.2em] text-on-surface-variant uppercase block mb-1">
           Current P&L (24h)
@@ -81,14 +75,12 @@ export default function BalanceCard({
           {displayPnL}
         </h2>
 
-        {/* THE RESPONSIVE DYNAMIC SPARKLINE VECTOR SYSTEM */}
         <div className="mt-6 sm:mt-8 h-28 sm:h-36 w-full relative flex items-end border-b border-outline-variant/20">
           <svg
             className="w-full h-full"
             preserveAspectRatio="none"
             viewBox="0 0 100 100"
           >
-            {/* The Live Data Sparkline Path String */}
             <path
               d={chartCoordinates.pathString}
               fill="none"
@@ -100,7 +92,6 @@ export default function BalanceCard({
             />
           </svg>
 
-          {/* Live Pulse Terminal Target Dot pinned accurately onto the final endpoint */}
           <div
             className="absolute w-2 h-2 rounded-full bg-primary-container shadow-[0_0_12px_#00f0ff] transition-all duration-500 ease-out"
             style={{

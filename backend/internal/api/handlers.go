@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -10,7 +9,9 @@ import (
 	"github.com/oalpha/internal/db"
 )
 
-// Handler handles systematic HTTP network request parameters.
+const contextUserIDKey = "userID"
+
+// Handler wires repositories and service coordinators into HTTP endpoints.
 type Handler struct {
 	repo          *db.BarsRepository
 	AgentManager  *agent.AgentManager
@@ -18,14 +19,13 @@ type Handler struct {
 	PortfolioRepo *db.PortfolioRepository
 }
 
-// NewHandler builds a clean instance of your endpoint coordinator dependencies.
+// NewHandler constructs an HTTP handler with its backing dependencies.
 func NewHandler(repo *db.BarsRepository, am *agent.AgentManager, ar *db.AgentRepository, pr *db.PortfolioRepository) *Handler {
 	return &Handler{
 		repo:          repo,
 		AgentManager:  am,
 		AgentRepo:     ar,
 		PortfolioRepo: pr,
-		
 	}
 }
 
@@ -37,17 +37,17 @@ func (h *Handler) Health(c *gin.Context) {
 	})
 }
 
-// deriveUserIDQuery is a private helper method to handle duplicate query param parsing logic gracefully.
+// deriveUserIDQuery returns the authenticated user ID injected by auth middleware.
 func (h *Handler) deriveUserIDQuery(c *gin.Context) (int64, bool) {
-	userIDStr := c.Query("user_id")
-	if userIDStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id verification context parameter is mandatory"})
+	value, exists := c.Get(contextUserIDKey)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "authenticated user context is required"})
 		return 0, false
 	}
 
-	var userID int64
-	if _, err := fmt.Sscanf(userIDStr, "%d", &userID); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "malformed user_id variable footprint"})
+	userID, ok := value.(int64)
+	if !ok || userID <= 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "authenticated user context is invalid"})
 		return 0, false
 	}
 

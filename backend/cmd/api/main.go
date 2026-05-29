@@ -36,21 +36,15 @@ func main() {
 	}
 	defer sqlDB.Close()
 
-	// Initialize database access and tracking repositories
 	repo := db.NewBarsRepository(sqlDB)
 	agentRepo := db.NewAgentRepository(sqlDB)
-	portfolioRepo := db.NewPortfolioRepository(sqlDB) // Injected database table layer
+	portfolioRepo := db.NewPortfolioRepository(sqlDB)
 
-	// Instantiate the market data provider client link
 	alpacaClient := alpaca.NewClient(cfg.AlpacaDataURL, cfg.AlpacaAPIKey, cfg.AlpacaAPISecret)
 
-	// Initialize execution supervisor manager loops
-	agentManager := agent.NewAgentManager(alpacaClient, repo)
+	agentManager := agent.NewAgentManager(alpacaClient, repo, portfolioRepo)
 
-	// Build HTTP resource coordinators
 	h := api.NewHandler(repo, agentManager, agentRepo, portfolioRepo)
-
-	// ✅ RESTORED: Passes both the handler instance and config context parameters cleanly
 	r := api.NewRouter(h, cfg)
 
 	srv := &http.Server{

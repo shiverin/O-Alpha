@@ -6,76 +6,69 @@ import (
 	"github.com/oalpha/pkg/models"
 )
 
-// RegimeType represents different market regimes
+// RegimeType represents a coarse market regime.
 type RegimeType string
 
 const (
-	RegimeBull   RegimeType = "bull"
-	RegimeBear   RegimeType = "bear"
+	RegimeBull     RegimeType = "bull"
+	RegimeBear     RegimeType = "bear"
 	RegimeVolatile RegimeType = "volatile"
-	RegimeNeutral RegimeType = "neutral"
+	RegimeNeutral  RegimeType = "neutral"
 )
 
-// RegimeSignal extends the basic Signal with regime information
+// RegimeSignal pairs a trading signal with its detected regime.
 type RegimeSignal struct {
-	Signal  models.Signal
-	Regime  RegimeType
+	Signal models.Signal
+	Regime RegimeType
 }
 
-// RegimeDetectorStrategy implements a simple regime detection strategy
-// based on price momentum and volatility
+// RegimeDetectorStrategy combines moving-average momentum with volatility filtering.
 type RegimeDetectorStrategy struct {
-	fastMA  int // Fast moving average period
-	slowMA  int // Slow moving average period
-	volLookback int // Volatility lookback period
-	volThreshold float64 // Volatility threshold for regime classification
+	fastMA       int
+	slowMA       int
+	volLookback  int
+	volThreshold float64
 }
 
-// NewRegimeDetectorStrategy creates a new regime detection strategy
+// NewRegimeDetectorStrategy creates a new regime detection strategy.
 func NewRegimeDetectorStrategy(fastMA, slowMA, volLookback int, volThreshold float64) *RegimeDetectorStrategy {
 	if fastMA <= 0 || slowMA <= 0 || fastMA >= slowMA {
 		return &RegimeDetectorStrategy{
-			fastMA:  10,
-			slowMA:  30,
-			volLookback: 20,
-			volThreshold: 0.02, // 2% daily volatility threshold
+			fastMA:       10,
+			slowMA:       30,
+			volLookback:  20,
+			volThreshold: 0.02,
 		}
 	}
 	return &RegimeDetectorStrategy{
-		fastMA:     fastMA,
-		slowMA:     slowMA,
-		volLookback: volLookback,
+		fastMA:       fastMA,
+		slowMA:       slowMA,
+		volLookback:  volLookback,
 		volThreshold: volThreshold,
 	}
 }
 
-// GenerateSignal implements the Strategy interface
-// It detects market regime and generates appropriate signals
+// GenerateSignal detects the current regime and emits index-aligned signals.
 func (s *RegimeDetectorStrategy) GenerateSignal(ctx context.Context, bars []models.Bar) ([]models.Signal, error) {
 	if len(bars) < s.slowMA {
-		// Not enough data to compute signals
 		return make([]models.Signal, len(bars)), nil
 	}
 
-	// Calculate moving averages
 	fastMAValues := calculateSMA(bars, s.fastMA)
 	slowMAValues := calculateSMA(bars, s.slowMA)
 
-	// Calculate volatility (using ATR-like measure)
 	volatility := calculateVolatility(bars, s.volLookback)
 
 	signals := make([]models.Signal, len(bars))
 
 	for i := range bars {
-		// Default to hold
 		signal := models.SignalHold
 
-		if i >= s.slowMA-1 { // We have enough data for both MAs
+		if i >= s.slowMA-1 {
 			fastMA := fastMAValues[i]
 			slowMA := slowMAValues[i]
 			vol := volatility[i]
 
-			// Determine regime
 			var regime RegimeType
 			if vol > s.volThreshold {
 				regime = RegimeVolatile
@@ -87,23 +80,18 @@ func (s *RegimeDetectorStrategy) GenerateSignal(ctx context.Context, bars []mode
 				regime = RegimeNeutral
 			}
 
-			// Generate signal based on regime
 			switch regime {
 			case RegimeBull:
 				if fastMA > slowMA && fastMAValues[i-1] <= slowMAValues[i-1] {
-					// Golden cross - bullish signal
 					signal = models.SignalBuy
 				}
 			case RegimeBear:
 				if fastMA < slowMA && fastMAValues[i-1] >= slowMAValues[i-1] {
-					// Death cross - bearish signal
 					signal = models.SignalSell
 				}
 			case RegimeVolatile:
-				// In volatile regime, reduce position sizes or stay neutral
 				signal = models.SignalHold
 			case RegimeNeutral:
-				// In neutral regime, follow the trend if any
 				if fastMA > slowMA {
 					signal = models.SignalBuy
 				} else if fastMA < slowMA {
@@ -118,7 +106,7 @@ func (s *RegimeDetectorStrategy) GenerateSignal(ctx context.Context, bars []mode
 	return signals, nil
 }
 
-// calculateSMA computes simple moving average
+// calculateSMA computes a simple moving average.
 func calculateSMA(bars []models.Bar, period int) []float64 {
 	sma := make([]float64, len(bars))
 	if period <= 0 || len(bars) < period {
@@ -138,7 +126,7 @@ func calculateSMA(bars []models.Bar, period int) []float64 {
 	return sma
 }
 
-// calculateVolatility computes a simple volatility measure (average true range proxy)
+// calculateVolatility computes an average true range proxy.
 func calculateVolatility(bars []models.Bar, lookback int) []float64 {
 	vol := make([]float64, len(bars))
 	if lookback <= 0 || len(bars) < lookback {
@@ -161,7 +149,6 @@ func calculateVolatility(bars []models.Bar, lookback int) []float64 {
 			}
 			trSum += tr
 		}
-		// Normalize by price to get percentage volatility
 		avgTR := trSum / float64(lookback)
 		vol[i] = avgTR / bars[i].Close
 	}

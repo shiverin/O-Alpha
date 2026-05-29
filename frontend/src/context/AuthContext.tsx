@@ -37,8 +37,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(decoded);
       }
 
+      const isLocalDemoToken =
+        token.endsWith(".offline-demo-signature") && decoded?.id === 999;
+      if (decoded && isLocalDemoToken) {
+        setLoading(false);
+        return;
+      }
+
       try {
-        // 🚀 UPDATED: Added is_onboarded type tracking to matching API layout response
         const response = await api.get<{
           id: number;
           username: string;
@@ -55,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           (err instanceof Error &&
             /Failed to fetch|NetworkError/i.test(err.message));
 
-        if (decoded && isNetworkError) {
+        if (decoded && decoded.id === 999 && isNetworkError) {
           // Keep token-backed session for local/demo mode when backend is down.
           setUser(decoded);
         } else {
@@ -72,13 +78,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (username: string, password: string) => {
     try {
-      // 🚀 UPDATED: Extended the layout schema specification to preserve onboarding metrics
       const response = await api.post<{
         token: string;
         user: { id: number; username: string; is_onboarded: boolean };
       }>("/auth/login", { username, password });
 
-      // Explicitly persist the token securely
       setToken(response.token);
 
       setUser({
@@ -95,9 +99,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await api.post("/auth/logout", {});
     } catch {
-      // Absorb tracking network logging variances silently
+      // Logout stays local if backend session cleanup is unavailable.
     } finally {
-      removeToken(); // Guard clean tracking clear states
+      removeToken();
       setUser(null);
     }
   };
