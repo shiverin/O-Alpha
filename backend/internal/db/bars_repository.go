@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -48,13 +49,29 @@ func (r *BarsRepository) InsertBars(ctx context.Context, bars []models.Bar, time
 			close = EXCLUDED.close,
 			volume = EXCLUDED.volume`
 
+	const assetQ = `
+		INSERT INTO assets (symbol, name, asset_class)
+		VALUES ($1, $1, 'equity')
+		ON CONFLICT (symbol) DO NOTHING`
+
+	var inserted int64
+	seenAssets := make(map[string]struct{})
 	batch := &pgx.Batch{}
 	for _, b := range bars {
-		batch.Queue(q, b.Time, b.Symbol, timeframe, b.Open, b.High, b.Low, b.Close, b.Volume)
+		symbol := normalizeSymbol(b.Symbol)
+		if symbol == "" {
+			return inserted, fmt.Errorf("bar symbol is required")
+		}
+		if _, seen := seenAssets[symbol]; !seen {
+			if _, err := tx.Exec(ctx, assetQ, symbol); err != nil {
+				return inserted, fmt.Errorf("upsert asset %s: %w", symbol, err)
+			}
+			seenAssets[symbol] = struct{}{}
+		}
+		batch.Queue(q, b.Time, symbol, timeframe, b.Open, b.High, b.Low, b.Close, b.Volume)
 	}
 
 	br := tx.SendBatch(ctx, batch)
-	var inserted int64
 	for range bars {
 		_, err := br.Exec()
 		if err != nil {
@@ -74,6 +91,7 @@ func (r *BarsRepository) InsertBars(ctx context.Context, bars []models.Bar, time
 
 // GetBars returns bars for symbol and timeframe ordered by time ascending.
 func (r *BarsRepository) GetBars(ctx context.Context, symbol, timeframe string, start, end time.Time) ([]models.Bar, error) {
+	symbol = normalizeSymbol(symbol)
 	const q = `
 		SELECT time, symbol, open, high, low, close, volume
 		FROM bars
@@ -99,6 +117,7 @@ func (r *BarsRepository) GetBars(ctx context.Context, symbol, timeframe string, 
 
 // CountBars returns the number of bars for symbol in [start, end].
 func (r *BarsRepository) CountBars(ctx context.Context, symbol string, start, end time.Time) (int64, error) {
+	symbol = normalizeSymbol(symbol)
 	const q = `SELECT COUNT(*) FROM bars WHERE symbol = $1 AND time >= $2 AND time <= $3`
 	var n int64
 	err := r.db.QueryRow(ctx, q, symbol, start, end).Scan(&n)
@@ -177,6 +196,15 @@ func (r *BarsRepository) SaveStrategyConfig(ctx context.Context, userID int64, n
 
 // SaveBacktestRun persists a backtest execution with its metrics.
 func (r *BarsRepository) SaveBacktestRun(ctx context.Context, userID, configID int64, req models.BacktestRequest, result *models.BacktestResult) error {
+	symbol := normalizeSymbol(req.Symbol)
+	if symbol == "" {
+		return fmt.Errorf("backtest symbol is required")
+	}
+	strategyType := strings.ToUpper(strings.TrimSpace(req.StrategyType))
+	if strategyType == "" {
+		strategyType = "MA_CROSSOVER"
+	}
+
 	endDate := time.Now().UTC()
 	startDate := endDate.Add(-365 * 24 * time.Hour)
 	if req.Start != nil {
@@ -196,20 +224,41 @@ func (r *BarsRepository) SaveBacktestRun(ctx context.Context, userID, configID i
 		configIDArg = &configID
 	}
 
+	params := map[string]interface{}{
+		"strategy_type": strategyType,
+		"q_noise":       req.QNoise,
+		"r_noise":       req.RNoise,
+		"z_threshold":   req.ZThreshold,
+		"fast_period":   req.FastPeriod,
+		"slow_period":   req.SlowPeriod,
+	}
+	paramsBytes, err := json.Marshal(params)
+	if err != nil {
+		return fmt.Errorf("marshal backtest parameters: %w", err)
+	}
+
+	const assetQ = `
+		INSERT INTO assets (symbol, name, asset_class)
+		VALUES ($1, $1, 'equity')
+		ON CONFLICT (symbol) DO NOTHING`
+	if _, err := r.db.Exec(ctx, assetQ, symbol); err != nil {
+		return fmt.Errorf("upsert backtest asset: %w", err)
+	}
+
 	const q = `
         INSERT INTO backtest_runs (
-            user_id, strategy_config_id, symbol, timeframe,
+            user_id, strategy_config_id, strategy_type, symbol, timeframe,
             start_time, end_time, initial_cash,
-            final_equity, total_return_pct, sharpe_ratio, max_drawdown_pct, num_trades,
-            equity_curve, created_at
+            final_equity, total_return_pct, annual_return_pct, sharpe_ratio, sortino_ratio, max_drawdown_pct, num_trades,
+            parameters, equity_curve, created_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())`
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 0, $11, $12, $13, $14, $15, $16, NOW())`
 
 	_, err = r.db.Exec(ctx, q,
-		userID, configIDArg, req.Symbol, req.Timeframe,
+		userID, configIDArg, strategyType, symbol, req.Timeframe,
 		startDate, endDate, req.InitialCash,
-		result.FinalEquity, result.TotalReturn, result.Sharpe, result.MaxDrawdown, result.NumTrades,
-		equityCurveBytes,
+		result.FinalEquity, result.TotalReturn*100, result.Sharpe, result.Sortino, result.MaxDrawdown*100, result.NumTrades,
+		paramsBytes, equityCurveBytes,
 	)
 	if err != nil {
 		return fmt.Errorf("insert backtest run: %w", err)
@@ -219,6 +268,7 @@ func (r *BarsRepository) SaveBacktestRun(ctx context.Context, userID, configID i
 
 // GetLatestBarTime returns the latest stored timestamp for a symbol/timeframe pair.
 func (r *BarsRepository) GetLatestBarTime(ctx context.Context, symbol, timeframe string) (time.Time, bool, error) {
+	symbol = normalizeSymbol(symbol)
 	const q = `
 		SELECT max(time) 
 		FROM bars 
@@ -235,4 +285,8 @@ func (r *BarsRepository) GetLatestBarTime(ctx context.Context, symbol, timeframe
 	}
 
 	return *latestTime, true, nil
+}
+
+func normalizeSymbol(symbol string) string {
+	return strings.ToUpper(strings.TrimSpace(symbol))
 }

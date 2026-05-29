@@ -16,6 +16,13 @@ export function PerformancePage() {
   const [data, setData] = useState<EquityPoint[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [backtestMetrics, setBacktestMetrics] = useState<{
+    sharpeRatio: number | null;
+    maxDrawdown: number | null;
+  }>({
+    sharpeRatio: null,
+    maxDrawdown: null,
+  });
 
   const [symbol, setSymbol] = useState("AAPL");
   const [strategyConfig, setStrategyConfig] = useState<StrategyConfig | null>(
@@ -58,8 +65,16 @@ export function PerformancePage() {
 
       const result = await runBacktest(payload);
       setData(result.equity_curve);
+      setBacktestMetrics({
+        sharpeRatio: result.sharpe,
+        maxDrawdown: result.max_drawdown,
+      });
     } catch (err) {
       setData(DEFAULT_EQUITY_CURVE);
+      setBacktestMetrics({
+        sharpeRatio: null,
+        maxDrawdown: null,
+      });
       setError(
         err instanceof Error
           ? `${err.message} Showing fallback performance data.`
@@ -124,6 +139,8 @@ export function PerformancePage() {
           data={data}
           loading={loading}
           currentReturnPct={currentReturnPct}
+          sharpeRatio={backtestMetrics.sharpeRatio}
+          maxDrawdown={backtestMetrics.maxDrawdown}
         />
 
         <section className="grid grid-cols-1 md:grid-cols-2 gap-gutter mb-4">
