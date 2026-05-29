@@ -15,6 +15,7 @@ interface AuthContextType {
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  markOnboarded: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -106,11 +107,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const markOnboarded = () => {
+    setUser((currentUser) =>
+      currentUser ? { ...currentUser, is_onboarded: true } : currentUser,
+    );
+  };
+
   const value = {
     user,
     loading,
     login,
     logout,
+    markOnboarded,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

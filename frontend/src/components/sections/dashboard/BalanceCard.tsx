@@ -13,6 +13,12 @@ interface BalanceCardProps {
   historyData?: SnapshotPoint[];
 }
 
+const FLATLINE_Y = 70;
+const FLAT_CHART_COORDINATES = {
+  pathString: `M 0 ${FLATLINE_Y} L 100 ${FLATLINE_Y}`,
+  lastPoint: { x: 100, y: FLATLINE_Y },
+};
+
 export default function BalanceCard({
   isAgentActive,
   displayPnL,
@@ -20,16 +26,17 @@ export default function BalanceCard({
 }: BalanceCardProps) {
   const chartCoordinates = useMemo(() => {
     if (!historyData || historyData.length < 2) {
-      return {
-        pathString: "M 0 85 Q 15 95 30 75 T 60 55 T 90 20 L 100 15",
-        lastPoint: { x: 100, y: 15 },
-      };
+      return FLAT_CHART_COORDINATES;
     }
 
     const values = historyData.map((d) => d.total_asset_value);
     const minVal = Math.min(...values);
     const maxVal = Math.max(...values);
-    const valRange = maxVal - minVal === 0 ? 1 : maxVal - minVal;
+    const valRange = maxVal - minVal;
+
+    if (valRange === 0) {
+      return FLAT_CHART_COORDINATES;
+    }
 
     // Leave vertical padding so the sparkline never clips the SVG edges.
     const points = historyData.map((snapshot, index) => {
