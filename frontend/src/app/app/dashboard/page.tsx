@@ -29,7 +29,7 @@ export default function DashboardPage() {
   const [volatilityCap, setVolatilityCap] = useState<number>(30);
   const [leverageMultiplier, setLeverageMultiplier] = useState<number>(50);
 
-  const { user, loading } = useAuth();
+  const { user, loading, markOnboarded } = useAuth();
   const currentUserID = user?.id || 999;
 
   const { data: serverSummary } = useSWR<ServerPortfolioSummary>(
@@ -100,6 +100,7 @@ export default function DashboardPage() {
 
   const handleOnboardingComplete = (finalProfile: string) => {
     configureDashboardFromBlueprint(finalProfile);
+    markOnboarded();
     setShowOnboarding(false);
   };
 
