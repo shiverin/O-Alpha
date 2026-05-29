@@ -17,13 +17,11 @@ func RunBacktest(ctx context.Context, bars []models.Bar, strat Strategy, initial
 		initialCash = 100_000
 	}
 
-	// Generate signals using the strategy
 	signals, err := strat.GenerateSignal(ctx, bars)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate signals: %w", err)
 	}
 
-	// Validate signals length matches bars length
 	if len(signals) != len(bars) {
 		return nil, fmt.Errorf("signals length (%d) does not match bars length (%d)", len(signals), len(bars))
 	}
@@ -62,10 +60,8 @@ func RunBacktest(ctx context.Context, bars []models.Bar, strat Strategy, initial
 		})
 	}
 
-	// Mark to market at last close if still holding.
 	if shares > 0 {
 		cash = shares * bars[len(bars)-1].Close
-		//shares = 0
 	}
 
 	equities := make([]float64, len(equityCurve))

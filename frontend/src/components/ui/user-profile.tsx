@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
-// FIXED: Added the missing sub-components to the import statement
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -16,10 +14,6 @@ import {
 export function UserProfile() {
   const router = useRouter();
   const { user, loading, logout } = useAuth();
-
-  useEffect(() => {
-    // Auth context already handles loading state
-  }, []);
 
   const handleLogout = async () => {
     await logout();

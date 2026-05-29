@@ -1,5 +1,3 @@
-// @/lib/api.ts
-
 import { getToken } from "@/lib/auth";
 
 const API_BASE =
@@ -17,8 +15,8 @@ export interface BacktestRequest {
   r_noise?: number;
   z_threshold?: number;
   // MA-specific parameters
-  fast_window?: number;
-  slow_window?: number;
+  fast_period?: number;
+  slow_period?: number;
   initial_cash?: number;
 }
 
@@ -38,7 +36,6 @@ export interface BacktestResult {
   num_trades: number;
 }
 
-// Helper function to get auth headers
 const getAuthHeaders = (): HeadersInit => {
   const token = typeof window !== "undefined" ? getToken() : null;
   const headers: HeadersInit = {
@@ -69,7 +66,6 @@ export async function runBacktest(
   return res.json();
 }
 
-// Generic API fetcher with auth support
 export const api = {
   get: async <R>(endpoint: string): Promise<R> => {
     const res = await fetch(`${API_BASE}${endpoint}`, {
@@ -84,7 +80,6 @@ export const api = {
     return res.json();
   },
 
-  // Swapped to <R, T = unknown> so TypeScript infers the payload type automatically
   post: async <R, T = unknown>(endpoint: string, data: T): Promise<R> => {
     const res = await fetch(`${API_BASE}${endpoint}`, {
       method: "POST",
@@ -100,7 +95,6 @@ export const api = {
     return res.json();
   },
 
-  // Swapped to <R, T = unknown> here as well
   put: async <R, T = unknown>(endpoint: string, data: T): Promise<R> => {
     const res = await fetch(`${API_BASE}${endpoint}`, {
       method: "PUT",
@@ -131,10 +125,7 @@ export const api = {
   },
 };
 
-// Append these definitions and methods to frontend/src/lib/api.ts
-
 export interface ServerAgentSettings {
-  user_id: number;
   risk_profile: string;
   leverage: number;
   max_positions: number;
@@ -149,13 +140,10 @@ export interface SettingsCheckResponse {
 }
 
 export const settingsApi = {
-  check: async (userID: number): Promise<SettingsCheckResponse> => {
-    return api.get<SettingsCheckResponse>(
-      `/api/v1/user/settings?user_id=${userID}`,
-    );
+  check: async (): Promise<SettingsCheckResponse> => {
+    return api.get<SettingsCheckResponse>("/api/v1/user/settings");
   },
   save: async (payload: {
-    user_id: number;
     risk_profile: string;
     leverage: number;
     max_positions: number;
@@ -171,10 +159,40 @@ export const settingsApi = {
 };
 
 export const userApi = {
-  completeOnboarding: async (userID: number): Promise<{ status: string }> => {
-    return api.post<{ status: string }, { user_id: number }>(
+  completeOnboarding: async (): Promise<{ status: string }> => {
+    return api.post<{ status: string }, Record<string, never>>(
       "/api/v1/user/onboarding/complete",
-      { user_id: userID },
+      {},
+    );
+  },
+};
+
+export interface AgentControlPayload {
+  symbol: string;
+  strategy_type: "KALMAN" | "MA_CROSSOVER";
+  timeframe?: string;
+  initial_cash?: number;
+  use_websocket?: boolean;
+  q_noise?: number;
+  r_noise?: number;
+  z_threshold?: number;
+  fast_period?: number;
+  slow_period?: number;
+}
+
+export const agentApi = {
+  start: async (
+    payload: AgentControlPayload,
+  ): Promise<{ status: string; symbol: string }> => {
+    return api.post<{ status: string; symbol: string }, AgentControlPayload>(
+      "/api/v1/agent/start",
+      payload,
+    );
+  },
+  stop: async (symbol: string): Promise<{ status: string; symbol: string }> => {
+    return api.post<{ status: string; symbol: string }, { symbol: string }>(
+      "/api/v1/agent/stop",
+      { symbol },
     );
   },
 };

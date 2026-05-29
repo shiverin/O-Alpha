@@ -2,24 +2,21 @@
 
 import { useState, useEffect } from "react";
 import { AppShell } from "@/components/app/AppShell";
-import { settingsApi } from "@/lib/api"; // ✅ Integrated database network layer
-import { useAuth } from "@/context/AuthContext"; // ✅ Integrated authorization context
+import { settingsApi } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 export default function AgentSettingsPage() {
   const [isAdvanced, setIsAdvanced] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Core Posture State
   const [riskProfile, setRiskProfile] = useState("moderate");
 
-  // Tracking flip state configurations independently
   const [flippedCards, setFlippedCards] = useState<{ [key: string]: boolean }>({
     conservative: false,
     moderate: false,
     aggressive: false,
   });
 
-  // Under-the-hood Granular Hyperparameters
   const [leverage, setLeverage] = useState(2);
   const [maxPositions, setMaxPositions] = useState(6);
   const [stopLoss, setStopLoss] = useState(2.5);
@@ -29,12 +26,8 @@ export default function AgentSettingsPage() {
   const { user } = useAuth();
   const currentUserID = user?.id || 999;
 
-  // ─────────────────────────────────────────────────────────────
-  // 📥 READ: LOAD PREFERENCES MATRIX ON COMPONENT MOUNT
-  // ─────────────────────────────────────────────────────────────
   useEffect(() => {
     const loadCurrentConfigurationState = async () => {
-      // Branch A: Load fields from localized storage blocks for sandbox demo states
       if (currentUserID === 999) {
         const demoProfile =
           localStorage.getItem("oa_demo_risk_posture") || "moderate";
@@ -82,9 +75,8 @@ export default function AgentSettingsPage() {
         return;
       }
 
-      // Branch B: Pull down precise parameters directly from the cloud database
       try {
-        const response = await settingsApi.check(currentUserID);
+        const response = await settingsApi.check();
         if (response.found && response.settings) {
           setRiskProfile(response.settings.risk_profile);
           setLeverage(response.settings.leverage);
@@ -127,17 +119,13 @@ export default function AgentSettingsPage() {
   };
 
   const toggleCardFlip = (profile: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Restricts parent selection firing during flip review
+    e.stopPropagation();
     setFlippedCards((prev) => ({ ...prev, [profile]: !prev[profile] }));
   };
 
-  // ─────────────────────────────────────────────────────────────
-  // 📤 WRITE: SAVE CORE HYPERPARAMETERS
-  // ─────────────────────────────────────────────────────────────
   const handleSave = async () => {
     setIsSaving(true);
 
-    // Branch A: Persist locally for anonymous demo sessions
     if (currentUserID === 999) {
       await new Promise((resolve) => setTimeout(resolve, 600));
       localStorage.setItem("oa_demo_risk_posture", riskProfile);
@@ -151,9 +139,7 @@ export default function AgentSettingsPage() {
       return;
     }
 
-    // Branch B: Map attributes to strict snake_case and fire over the wire
     const configPayload = {
-      user_id: currentUserID,
       risk_profile: riskProfile,
       leverage: leverage,
       max_positions: maxPositions,
@@ -184,9 +170,6 @@ export default function AgentSettingsPage() {
   return (
     <AppShell title="Agent Settings">
       <div className="w-full bg-transparent flex flex-col gap-6 md:gap-10 animate-in fade-in duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]">
-        {/* =========================================
-            HEADER CONTROL GATEWAY
-        ========================================= */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-2 border-b border-outline-variant/10">
           <div>
             <h1 className="text-2xl sm:text-3xl font-light tracking-tight text-on-surface">
@@ -211,9 +194,6 @@ export default function AgentSettingsPage() {
           </button>
         </div>
 
-        {/* =========================================
-            SIMPLE WORKSPACE: RECONFIGURED BENTO MATRIX
-        ========================================= */}
         <div className="flex flex-col gap-2">
           <span className="text-[10px] font-mono tracking-[0.2em] text-on-surface-variant/40 uppercase block mb-1">
             Risk Profiles
@@ -236,7 +216,6 @@ export default function AgentSettingsPage() {
                         isFlipped ? "[transform:rotateY(180deg)]" : ""
                       }`}
                     >
-                      {/* FRONT FACE */}
                       <div
                         className={`absolute inset-0 [backface-visibility:hidden] flex flex-col justify-center items-center bg-surface-container-low border rounded-[24px] p-6 transition-all duration-300 ${
                           isSelected
@@ -265,7 +244,6 @@ export default function AgentSettingsPage() {
                         </h4>
                       </div>
 
-                      {/* BACK FACE */}
                       <div className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)] flex flex-col justify-center bg-surface-container border border-outline-variant/40 rounded-[24px] p-6 shadow-xl">
                         <button
                           type="button"
@@ -289,12 +267,8 @@ export default function AgentSettingsPage() {
           </div>
         </div>
 
-        {/* =========================================
-            ADVANCED EXPERT VARIABLE PARAMETERS
-        ========================================= */}
         {isAdvanced && (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 md:gap-8 animate-in fade-in slide-in-from-top-4 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] border-t border-outline-variant/10 pt-6">
-            {/* INPUT PANEL MODULE LEFT */}
             <div className="group relative bg-surface-container-low border border-outline-variant/30 rounded-[32px] p-6 sm:p-8 flex flex-col gap-6">
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between text-[11px] font-mono tracking-wider text-on-surface-variant">
@@ -360,7 +334,6 @@ export default function AgentSettingsPage() {
               </div>
             </div>
 
-            {/* INPUT PANEL MODULE RIGHT */}
             <div className="group relative bg-surface-container-low border border-outline-variant/30 rounded-[32px] p-6 sm:p-8 flex flex-col gap-6">
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between text-[11px] font-mono tracking-wider text-on-surface-variant">
@@ -409,9 +382,6 @@ export default function AgentSettingsPage() {
           </div>
         )}
 
-        {/* =========================================
-            GLOBAL DISPATCH SYNC ACTION
-          ========================================= */}
         <div className="pt-4 border-t border-outline-variant/20 flex justify-end">
           <button
             type="button"

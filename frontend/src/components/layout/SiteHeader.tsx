@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, Dispatch, SetStateAction } from "react";
-// FIXED: Imported usePathname alongside useRouter
 import { useRouter } from "next/navigation";
 
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/solid";
@@ -43,7 +42,6 @@ export function SiteHeader({
   const setLoginOpen = onLoginModalOpenChange || setInternalLoginOpen;
 
   const router = useRouter();
-  // const pathname = usePathname();
 
   const links = navLinks.map((link) => ({
     ...link,
@@ -140,7 +138,6 @@ export function SiteHeader({
                 }
               `}
             >
-              {/* FIXED: Removed nested <a> tag */}
               {link.label}
             </Link>
           ))}

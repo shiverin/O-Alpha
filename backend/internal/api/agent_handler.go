@@ -1,8 +1,8 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/oalpha/internal/backtest"
@@ -10,7 +10,6 @@ import (
 )
 
 type AgentControlRequest struct {
-	UserID       int64   `json:"user_id"`
 	Symbol       string  `json:"symbol" binding:"required"`
 	StrategyType string  `json:"strategy_type" binding:"required"`
 	Timeframe    string  `json:"timeframe"`
@@ -23,16 +22,24 @@ type AgentControlRequest struct {
 	SlowPeriod   int     `json:"slow_period"`
 }
 
-// LaunchLiveAgent provisions and kicks off a real-time live trading process loop.
+// LaunchLiveAgent starts a user-scoped paper trading worker.
 func (h *Handler) LaunchLiveAgent(c *gin.Context) {
+	userID, ok := h.deriveUserIDQuery(c)
+	if !ok {
+		return
+	}
+
 	var req AgentControlRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if req.UserID == 0 {
-		req.UserID = 999
+	req.Symbol = strings.ToUpper(strings.TrimSpace(req.Symbol))
+	req.StrategyType = strings.ToUpper(strings.TrimSpace(req.StrategyType))
+	if req.Symbol == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "symbol is required"})
+		return
 	}
 	if req.Timeframe == "" {
 		req.Timeframe = "1Hour"
@@ -54,19 +61,26 @@ func (h *Handler) LaunchLiveAgent(c *gin.Context) {
 			req.ZThreshold = 2.0
 		}
 		strat = backtest.NewKalmanStrategy(req.QNoise, req.RNoise, 20, req.ZThreshold)
-	default:
+	case "MA_CROSSOVER":
 		if req.FastPeriod == 0 {
 			req.FastPeriod = 10
 		}
 		if req.SlowPeriod == 0 {
 			req.SlowPeriod = 30
 		}
+		if req.FastPeriod >= req.SlowPeriod {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "fast_period must be less than slow_period"})
+			return
+		}
 		strat = backtest.NewMACrossoverStrategy(req.FastPeriod, req.SlowPeriod)
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{"error": "strategy_type must be KALMAN or MA_CROSSOVER"})
+		return
 	}
 
 	err := h.AgentManager.StartAgent(
 		c.Request.Context(),
-		req.UserID,
+		userID,
 		req.Symbol,
 		req.Timeframe,
 		strat,
@@ -82,10 +96,14 @@ func (h *Handler) LaunchLiveAgent(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "activated", "symbol": req.Symbol})
 }
 
-// TerminateLiveAgent stops a matching active process loop instantly.
+// TerminateLiveAgent stops a user-scoped worker.
 func (h *Handler) TerminateLiveAgent(c *gin.Context) {
+	userID, ok := h.deriveUserIDQuery(c)
+	if !ok {
+		return
+	}
+
 	var req struct {
-		UserID int64  `json:"user_id"`
 		Symbol string `json:"symbol" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -93,11 +111,13 @@ func (h *Handler) TerminateLiveAgent(c *gin.Context) {
 		return
 	}
 
-	if req.UserID == 0 {
-		req.UserID = 999
+	req.Symbol = strings.ToUpper(strings.TrimSpace(req.Symbol))
+	if req.Symbol == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "symbol is required"})
+		return
 	}
 
-	err := h.AgentManager.StopAgent(req.UserID, req.Symbol)
+	err := h.AgentManager.StopAgent(userID, req.Symbol)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -106,17 +126,10 @@ func (h *Handler) TerminateLiveAgent(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "terminated", "symbol": req.Symbol})
 }
 
-// GetUserSettings evaluates if a configuration state is available for the given user profile.
+// GetUserSettings returns saved agent settings for the authenticated user.
 func (h *Handler) GetUserSettings(c *gin.Context) {
-	userIDStr := c.Query("user_id")
-	if userIDStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id query parameter is required"})
-		return
-	}
-
-	var userID int64
-	if _, err := fmt.Sscanf(userIDStr, "%d", &userID); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user_id format"})
+	userID, ok := h.deriveUserIDQuery(c)
+	if !ok {
 		return
 	}
 
@@ -134,10 +147,9 @@ func (h *Handler) GetUserSettings(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"found": true, "settings": settings})
 }
 
-// SaveUserSettings ingests settings payloads and synchronizes active database models.
+// SaveUserSettings validates and persists agent settings for the authenticated user.
 func (h *Handler) SaveUserSettings(c *gin.Context) {
 	var req struct {
-		UserID        int64   `json:"user_id" binding:"required"`
 		RiskProfile   string  `json:"risk_profile" binding:"required"`
 		Leverage      int     `json:"leverage" binding:"required"`
 		MaxPositions  int     `json:"max_positions" binding:"required"`
@@ -151,8 +163,17 @@ func (h *Handler) SaveUserSettings(c *gin.Context) {
 		return
 	}
 
+	userID, ok := h.deriveUserIDQuery(c)
+	if !ok {
+		return
+	}
+	if !validAgentSettings(req.RiskProfile, req.Leverage, req.MaxPositions, req.StopLossPct, req.TakeProfitPct, req.RebalanceFreq) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "agent settings are outside supported bounds"})
+		return
+	}
+
 	settings := &db.AgentSettings{
-		UserID:        req.UserID,
+		UserID:        userID,
 		RiskProfile:   req.RiskProfile,
 		Leverage:      req.Leverage,
 		MaxPositions:  req.MaxPositions,
@@ -167,4 +188,30 @@ func (h *Handler) SaveUserSettings(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "synchronized"})
+}
+
+func validAgentSettings(riskProfile string, leverage, maxPositions int, stopLossPct, takeProfitPct float64, rebalanceFreq string) bool {
+	switch riskProfile {
+	case "conservative", "moderate", "aggressive":
+	default:
+		return false
+	}
+	switch rebalanceFreq {
+	case "hourly", "daily", "weekly", "monthly":
+	default:
+		return false
+	}
+	if leverage < 1 || leverage > 10 {
+		return false
+	}
+	if maxPositions < 1 || maxPositions > 100 {
+		return false
+	}
+	if stopLossPct <= 0 || stopLossPct > 100 {
+		return false
+	}
+	if takeProfitPct <= 0 || takeProfitPct > 100 {
+		return false
+	}
+	return true
 }

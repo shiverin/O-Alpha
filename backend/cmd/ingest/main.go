@@ -72,12 +72,10 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// 🚀 1. Trigger delta synchronization immediately for all symbols at startup
 	if err := syncAllSymbolsDelta(ctx, repo, client, cfg.IngestSymbols, cfg.IngestInterval, cfg.IngestLookback); err != nil {
 		log.Error().Err(err).Msg("startup delta resync encountered warnings")
 	}
 
-	// ⏰ 2. Establish our long-running background cron interval ticker
 	ticker := time.NewTicker(tickInterval)
 	defer ticker.Stop()
 
@@ -101,7 +99,7 @@ func main() {
 	log.Info().Msg("ingest service stopped gracefully")
 }
 
-// Spans concurrent goroutines across target assets to safely perform delta updates
+// syncAllSymbolsDelta runs one delta sync per configured symbol.
 func syncAllSymbolsDelta(ctx context.Context, repo *db.BarsRepository, client *alpaca.Client, symbols []string, interval string, defaultLookback time.Duration) error {
 	var wg sync.WaitGroup
 	errCh := make(chan error, len(symbols))
@@ -128,29 +126,25 @@ func syncAllSymbolsDelta(ctx context.Context, repo *db.BarsRepository, client *a
 	return nil
 }
 
-// Evaluates database timelines against real-world gaps to query exact ranges from Alpaca
+// syncSingleSymbolDelta starts from the latest stored bar and relies on upserts
+// to absorb an overlapping boundary candle.
 func syncSingleSymbolDelta(ctx context.Context, repo *db.BarsRepository, client *alpaca.Client, symbol, interval string, defaultLookback time.Duration) error {
 	end := time.Now().UTC()
 	var start time.Time
 
-	// 🔍 Check database to find when we last logged this asset configuration
 	latestTime, found, err := repo.GetLatestBarTime(ctx, symbol, interval)
 	if err != nil {
 		return err
 	}
 
 	if found {
-		// ✅ Smart Delta Mode: Start pulling from the exact millisecond of your last recorded bar.
-		// Your composite ON CONFLICT clause will safely handle updating this boundary bar if its metrics finalized late.
 		start = latestTime
 		log.Info().Str("symbol", symbol).Time("last_recorded", start).Msg("Delta sync mapping initialized")
 	} else {
-		// 💤 Bulk Inception Mode: Table is pristine, apply lookback window configurations
 		start = end.Add(-defaultLookback)
 		log.Info().Str("symbol", symbol).Time("lookback_start", start).Msg("No data found. Commencing cold structural initialization")
 	}
 
-	// Avoid firing empty, redundant queries over the wire to Alpaca if we are already completely up to date
 	if end.Sub(start) < 2*time.Second {
 		log.Debug().Str("symbol", symbol).Msg("Asset database timeline matches real-world metrics. Sync skipped")
 		return nil

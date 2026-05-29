@@ -1,4 +1,4 @@
-# ✅ Globally load and export the .env file if it exists in the root directory
+# Load and export the root .env file when present.
 ifneq (,$(wildcard .env))
     include .env
     export
@@ -28,29 +28,29 @@ help:
 setup-local:
 	@echo "Setting up for local development with Supabase..."
 	@cp .env.local .env
-	@echo "✅ Copied .env.local to .env"
+	@echo "Copied .env.local to .env"
 	@echo ""
-	@echo "⚠️  Next steps:"
+	@echo "Next steps:"
 	@echo "1. Update DATABASE_URL in .env with your Supabase credentials"
 	@echo "2. Run: make migrate"
 	@echo "3. Run: make run-api"
 	@echo "4. Run: npm run dev (from frontend folder)"
 	@echo ""
-	@echo "📖 See DATABASE_CONFIG.md for detailed instructions"
+	@echo "See README.md for detailed instructions"
 
 setup-docker:
 	@echo "Setting up for Docker deployment..."
 	@cp .env.docker .env
-	@echo "✅ Copied .env.docker to .env"
+	@echo "Copied .env.docker to .env"
 	@echo ""
-	@echo "⚠️  Next steps:"
+	@echo "Next steps:"
 	@echo "1. Run: make up"
 	@echo "2. Services will start:"
 	@echo "   - API: http://localhost:8080"
 	@echo "   - Frontend: http://localhost:3000"
 	@echo "   - Database: localhost:5432 (oalpha:dev)"
 	@echo ""
-	@echo "📖 See DATABASE_CONFIG.md for detailed instructions"
+	@echo "See README.md for detailed instructions"
 
 up:
 	docker compose up -d --build

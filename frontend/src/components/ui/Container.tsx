@@ -25,7 +25,6 @@ export const Container = ({
   px = "desktop",
   maxWidth = fluid ? undefined : "[1440px]",
 }: ContainerProps) => {
-  // Padding classes
   let pxClass = "";
   switch (px) {
     case "mobile":
@@ -39,13 +38,11 @@ export const Container = ({
       break;
   }
 
-  // Width/max-width classes
   let widthClass = "w-full";
   if (!fluid && maxWidth) {
     widthClass += ` max-w-${typeof maxWidth === "number" ? `[${maxWidth}px]` : maxWidth}`;
   }
 
-  // Centering (only when not fluid and has max-width)
   const mxClass = !fluid ? "mx-auto" : "";
 
   return (

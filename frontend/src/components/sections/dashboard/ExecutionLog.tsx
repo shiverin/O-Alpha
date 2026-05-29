@@ -12,13 +12,8 @@ export default function ExecutionLog({
   currentUserID,
   serverTrades,
 }: ExecutionLogProps) {
-  // 1. Determine if we should render the guest sandbox telemetry loop
   const isGuestMode = currentUserID === 999;
-
-  // 2. Safely evaluate if our SWR network pipeline is still fetching
   const isLoading = !isGuestMode && serverTrades === undefined;
-
-  // 3. Detect if a real user has landed with a completely fresh account history
   const isEmpty = !isGuestMode && serverTrades && serverTrades.length === 0;
 
   return (
@@ -31,7 +26,6 @@ export default function ExecutionLog({
       </h3>
 
       <div className="bg-void-black/40 rounded-xl p-4 flex-grow overflow-y-auto terminal-scroll font-mono text-[11px] leading-relaxed text-on-surface-variant/80 border border-outline-variant/20">
-        {/* Table Headers (Only show if we aren't loading or empty) */}
         {!isLoading && !isEmpty && (
           <div className="flex justify-between border-b border-outline-variant/20 pb-2 mb-2 text-on-surface-variant/40 font-medium tracking-wider">
             <span className="w-12 sm:w-16">TIME</span>
@@ -42,7 +36,6 @@ export default function ExecutionLog({
         )}
 
         <div className="space-y-1">
-          {/* STATE A: CURRENT USER IS THE GUEST SANDBOX ENGINE */}
           {isGuestMode &&
             mockExecutionLogs.map((log: MockLogItem, index: number) => (
               <div
@@ -60,14 +53,12 @@ export default function ExecutionLog({
               </div>
             ))}
 
-          {/* STATE B: NETWORK WIRE IS LOADING IN FLIGHT */}
           {isLoading && (
             <div className="h-full w-full flex items-center justify-center text-xs text-primary-container/40 uppercase tracking-widest animate-pulse py-20">
-              ⚡ Connecting core telemetry streaming nodes...
+              Connecting core telemetry streaming nodes...
             </div>
           )}
 
-          {/* STATE C: REAL USER WITH 0 HISTORICAL TRADES */}
           {isEmpty && (
             <div className="flex flex-col gap-2 py-12 px-4 text-left text-on-surface-variant/50">
               <p className="text-primary-fixed-dim text-xs font-semibold select-none">
@@ -83,7 +74,6 @@ export default function ExecutionLog({
             </div>
           )}
 
-          {/* STATE D: PRODUCTION LIVE ACCOUNT TRACKING REDUCTION MAP */}
           {!isGuestMode &&
             serverTrades &&
             serverTrades.map((log: ServerTradeLog, index: number) => {

@@ -52,8 +52,8 @@ export function PerformancePage() {
         q_noise: strategyConfig.qNoise,
         r_noise: strategyConfig.rNoise,
         z_threshold: strategyConfig.zThresh,
-        fast_window: strategyConfig.fastPeriod,
-        slow_window: strategyConfig.slowPeriod,
+        fast_period: strategyConfig.fastPeriod,
+        slow_period: strategyConfig.slowPeriod,
       };
 
       const result = await runBacktest(payload);

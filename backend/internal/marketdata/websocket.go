@@ -15,34 +15,36 @@ import (
 	"github.com/oalpha/pkg/models"
 )
 
-// WebSocketConnector handles Alpaca market data streams
+// WebSocketConnector handles Alpaca market data streams.
 type WebSocketConnector struct {
-	alpacaClient *alpaca.Client
-	symbols      []string
-	timeframe    string
-	dataChan     chan models.Bar
-	doneChan     chan struct{}
-	errChan      chan error
-	wsConn       *websocket.Conn
-	mu           sync.Mutex
-	connected    bool
+	alpacaClient    *alpaca.Client
+	symbols         []string
+	timeframe       string
+	dataChan        chan models.Bar
+	doneChan        chan struct{}
+	errChan         chan error
+	wsConn          *websocket.Conn
+	mu              sync.Mutex
+	stopOnce        sync.Once
+	reconnectOnce   sync.Once
+	connected       bool
 	reconnectTicker *time.Ticker
 }
 
-// NewWebSocketConnector creates a new market data WebSocket connector
+// NewWebSocketConnector creates a market data WebSocket connector.
 func NewWebSocketConnector(alpacaClient *alpaca.Client, symbols []string, timeframe string) *WebSocketConnector {
 	return &WebSocketConnector{
-		alpacaClient: alpacaClient,
-		symbols:      symbols,
-		timeframe:    timeframe,
-		dataChan:     make(chan models.Bar, 100),
-		doneChan:     make(chan struct{}),
-		errChan:      make(chan error, 1),
+		alpacaClient:    alpacaClient,
+		symbols:         symbols,
+		timeframe:       timeframe,
+		dataChan:        make(chan models.Bar, 100),
+		doneChan:        make(chan struct{}),
+		errChan:         make(chan error, 1),
 		reconnectTicker: time.NewTicker(30 * time.Second),
 	}
 }
 
-// Start begins the WebSocket connection
+// Start opens the stream and starts the reader and reconnect loops.
 func (w *WebSocketConnector) Start(ctx context.Context) error {
 	w.mu.Lock()
 	if w.connected {
@@ -51,17 +53,13 @@ func (w *WebSocketConnector) Start(ctx context.Context) error {
 	}
 	w.mu.Unlock()
 
-	// Determine WebSocket URL based on environment
 	var wsURL string
 	if w.alpacaClient.BaseURL() == "https://api.alpaca.markets" {
-		// Use SIP for paid data
 		wsURL = "wss://stream.data.alpaca.markets/v2/sip"
 	} else {
-		// Use IEX for free/paper data
 		wsURL = "wss://stream.data.alpaca.markets/v2/iex"
 	}
 
-	// Dial WebSocket connection
 	header := http.Header{}
 	header.Add("APCA-API-KEY-ID", w.alpacaClient.APIKey())
 	header.Add("APCA-API-SECRET-KEY", w.alpacaClient.APISecret())
@@ -70,19 +68,24 @@ func (w *WebSocketConnector) Start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("websocket dial failed: %w", err)
 	}
-	if resp.StatusCode != 101 {
-		if err := resp.Body.Close(); err != nil {
-			log.Printf("close body: %v", err)
+	if resp != nil && resp.StatusCode != http.StatusSwitchingProtocols {
+		if resp.Body != nil {
+			if err := resp.Body.Close(); err != nil {
+				log.Printf("close body: %v", err)
+			}
+		}
+		if c != nil {
+			_ = c.Close()
 		}
 		return fmt.Errorf("unexpected WS response: %d", resp.StatusCode)
 	}
-
-	if err := resp.Body.Close(); err != nil {
-		log.Printf("close body: %v", err)
+	if resp != nil && resp.Body != nil {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("close body: %v", err)
+		}
 	}
 	w.wsConn = c
 
-	// Subscribe to bars for symbols
 	subMsg := map[string]interface{}{
 		"action": "subscribe",
 		"bars":   w.symbols,
@@ -96,21 +99,20 @@ func (w *WebSocketConnector) Start(ctx context.Context) error {
 	w.connected = true
 	w.mu.Unlock()
 
-	// Start reading messages
 	go w.readMessages(ctx)
-	go w.handleReconnect(ctx)
+	w.reconnectOnce.Do(func() {
+		go w.handleReconnect(ctx)
+	})
 
 	return nil
 }
 
-// readMessages continuously reads from WebSocket
+// readMessages streams valid bar messages into dataChan.
 func (w *WebSocketConnector) readMessages(ctx context.Context) {
 	defer func() {
 		if w.wsConn != nil {
 			_ = w.wsConn.Close()
 		}
-		close(w.dataChan)
-		close(w.errChan)
 		w.mu.Lock()
 		w.connected = false
 		w.mu.Unlock()
@@ -133,17 +135,14 @@ func (w *WebSocketConnector) readMessages(ctx context.Context) {
 				return
 			}
 
-			// Parse Alpaca WebSocket message
 			var wsMsg []map[string]interface{}
 			if err := json.Unmarshal(msg, &wsMsg); err != nil {
 				log.Printf("Failed to parse WS message: %v", err)
 				continue
 			}
 
-			// Handle bar data
 			for _, barData := range wsMsg {
 				if barData["T"] == nil || barData["S"] == nil {
-					// Not a bar message, could be trade, quote, or status
 					continue
 				}
 
@@ -161,7 +160,7 @@ func (w *WebSocketConnector) readMessages(ctx context.Context) {
 	}
 }
 
-// handleReconnect manages reconnection logic
+// handleReconnect periodically reconnects after a dropped stream.
 func (w *WebSocketConnector) handleReconnect(ctx context.Context) {
 	for {
 		select {
@@ -173,11 +172,9 @@ func (w *WebSocketConnector) handleReconnect(ctx context.Context) {
 			w.mu.Lock()
 			if !w.connected {
 				w.mu.Unlock()
-				// Attempt reconnection
 				log.Println("Attempting WebSocket reconnection...")
 				if err := w.Start(ctx); err != nil {
 					log.Printf("Reconnection failed: %v", err)
-					// Will try again on next tick
 				} else {
 					log.Println("WebSocket reconnected successfully")
 				}
@@ -188,12 +185,20 @@ func (w *WebSocketConnector) handleReconnect(ctx context.Context) {
 	}
 }
 
-// parseAlpacaBar converts Alpaca WebSocket bar to internal model
+// parseAlpacaBar converts an Alpaca bar payload to the internal model.
 func (w *WebSocketConnector) parseAlpacaBar(data map[string]interface{}) *models.Bar {
-	t := data["t"].(string)
+	messageType, ok := stringField(data, "T")
+	if !ok || messageType != "b" {
+		return nil
+	}
+
+	t, ok := stringField(data, "t")
+	if !ok {
+		log.Printf("Skipping bar without timestamp: %v", data)
+		return nil
+	}
 	timestamp, err := time.Parse(time.RFC3339Nano, t)
 	if err != nil {
-		// Try alternative format
 		timestamp, err = time.Parse(time.RFC3339, t)
 		if err != nil {
 			log.Printf("Failed to parse time %s: %v", t, err)
@@ -201,50 +206,115 @@ func (w *WebSocketConnector) parseAlpacaBar(data map[string]interface{}) *models
 		}
 	}
 
-	return &models.Bar{
+	symbol, ok := stringField(data, "S")
+	if !ok {
+		log.Printf("Skipping bar without symbol: %v", data)
+		return nil
+	}
+	open, ok := floatField(data, "o")
+	if !ok {
+		log.Printf("Skipping bar without open price: %v", data)
+		return nil
+	}
+	high, ok := floatField(data, "h")
+	if !ok {
+		log.Printf("Skipping bar without high price: %v", data)
+		return nil
+	}
+	low, ok := floatField(data, "l")
+	if !ok {
+		log.Printf("Skipping bar without low price: %v", data)
+		return nil
+	}
+	closePrice, ok := floatField(data, "c")
+	if !ok {
+		log.Printf("Skipping bar without close price: %v", data)
+		return nil
+	}
+	volume, ok := floatField(data, "v")
+	if !ok {
+		log.Printf("Skipping bar without volume: %v", data)
+		return nil
+	}
+
+	bar := models.Bar{
 		Time:   timestamp.UTC(),
-		Symbol: strings.ToUpper(data["S"].(string)),
-		Open:   data["o"].(float64),
-		High:   data["h"].(float64),
-		Low:    data["l"].(float64),
-		Close:  data["c"].(float64),
-		Volume: int64(data["v"].(float64)),
+		Symbol: strings.ToUpper(symbol),
+		Open:   open,
+		High:   high,
+		Low:    low,
+		Close:  closePrice,
+		Volume: int64(volume),
+	}
+	if err := alpaca.ValidateBar(bar); err != nil {
+		log.Printf("Skipping invalid bar: %v", err)
+		return nil
+	}
+	return &bar
+}
+
+func stringField(data map[string]interface{}, key string) (string, bool) {
+	value, ok := data[key]
+	if !ok {
+		return "", false
+	}
+	s, ok := value.(string)
+	return s, ok && s != ""
+}
+
+func floatField(data map[string]interface{}, key string) (float64, bool) {
+	value, ok := data[key]
+	if !ok {
+		return 0, false
+	}
+	switch v := value.(type) {
+	case float64:
+		return v, true
+	case int:
+		return float64(v), true
+	case int64:
+		return float64(v), true
+	case json.Number:
+		f, err := v.Float64()
+		return f, err == nil
+	default:
+		return 0, false
 	}
 }
 
-// Data returns the market data channel
+// Data returns the market data channel.
 func (w *WebSocketConnector) Data() <-chan models.Bar {
 	return w.dataChan
 }
 
-// Errors returns the error channel
+// Errors returns the error channel.
 func (w *WebSocketConnector) Errors() <-chan error {
 	return w.errChan
 }
 
-// IsConnected returns connection status
+// IsConnected returns connection status.
 func (w *WebSocketConnector) IsConnected() bool {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	return w.connected
 }
 
-// Stop closes the WebSocket connection
+// Stop closes the WebSocket connection.
 func (w *WebSocketConnector) Stop() {
-	w.mu.Lock()
-	if !w.connected {
+	w.stopOnce.Do(func() {
+		close(w.doneChan)
+		w.reconnectTicker.Stop()
+
+		w.mu.Lock()
+		conn := w.wsConn
+		w.connected = false
 		w.mu.Unlock()
-		return
-	}
-	w.mu.Unlock()
 
-	close(w.doneChan)
-	w.reconnectTicker.Stop()
+		if conn != nil {
+			_ = conn.Close()
+		}
 
-	if w.wsConn != nil {
-		_ = w.wsConn.Close()
-	}
-
-	// Wait for goroutines to cleanup
-	time.Sleep(100 * time.Millisecond)
+		// Wait briefly for reader goroutines to observe doneChan and exit.
+		time.Sleep(100 * time.Millisecond)
+	})
 }

@@ -33,15 +33,13 @@ func NewAuthService(userRepo *db.UserRepository, jwtSecret string, tokenExpiry t
 	}
 }
 
-// Login authenticates a user with username and password.
-// It preserves auto-registration behavior while returning the user to avoid a duplicate DB lookup.
+// Login authenticates a user and preserves the current auto-registration behavior.
 func (s *AuthService) Login(ctx context.Context, username, password string) (string, *models.User, error) {
 	user, err := s.userRepo.GetUserByUsername(ctx, username)
 	if err != nil {
 		return "", nil, err
 	}
 
-	// Preserved Auto-Registration Behavior
 	if user == nil {
 		newUser := &models.User{Username: username}
 		if err := newUser.SetPassword(password); err != nil {
@@ -57,7 +55,6 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (str
 		return "", nil, errors.New("invalid credentials")
 	}
 
-	// Create token using safe, typed Claims struct
 	claims := Claims{
 		UserID:   user.ID,
 		Username: user.Username,

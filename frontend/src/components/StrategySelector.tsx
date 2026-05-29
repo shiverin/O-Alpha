@@ -15,7 +15,6 @@ interface StrategySelectorProps {
   onConfigChange: (config: StrategyConfig) => void;
 }
 
-// 1. Added 'onCommit' to the Slider props
 const Slider = ({
   label,
   value,
@@ -58,9 +57,7 @@ const Slider = ({
           max={max}
           step={step}
           value={value}
-          // 2. onChange ONLY updates local visual state (instant, buttery smooth)
           onChange={(e) => onChange(parseFloat(e.target.value))}
-          // 3. onPointerUp fires when you let go of the mouse/touchscreen (commits data)
           onPointerUp={onCommit}
           className="absolute w-full h-[3px] appearance-none outline-none rounded-full cursor-pointer
             [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 
@@ -90,7 +87,6 @@ export default function StrategySelector({
 }: StrategySelectorProps) {
   const [strategy, setStrategy] = useState("KALMAN");
 
-  // Local States
   const [qNoise, setQNoise] = useState(0.01);
   const [rNoise, setRNoise] = useState(0.5);
   const [zThresh, setZThresh] = useState(2.0);
@@ -124,7 +120,6 @@ export default function StrategySelector({
 
   return (
     <div className="w-full bg-transparent flex flex-col gap-8 py-2">
-      {/* Header & Segmented Engine Toggle */}
       <div className="flex flex-col gap-4">
         <span className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-medium">
           Simulation Engine
@@ -160,7 +155,6 @@ export default function StrategySelector({
         </div>
       </div>
 
-      {/* Dynamic Settings Configuration */}
       <div className="flex flex-col gap-8 min-h-[220px]">
         {strategy === "KALMAN" && (
           <div className="flex flex-col gap-8 animate-in fade-in zoom-in-95 duration-500 ease-out">
@@ -170,9 +164,7 @@ export default function StrategySelector({
               max="0.1"
               step="0.001"
               value={qNoise}
-              // 4. Update local state immediately for visual feedback
               onChange={(v) => setQNoise(v)}
-              // 5. Tell the parent to update ONLY when dragging stops
               onCommit={() => handleUpdate({ qNoise })}
             />
             <Slider

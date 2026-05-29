@@ -119,7 +119,6 @@ type DataValidationReport struct {
 }
 
 // ValidateData checks bar integrity and rough continuity.
-// ✅ Fix: Added 'timeframe string' parameter and passed it into GetBars
 func (r *BarsRepository) ValidateData(ctx context.Context, symbol, timeframe string, start, end time.Time, expectedInterval time.Duration) (*DataValidationReport, error) {
 	bars, err := r.GetBars(ctx, symbol, timeframe, start, end)
 	if err != nil {
@@ -218,22 +217,21 @@ func (r *BarsRepository) SaveBacktestRun(ctx context.Context, userID, configID i
 	return nil
 }
 
-// GetLatestBarTime queries the maximum timestamp recorded for a unique asset pairing.
-// Returns the timestamp and a boolean indicating if any data rows were discovered.
+// GetLatestBarTime returns the latest stored timestamp for a symbol/timeframe pair.
 func (r *BarsRepository) GetLatestBarTime(ctx context.Context, symbol, timeframe string) (time.Time, bool, error) {
 	const q = `
 		SELECT max(time) 
 		FROM bars 
 		WHERE symbol = $1 AND timeframe = $2`
 
-	var latestTime *time.Time // Using a pointer handles SQL NULL cleanly if the table is blank
+	var latestTime *time.Time
 	err := r.db.QueryRow(ctx, q, symbol, timeframe).Scan(&latestTime)
 	if err != nil {
 		return time.Time{}, false, fmt.Errorf("query max bar time: %w", err)
 	}
 
 	if latestTime == nil {
-		return time.Time{}, false, nil // Table is completely empty for this asset
+		return time.Time{}, false, nil
 	}
 
 	return *latestTime, true, nil

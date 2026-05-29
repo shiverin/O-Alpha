@@ -13,27 +13,29 @@ import (
 
 // AgentManager orchestrates the runtime lifecycles of live AgentWorkers.
 type AgentManager struct {
-	mu           sync.RWMutex
-	activeAgents map[string]*AgentWorker
-	alpacaClient *alpaca.Client
-	repo         *db.BarsRepository
+	mu            sync.RWMutex
+	activeAgents  map[string]*AgentWorker
+	alpacaClient  *alpaca.Client
+	repo          *db.BarsRepository
+	portfolioRepo *db.PortfolioRepository
 }
 
-// NewAgentManager instantiates a clean orchestrator instance.
-func NewAgentManager(client *alpaca.Client, repo *db.BarsRepository) *AgentManager {
+// NewAgentManager constructs an agent orchestrator.
+func NewAgentManager(client *alpaca.Client, repo *db.BarsRepository, portfolioRepo *db.PortfolioRepository) *AgentManager {
 	return &AgentManager{
-		activeAgents: make(map[string]*AgentWorker),
-		alpacaClient: client,
-		repo:         repo,
+		activeAgents:  make(map[string]*AgentWorker),
+		alpacaClient:  client,
+		repo:          repo,
+		portfolioRepo: portfolioRepo,
 	}
 }
 
-// GenerateKey builds a unique tracking handle for an agent loop.
+// GenerateKey builds a stable per-user, per-symbol worker key.
 func (m *AgentManager) GenerateKey(userID int64, symbol string) string {
 	return fmt.Sprintf("%d_%s", userID, symbol)
 }
 
-// StartAgent provisions, warms up, and initializes a background market routing pipeline.
+// StartAgent provisions and starts one background worker.
 func (m *AgentManager) StartAgent(
 	ctx context.Context,
 	userID int64,
@@ -52,11 +54,12 @@ func (m *AgentManager) StartAgent(
 		return fmt.Errorf("agent for symbol %s is already running for this user", symbol)
 	}
 
-	// Spin up the worker thread using your existing constructor layout
 	worker := NewAgentWorker(
-		context.Background(), // Root context detached from transient HTTP lifecycle boundaries
+		context.Background(), // Decouple worker lifetime from the HTTP request context.
 		m.alpacaClient,
 		m.repo,
+		m.portfolioRepo,
+		userID,
 		strat,
 		symbol,
 		timeframe,
@@ -65,33 +68,38 @@ func (m *AgentManager) StartAgent(
 		useWebSocket,
 	)
 
-	// Trigger indicators warmup and start polling loops
 	if err := worker.Start(); err != nil {
 		return fmt.Errorf("failed to start live agent: %w", err)
 	}
 
 	m.activeAgents[key] = worker
-	m.activeAgents[key] = worker
 
-	// Background monitor loop to auto-cleanup dropped/failed worker nodes safely
 	go func(agentKey string, w *AgentWorker) {
-		select {
-		case <-w.Done():
-		case err := <-w.Err():
-			if err != nil {
-				// FIX: Added a valid log operation to eliminate the empty branch lint warning
-				log.Printf("Background agent worker error [%s]: %v", agentKey, err)
+		for {
+			select {
+			case <-w.Done():
+				m.mu.Lock()
+				delete(m.activeAgents, agentKey)
+				m.mu.Unlock()
+				return
+			case err, ok := <-w.Err():
+				if !ok {
+					m.mu.Lock()
+					delete(m.activeAgents, agentKey)
+					m.mu.Unlock()
+					return
+				}
+				if err != nil {
+					log.Printf("Background agent worker error [%s]: %v", agentKey, err)
+				}
 			}
 		}
-		m.mu.Lock()
-		delete(m.activeAgents, agentKey)
-		m.mu.Unlock()
 	}(key, worker)
 
 	return nil
 }
 
-// StopAgent gracefully terminates an active streaming thread channel.
+// StopAgent terminates an active worker.
 func (m *AgentManager) StopAgent(userID int64, symbol string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -107,7 +115,7 @@ func (m *AgentManager) StopAgent(userID int64, symbol string) error {
 	return nil
 }
 
-// IsAgentRunning handles quick real-time visual flag checks for dashboard widgets.
+// IsAgentRunning reports whether a worker is active.
 func (m *AgentManager) IsAgentRunning(userID int64, symbol string) bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()

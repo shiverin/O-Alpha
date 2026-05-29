@@ -25,18 +25,13 @@ export function AppShell({
 
   return (
     <div className="min-h-screen flex bg-background text-on-background font-body">
-      {/* =========================================
-          LEFT SIDEBAR (MINIMALIST TERMINAL DOCK)
-      ========================================= */}
       <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full w-64 border-r border-outline-variant/20 bg-surface-container-lowest/40 backdrop-blur-md">
-        {/* Minimalist Header without the Box Panel Container */}
         <div className="px-7 pt-10 pb-12 flex items-center gap-2">
           <span className="text-lg font-light tracking-[0.15em] text-on-background">
             O(Alpha)
           </span>
         </div>
 
-        {/* Navigation Desk */}
         <nav className="flex-1 px-4 space-y-1.5">
           {appNavItems.map((item) => {
             const active = pathname === item.href;
@@ -63,7 +58,6 @@ export function AppShell({
           })}
         </nav>
 
-        {/* Bottom Panel Actions */}
         <div className="px-6 pb-8 mt-auto">
           <button
             className="w-full py-2.5 rounded-full border border-outline-variant/30 text-xs font-medium tracking-wider uppercase text-on-surface-variant hover:text-on-background hover:bg-surface-container-high hover:border-outline-variant/60 transition-all duration-300 ease-out"
@@ -77,7 +71,6 @@ export function AppShell({
       <div className="flex-1 md:ml-64 flex flex-col min-w-0">
         <AppTopBar title={title} onSignOut={handleLogout} />
 
-        {/* Dynamic Inner Stage views */}
         <main className="px-margin-mobile md:px-margin-desktop py-12 flex-grow min-w-0">
           <Container className="min-w-0">
             <div className="animate-in fade-in duration-700 ease-out">

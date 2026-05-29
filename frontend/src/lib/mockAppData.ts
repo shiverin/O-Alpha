@@ -1,8 +1,3 @@
-// Mock app data used across the system dashboard and portfolio stages
-
-// ============================================================================
-// 1. DASHBOARD TELEMETRY CHANNELS
-// ============================================================================
 export const mockExecutionLogs = [
   {
     time: "14:32:01",
@@ -79,9 +74,6 @@ export const allocationSegments = [
   },
 ];
 
-// ============================================================================
-// 2. PORTFOLIO WORKSPACE PROFILES (ADDED FOR THE PORTFOLIO MAKEOVER)
-// ============================================================================
 export interface PortfolioSummary {
   totalAssetValue: number;
   changePercent24h: number;
@@ -219,7 +211,6 @@ export const assetPositions: AssetPosition[] = [
   },
 ];
 
-// Clean export fallback alignment
 const fallbackData = {
   mockExecutionLogs,
   allocationSegments,
@@ -230,8 +221,6 @@ const fallbackData = {
 };
 
 export default fallbackData;
-
-// Append these exports to your existing frontend/lib/mockAppData.ts file
 
 export interface ExecutionStreamLog {
   timestamp: string;

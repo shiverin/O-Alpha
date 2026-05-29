@@ -31,7 +31,6 @@ export default function StrategyControls({
       </div>
 
       <div className="flex flex-col gap-6 flex-grow justify-center py-4 xl:py-0">
-        {/* Risk Tolerance */}
         <div className="flex flex-col gap-2">
           <div className="flex justify-between text-[10px] font-medium tracking-wider text-on-surface-variant">
             <span>Risk Tolerance</span>
@@ -53,7 +52,6 @@ export default function StrategyControls({
           />
         </div>
 
-        {/* Volatility Cap */}
         <div className="flex flex-col gap-2">
           <div className="flex justify-between text-[10px] font-medium tracking-wider text-on-surface-variant">
             <span>Volatility Cap</span>
@@ -69,7 +67,6 @@ export default function StrategyControls({
           />
         </div>
 
-        {/* Leverage Multiplier */}
         <div className="flex flex-col gap-2">
           <div className="flex justify-between text-[10px] font-medium tracking-wider text-on-surface-variant">
             <span>Leverage Multiplier</span>

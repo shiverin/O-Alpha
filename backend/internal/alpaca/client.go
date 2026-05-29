@@ -1,6 +1,7 @@
 package alpaca
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -53,12 +54,12 @@ type barsResponse struct {
 }
 
 type alpacaBar struct {
-	T  string  `json:"t"`
-	O  float64 `json:"o"`
-	H  float64 `json:"h"`
-	L  float64 `json:"l"`
-	C  float64 `json:"c"`
-	V  uint64  `json:"v"`
+	T string  `json:"t"`
+	O float64 `json:"o"`
+	H float64 `json:"h"`
+	L float64 `json:"l"`
+	C float64 `json:"c"`
+	V uint64  `json:"v"`
 }
 
 // GetBars fetches historical bars with pagination.
@@ -199,14 +200,41 @@ func (c *Client) PlaceOrder(ctx context.Context, req *OrderRequest) (*OrderRespo
 		return nil, fmt.Errorf("side must be 'buy' or 'sell'")
 	}
 
-	// In a real implementation, this would make an HTTP request to the Alpaca Trading API
-	// For now, we'll return a mock response for testing purposes
-	return &OrderResponse{
-		ID:     "order123",
-		Symbol: req.Symbol,
-		Qty:    fmt.Sprintf("%d", req.Qty),
-		Side:   req.Side,
-		Type:   req.Type,
-		Status: "new",
-	}, nil
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("encode order: %w", err)
+	}
+
+	u, err := url.Parse(c.baseURL + "/v2/orders")
+	if err != nil {
+		return nil, fmt.Errorf("parse order url: %w", err)
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("create order request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("APCA-API-KEY-ID", c.apiKey)
+	httpReq.Header.Set("APCA-API-SECRET-KEY", c.apiSecret)
+
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("alpaca order request: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read order response: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return nil, fmt.Errorf("alpaca order status %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	var orderResp OrderResponse
+	if err := json.Unmarshal(respBody, &orderResp); err != nil {
+		return nil, fmt.Errorf("decode order response: %w", err)
+	}
+	return &orderResp, nil
 }

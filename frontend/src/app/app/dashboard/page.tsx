@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect } from "react";
 import useSWR from "swr";
 import { AppShell } from "@/components/app/AppShell";
 import OnboardingOverlay from "@/components/app/OnboardingOverlay";
-import { settingsApi } from "@/lib/api";
+import { agentApi, api, settingsApi } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import {
   ServerPortfolioSummary,
@@ -12,20 +12,17 @@ import {
   SnapshotPoint,
 } from "@/types/dashboard";
 
-// Import custom dashboard widgets
 import BalanceCard from "@/components/sections/dashboard/BalanceCard";
 import StrategyControls from "@/components/sections/dashboard/StrategyControls";
 import ExecutionLog from "@/components/sections/dashboard/ExecutionLog";
 import PortfolioAllocation from "@/components/sections/dashboard/PortfolioAllocation";
 
-const fetcher = <T,>(url: string): Promise<T> =>
-  fetch(url).then((res) => {
-    if (!res.ok) throw new Error(`Network response error: ${res.status}`);
-    return res.json();
-  });
+const fetcher = <T,>(path: string): Promise<T> => api.get<T>(path);
 
 export default function DashboardPage() {
-  const [isAgentActive, setIsAgentActive] = useState<boolean>(true);
+  const [isAgentActive, setIsAgentActive] = useState<boolean>(false);
+  const [agentActionPending, setAgentActionPending] = useState<boolean>(false);
+  const [agentError, setAgentError] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
 
   const [riskTolerance, setRiskTolerance] = useState<number>(80);
@@ -35,29 +32,21 @@ export default function DashboardPage() {
   const { user, loading } = useAuth();
   const currentUserID = user?.id || 999;
 
-  // 📡 DYNAMIC SERVER TELEMETRY FETCHERS
   const { data: serverSummary } = useSWR<ServerPortfolioSummary>(
-    currentUserID !== 999
-      ? `http://localhost:8080/api/v1/user/portfolio/summary?user_id=${currentUserID}`
-      : null,
+    currentUserID !== 999 ? "/api/v1/user/portfolio/summary" : null,
     fetcher,
   );
 
   const { data: serverTrades } = useSWR<ServerTradeLog[]>(
-    currentUserID !== 999
-      ? `http://localhost:8080/api/v1/user/portfolio/trades?user_id=${currentUserID}&limit=8`
-      : null,
+    currentUserID !== 999 ? "/api/v1/user/portfolio/trades?limit=8" : null,
     fetcher,
   );
 
-  // 📡 Add this query under your existing SWR hooks to retrieve up to 30 historical timeline frames
   const { data: snapshotHistory } = useSWR<SnapshotPoint[]>(
-    currentUserID !== 999
-      ? `http://localhost:8080/api/v1/user/portfolio/history?user_id=${currentUserID}&limit=30`
-      : null,
+    currentUserID !== 999 ? "/api/v1/user/portfolio/history?limit=30" : null,
     fetcher,
   );
-  // Synchronize layout posture configurations seamlessly
+
   useEffect(() => {
     if (loading) return;
 
@@ -79,7 +68,7 @@ export default function DashboardPage() {
 
         const fetchRegistrationPosture = async () => {
           try {
-            const response = await settingsApi.check(currentUserID);
+            const response = await settingsApi.check();
             if (response.found && response.settings) {
               configureDashboardFromBlueprint(response.settings.risk_profile);
             }
@@ -111,8 +100,41 @@ export default function DashboardPage() {
 
   const handleOnboardingComplete = (finalProfile: string) => {
     configureDashboardFromBlueprint(finalProfile);
-    if (user) user.is_onboarded = true;
     setShowOnboarding(false);
+  };
+
+  const handleAgentToggle = async () => {
+    setAgentError(null);
+
+    if (currentUserID === 999) {
+      setIsAgentActive((active) => !active);
+      return;
+    }
+
+    setAgentActionPending(true);
+    try {
+      if (isAgentActive) {
+        await agentApi.stop("AAPL");
+        setIsAgentActive(false);
+      } else {
+        await agentApi.start({
+          symbol: "AAPL",
+          strategy_type: "KALMAN",
+          timeframe: "1Hour",
+          initial_cash: serverSummary?.total_asset_value ?? 50000,
+          q_noise: 0.01,
+          r_noise: 0.5,
+          z_threshold: 2,
+        });
+        setIsAgentActive(true);
+      }
+    } catch (err) {
+      setAgentError(
+        err instanceof Error ? err.message : "Agent control request failed.",
+      );
+    } finally {
+      setAgentActionPending(false);
+    }
   };
 
   const calculatedLeverageText = useMemo(() => {
@@ -157,14 +179,24 @@ export default function DashboardPage() {
           </div>
 
           <button
-            onClick={() => setIsAgentActive(!isAgentActive)}
-            className="w-full sm:w-auto px-6 py-2.5 rounded-full text-xs font-medium tracking-wider uppercase shadow-md transition-all duration-500 active:scale-95 bg-primary-container text-black shadow-primary-container/20 hover:bg-primary-container/90"
+            onClick={handleAgentToggle}
+            disabled={agentActionPending}
+            className="w-full sm:w-auto px-6 py-2.5 rounded-full text-xs font-medium tracking-wider uppercase shadow-md transition-all duration-500 active:scale-95 bg-primary-container text-black shadow-primary-container/20 hover:bg-primary-container/90 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isAgentActive ? "Terminate Agent" : "Launch Agent"}
+            {agentActionPending
+              ? "Synchronizing"
+              : isAgentActive
+                ? "Terminate Agent"
+                : "Launch Agent"}
           </button>
         </div>
 
-        {/* Bento Widgets Layer Grid Matrix */}
+        {agentError && (
+          <div className="rounded-xl border border-error/30 bg-error/5 px-4 py-3 text-xs font-mono tracking-wide text-error">
+            {agentError}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start">
           <BalanceCard
             isAgentActive={isAgentActive}

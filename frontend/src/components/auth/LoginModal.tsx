@@ -5,7 +5,6 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Panel } from "@/components/ui/Panel";
 import { Icon } from "@/components/ui/Icon";
-//import { api } from "@/lib/api";
 import { setToken } from "@/lib/auth";
 import { useAuth } from "@/context/AuthContext";
 
@@ -72,16 +71,6 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
     return `${header}.${payload}.offline-demo-signature`;
   };
 
-  // const isBackendUnavailable = (err: unknown): boolean => {
-  //   if (err instanceof TypeError) {
-  //     return true;
-  //   }
-  //   return (
-  //     err instanceof Error &&
-  //     /Failed to fetch|NetworkError|Request failed \(5\d\d\)/i.test(err.message)
-  //   );
-  // };
-
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!canSubmit) return;
@@ -90,7 +79,6 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
     setError(null);
 
     try {
-      // Consume the context logic directly
       await login(username, password);
 
       router.push(redirectPath || "/app/dashboard");

@@ -1,213 +1,273 @@
 # O(Alpha)
 
-Quant research and paper-trading platform with a Go backend and Next.js frontend.
+Quantitative research and paper-trading platform featuring a Go backend and a Next.js frontend.
 
-## Architecture
+---
 
-- Frontend: Next.js (React/TypeScript)
-- Backend: Go (Gin) API + ingest service
-- Data: PostgreSQL with TimescaleDB
-- Cache/Queue: Redis
-- Orchestration: Docker Compose
+# Architecture & Tech Stack
 
-## Tech Stack
+| Layer         | Technology                             |
+| ------------- | -------------------------------------- |
+| Frontend      | Next.js (React / TypeScript)           |
+| Backend       | Go 1.23 (Gin, zerolog, golang-migrate) |
+| Database      | PostgreSQL + TimescaleDB               |
+| Cache / Queue | Redis                                  |
+| Orchestration | Docker Compose                         |
 
-- Go 1.23
-- Gin, zerolog, golang-migrate
-- PostgreSQL + TimescaleDB
-- Next.js + TypeScript
+---
 
-## Getting Started
+# Database & Deployment Scenarios
 
-### Option 1: Local Development (VS Code + Supabase)
+Choose the setup scenario that matches your development workflow.
+
+| Scenario             | Database                    | Configuration Template | Run Command                    |
+| -------------------- | --------------------------- | ---------------------- | ------------------------------ |
+| 1. Local Development | Cloud (Supabase)            | `.env.local`           | `make run-api` + `npm run dev` |
+| 2. Docker Full Stack | Local Container (Timescale) | `.env.docker`          | `make up`                      |
+| 3. Docker + Cloud DB | Cloud (Supabase)            | Custom `.env`          | `docker compose up -d --build` |
+
+---
+
+# Getting Started: Step-by-Step
+
+## Option 1: Local Development (Go + Next.js with Supabase)
+
+Best for rapid code changes, debugging, and utilizing the VS Code debugger.
+
+### 1. Initialize the configuration file
 
 ```bash
 make setup-local
-# Update .env with your Supabase credentials
-make run-api                   # Terminal 1
-npm run dev                    # Terminal 2
 ```
 
-### Option 2: Docker Deployment (Local Database)
+This copies `.env.local` to `.env`.
+
+### 2. Configure your Supabase URL
+
+Open the newly generated `.env` file and update the `DATABASE_URL` with your Supabase connection string:
+
+```env
+DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@db.YOUR_PROJECT_REF.supabase.co:5432/postgres?sslmode=require
+```
+
+### 3. Run database migrations
+
+```bash
+make migrate
+```
+
+Executes migrations against your cloud database.
+
+### 4. Start the services
+
+#### Terminal 1 — Backend API
+
+```bash
+make run-api
+```
+
+#### Terminal 2 — Frontend UI
+
+```bash
+cd frontend && npm run dev
+```
+
+---
+
+## Option 2: Docker Deployment (Full Local Stack)
+
+Best for evaluating the environment cleanly without needing local database installations.
+
+### 1. Initialize the configuration file
 
 ```bash
 make setup-docker
+```
+
+This copies `.env.docker` to `.env`.
+
+### 2. Add your Alpaca Paper Trading Credentials
+
+Open `.env` and fill out:
+
+```env
+ALPACA_API_KEY=YOUR_KEY
+ALPACA_API_SECRET=YOUR_SECRET
+```
+
+### 3. Spin up the entire stack
+
+```bash
 make up
 ```
 
-### Option 3: Docker + Supabase
+Launches isolated containers for:
+
+* TimescaleDB
+* Redis
+* API
+* Ingest
+* Frontend
+
+---
+
+## Option 3: Docker Orchestration with Supabase
+
+Best for reproducing staging environments locally while pointing to persistent cloud storage.
+
+### 1. Initialize the template
 
 ```bash
-cp .env.local .env
-# Update DATABASE_URL in .env with Supabase credentials
-docker compose up
+make setup-local
+```
+
+### 2. Modify your `.env` variables for container cross-communication
+
+Update `DATABASE_URL` to point to your Supabase connection string.
+
+### 3. Critical Redis configuration change
+
+⚠️ **IMPORTANT:** Change `REDIS_URL` from `localhost` to the Docker network service name:
+
+```env
+REDIS_URL=redis://redis:6379
+```
+
+If left as `localhost`, the containerized API will search for Redis internally within its own loopback interface instead of routing to the Redis container.
+
+### 4. Spin up the containers
+
+```bash
+docker compose up -d --build
 ```
 
 ---
 
-## Database Configuration
+# Environment File & Variables Guide
 
-### Quick Reference
+## File Precedence Rules
 
-| Scenario          | Command                  | Database          | Config File   |
-| ----------------- | ------------------------ | ----------------- | ------------- |
-| Local development | `go run` + `npm run dev` | Supabase          | `.env.local`  |
-| Docker full stack | `docker-compose up`      | Local TimescaleDB | `.env.docker` |
-| Docker + Supabase | `docker-compose up`      | Supabase          | Custom `.env` |
-
-### Environment Variables
-
-**Copy the template that matches your setup:**
-
-```bash
-make setup-local   # For local development with Supabase
-# or
-make setup-docker  # For Docker with local database
+```text
+.env
+  ↓
+.env.local
+.env.docker
 ```
 
-### Database URL Formats
+### Explanation
 
-**PostgreSQL (Local):**
-
-```
-postgres://user:password@localhost:5432/dbname?sslmode=disable
-```
-
-**Supabase (Cloud):**
-
-```
-postgresql://postgres:PASSWORD@db.PROJECT.supabase.co:5432/postgres?sslmode=require
-```
-
-**Docker Internal:**
-
-```
-postgres://user:password@timescale:5432/dbname?sslmode=disable
-```
-
-### Important Variables
-
-| Variable              | Local Dev                | Docker                                                        |
-| --------------------- | ------------------------ | ------------------------------------------------------------- |
-| `DATABASE_URL`        | Supabase URL or local    | `postgres://oalpha:dev@timescale:5432/oalpha?sslmode=disable` |
-| `REDIS_URL`           | `redis://localhost:6379` | `redis://redis:6379`                                          |
-| `MIGRATIONS_PATH`     | `file://migrations`      | `file:///migrations`                                          |
-| `HTTP_ADDR`           | `:8080`                  | `:8080`                                                       |
-| `NEXT_PUBLIC_API_URL` | `http://localhost:8080`  | `http://localhost:8080`                                       |
-
-### Setup Supabase for Local Development
-
-1. **Create Supabase Project:**
-   - Go to https://supabase.com
-   - Click "New Project"
-   - Save your password (you'll need it)
-
-2. **Get Connection String:**
-   - Dashboard → Settings → Database
-   - Under "Connection string", select "PostgreSQL"
-   - Copy the connection string
-
-3. **Update .env:**
-
-   ```bash
-   # Paste the Supabase URL
-   DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@db.YOUR_PROJECT.supabase.co:5432/postgres?sslmode=require
-   ```
-
-4. **Run Migrations:**
-
-   ```bash
-   cd backend
-   MIGRATIONS_PATH=file://../migrations go run ./cmd/migrate
-   ```
-
-5. **Start Backend:**
-
-   ```bash
-   cd backend
-   MIGRATIONS_PATH=file://../migrations go run ./cmd/api
-   ```
-
-6. **Start Frontend** (in separate terminal):
-   ```bash
-   cd frontend
-   npm run dev
-   ```
-
-### Docker with Environment Variables
-
-The `docker-compose.yml` uses smart variable substitution:
-
-```yaml
-DATABASE_URL: ${DATABASE_URL:-postgres://oalpha:dev@timescale:5432/oalpha?sslmode=disable}
-REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-```
-
-**This means:**
-
-- If you set `DATABASE_URL` in `.env` → Docker uses it (e.g., Supabase)
-- If not set → Falls back to local TimescaleDB container
-- Same pattern for Redis and other services
-
-### Troubleshooting
-
-**"Can't connect to database"**
-
-- Check DATABASE_URL is correct
-- For Supabase: verify `sslmode=require` is set
-- For local: ensure PostgreSQL/Redis is running
-
-**"Connection refused"**
-
-- Local dev: Start Redis: `redis-server`
-- Docker: Run `docker-compose down && docker-compose up`
-
-**"SSL certificate error"**
-
-- Supabase requires SSL. Use `sslmode=require`
-- Local dev doesn't need SSL: use `sslmode=disable`
-
-**"Wrong host/port"**
-
-- VS Code: Use `localhost` (not `127.0.0.1`)
-- Docker: Use service name (`timescale`, `redis`)
+| File          | Purpose                                             |
+| ------------- | --------------------------------------------------- |
+| `.env`        | Active runtime file — never commit to Git           |
+| `.env.local`  | Template for Local Development / Supabase           |
+| `.env.docker` | Template for Local Docker Containerized Development |
 
 ---
 
-## Quick Start (Docker Only)
+# Connection Reference Table
 
-### Prerequisites
+| Variable              | Local Dev Setup (Option 1)                   | Docker Container Setup (Option 2 & 3)                         |
+| --------------------- | -------------------------------------------- | ------------------------------------------------------------- |
+| `DATABASE_URL`        | Cloud URL or `postgres://localhost:5432/...` | `postgres://oalpha:dev@timescale:5432/oalpha?sslmode=disable` |
+| `REDIS_URL`           | `redis://localhost:6379`                     | `redis://redis:6379`                                          |
+| `MIGRATIONS_PATH`     | `file://migrations`                          | `file:///migrations`                                          |
+| `HTTP_ADDR`           | `:8080`                                      | `:8080`                                                       |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8080`                      | `http://localhost:8080`                                       |
 
-- Docker and Docker Compose
-- Alpaca API Keys (paper trading)
+---
 
-### Steps
+# Smart Variable Substitutions
 
-1. Copy `.env.example` to `.env` and set values:
-   - `ALPACA_API_KEY`
-   - `ALPACA_API_SECRET`
+Your `docker-compose.yml` includes flexible variable defaults.
 
-2. Build and run:
+If `DATABASE_URL` or `REDIS_URL` are not explicitly defined inside the active `.env` file, Docker automatically falls back to the internal local service architecture.
+
+---
+
+# Data Ingestion & Verification
+
+Database migrations are designed to run safely during container or service initialization.
+
+## Triggering the Data Ingestion Routine
+
+Financial market ingestion behavior is controlled through:
+
+* `INGEST_SYMBOLS`
+* `INGEST_INTERVAL`
+* `INGEST_LOOKBACK`
+
+inside the `.env` file.
+
+### Local Execution
 
 ```bash
-docker compose up --build
+make run-ingest
 ```
 
-3. Ingest data:
+### Docker Execution
 
 ```bash
 docker compose run ingest
 ```
 
-4. Verify data (example):
+---
+
+# Verifying Active Table Content
+
+To inspect your local Timescale database container directly:
 
 ```bash
-psql "postgres://oalpha:dev@localhost:5432/oalpha" -f scripts/verify_data.sql
+make db-shell
 ```
 
-## Development Notes
+---
 
-- Database migrations are run automatically on API and ingest startup.
-- Use `INGEST_SYMBOLS`, `INGEST_INTERVAL`, and `INGEST_LOOKBACK` to control ingest.
+# Troubleshooting Checklist
 
-Project maintained by Tan Jia Jun and Zhao Shi Zhen.
+## "Can't connect to database / Connection Refused"
+
+### Supabase
+
+Ensure `sslmode=require` is appended to the end of your database connection string.
+
+### Local Engine
+
+Verify that:
+
+* Your local Redis daemon is running:
+
+```bash
+redis-server
+```
+
+* Or confirm containers are healthy:
+
+```bash
+make logs
+```
+
+---
+
+## "Wrong Host / Port Configurations"
+
+### VS Code (Local Engine)
+
+Use explicit `localhost` endpoints instead of strict loopback aliases like `127.0.0.1`.
+
+### Docker
+
+Ensure services communicate using internal Docker service names:
+
+* `timescale`
+* `redis`
+
+instead of `localhost`.
+
+---
+
+# Maintainers
+
+Project maintained by:
+
+* Tan Jia Jun
+* Zhao Shi Zhen

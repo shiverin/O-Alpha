@@ -1,5 +1,3 @@
-//import Image from "next/image";
-
 export type AvatarProps = {
   name: string;
   size?: number;
@@ -7,7 +5,6 @@ export type AvatarProps = {
 };
 
 export const Avatar = ({ name, size = 40, className = "" }: AvatarProps) => {
-  // Get initials from name
   const initials = name
     .split(" ")
     .map((part) => part[0])
@@ -15,7 +12,6 @@ export const Avatar = ({ name, size = 40, className = "" }: AvatarProps) => {
     .toUpperCase()
     .slice(0, 2);
 
-  // Generate a color based on the name (simple hash function)
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);

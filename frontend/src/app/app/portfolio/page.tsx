@@ -5,15 +5,13 @@ import useSWR from "swr";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/ui/Icon";
 import { useAuth } from "@/context/AuthContext";
+import { api } from "@/lib/api";
 import {
   portfolioSummary as mockSummary,
-  portfolioMetrics as mockMetrics, // 🚀 FIXED: Restored the missing mock metrics import
+  portfolioMetrics as mockMetrics,
   assetPositions as mockPositions,
 } from "@/lib/mockAppData";
 
-// ─────────────────────────────────────────────────────────────
-// 📐 STRONGLY-TYPED INTERFACES FOR DATABASE & MOCK ALIGNMENT
-// ─────────────────────────────────────────────────────────────
 interface ServerPortfolioSummary {
   total_asset_value: number;
   change_percent_24h: number;
@@ -45,29 +43,22 @@ interface MockPositionMetrics {
   exposure: number;
 }
 
-const fetcher = <T,>(url: string): Promise<T> =>
-  fetch(url).then((res) => res.json());
+const fetcher = <T,>(path: string): Promise<T> => api.get<T>(path);
 
 export default function PortfolioPage() {
   const { user } = useAuth();
   const currentUserID = user?.id || 999;
 
-  // 📡 GRANULAR NETWORK DATA COHORT LOOKUPS
   const { data: serverSummary } = useSWR<ServerPortfolioSummary>(
-    currentUserID !== 999
-      ? `http://localhost:8080/api/v1/user/portfolio/summary?user_id=${currentUserID}`
-      : null,
+    currentUserID !== 999 ? "/api/v1/user/portfolio/summary" : null,
     fetcher,
   );
 
   const { data: serverPositions } = useSWR<ServerPositionMetrics[]>(
-    currentUserID !== 999
-      ? `http://localhost:8080/api/v1/user/portfolio/positions?user_id=${currentUserID}`
-      : null,
+    currentUserID !== 999 ? "/api/v1/user/portfolio/positions" : null,
     fetcher,
   );
 
-  // 🔀 DUAL-MODE DISPATCH MATRIX (AUTO-FALLBACK FOR DEMO GUEST 999)
   const totalAssetValue =
     currentUserID === 999 || !serverSummary
       ? mockSummary.totalAssetValue
@@ -91,7 +82,6 @@ export default function PortfolioPage() {
       ? 0
       : serverSummary.target_progress_percent;
 
-  // 📐 REAL-TIME QUANTITATIVE CALCULATIONS (NO ARTIFACT FALLBACKS)
   const totalPositionsExposure = useMemo(() => {
     if (!serverPositions) return 0;
     return serverPositions.reduce(
@@ -105,7 +95,6 @@ export default function PortfolioPage() {
     return diff > 0 ? diff : 0;
   }, [totalAssetValue, totalPositionsExposure]);
 
-  // Compute live geometric composition segments dynamically
   const compositionSegmentsList = useMemo(() => {
     if (currentUserID === 999) {
       return [
@@ -194,7 +183,6 @@ export default function PortfolioPage() {
     });
   }, [currentUserID, serverPositions, totalAssetValue, cashBalance]);
 
-  // Compute performance metrics cleanly without mocking leaks
   const topPerformerMetrics = useMemo(() => {
     if (currentUserID === 999) {
       return { symbol: "NVDA", contribution: 12.4 };
@@ -220,9 +208,6 @@ export default function PortfolioPage() {
   return (
     <AppShell title="Portfolio">
       <div className="w-full max-w-full min-w-0 bg-transparent flex flex-col gap-6 md:gap-10 animate-in fade-in duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden">
-        {/* =========================================
-            SECTION 1: TOTAL VALUE SUMMARY OVERHEAD
-        ========================================= */}
         <section className="w-full min-w-0 max-w-full">
           <div className="group relative bg-surface-container-low border border-outline-variant/30 rounded-[32px] p-5 sm:p-8 xl:p-10 overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
             <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-primary-container/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
@@ -270,7 +255,6 @@ export default function PortfolioPage() {
                 </div>
               </div>
 
-              {/* RESPONSIVE VECTOR SPARKLINE PANEL */}
               <div className="w-full xl:w-1/2 max-w-md xl:max-w-none h-24 sm:h-28 relative border-b border-outline-variant/10 mt-2 xl:mt-0 min-w-0">
                 <svg
                   className="w-full h-full"
@@ -319,9 +303,6 @@ export default function PortfolioPage() {
           </div>
         </section>
 
-        {/* =========================================
-            SECTION 2: COMPOSITION & BALANCED METRICS
-        ========================================= */}
         <section className="w-full min-w-0 max-w-full grid grid-cols-1 xl:grid-cols-12 gap-6 md:gap-8 items-start">
           <div className="w-full min-w-0 md:col-span-12 xl:col-span-5 bg-surface-container-low border border-outline-variant/30 rounded-[32px] p-5 sm:p-8 flex flex-col justify-between h-auto min-h-[380px] sm:min-h-[420px] xl:min-h-[440px]">
             <h3 className="text-xs font-light tracking-wide text-on-surface border-b border-outline-variant/20 pb-4 mb-2">
@@ -392,7 +373,6 @@ export default function PortfolioPage() {
             </div>
           </div>
 
-          {/* TELEMETRY MATRIX SUBGRID */}
           <div className="w-full min-w-0 max-w-full md:col-span-12 xl:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8 items-start">
             <div className="w-full min-w-0 bg-surface-container-low border border-outline-variant/30 rounded-[32px] p-5 sm:p-6 min-h-[180px] sm:min-h-[200px] flex flex-col justify-between hover:bg-surface-container transition-colors duration-300">
               <div className="flex justify-between items-start mb-4">
@@ -450,7 +430,6 @@ export default function PortfolioPage() {
               </div>
             </div>
 
-            {/* ESTIMATED ANNUAL YIELD CONTAINER */}
             <div className="w-full min-w-0 sm:col-span-2 bg-surface-container-low border border-outline-variant/30 rounded-[32px] p-5 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-surface-container transition-colors duration-300">
               <div className="min-w-0">
                 <p className="font-mono text-[10px] tracking-wider text-on-surface-variant/50 uppercase mb-1">
@@ -478,9 +457,6 @@ export default function PortfolioPage() {
           </div>
         </section>
 
-        {/* =========================================
-            SECTION 3: DENSER POSITIONS DATA TABLE
-        ========================================= */}
         <section className="w-full min-w-0 max-w-full bg-surface-container-low border border-outline-variant/30 rounded-[32px] pb-4">
           <div className="p-5 sm:p-6 border-b border-outline-variant/20 flex justify-between items-center bg-white/[0.01]">
             <h3 className="text-sm sm:text-md font-light tracking-wide text-on-surface">

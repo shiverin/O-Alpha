@@ -5,12 +5,9 @@ import useSWR from "swr";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/ui/Icon";
 import { useAuth } from "@/context/AuthContext";
-import { api } from "@/lib/api"; // 🚀 FIXED: Imported authenticated core network module
+import { api } from "@/lib/api";
 import { mockExecutionStream, mockSystemAlerts } from "@/lib/mockAppData";
 
-// ─────────────────────────────────────────────────────────────
-// 📐 EXPLICIT TYPESCRIPT TYPE DEFINITIONS
-// ─────────────────────────────────────────────────────────────
 interface TradeLogItem {
   id?: number;
   timestamp: string;
@@ -37,38 +34,32 @@ interface SystemAlertItem {
   created_at?: string;
 }
 
-// 🚀 FIXED: Swapped raw browser fetch for authenticated endpoint handler to attach Bearer tokens
 const fetcher = <T,>(path: string): Promise<T> => api.get<T>(path);
 
 export default function ActivityPage() {
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
-  const [tradeLimit, setTradeLimit] = useState<number>(15); // 🚀 FIXED: Dynamic pagination limit state
+  const [tradeLimit, setTradeLimit] = useState<number>(15);
 
   const { user } = useAuth();
   const currentUserID = user?.id || 999;
 
-  // 📡 GRANULAR NETWORK DATA ACCESS OPERATIONS (Swapped to secure relative pathing context)
   const { data: serverTrades } = useSWR<TradeLogItem[]>(
     currentUserID !== 999
-      ? `/api/v1/user/portfolio/trades?user_id=${currentUserID}&limit=${tradeLimit}`
+      ? `/api/v1/user/portfolio/trades?limit=${tradeLimit}`
       : null,
     fetcher,
   );
 
   const { data: serverAlerts } = useSWR<SystemAlertItem[]>(
-    currentUserID !== 999
-      ? `/api/v1/user/portfolio/alerts?user_id=${currentUserID}&limit=10`
-      : null,
+    currentUserID !== 999 ? "/api/v1/user/portfolio/alerts?limit=10" : null,
     fetcher,
   );
 
-  // Safely intercept execution paths to enforce precise array presence mapping
   const rawTrades: TradeLogItem[] =
     currentUserID === 999 ? mockExecutionStream : serverTrades || [];
   const rawAlerts: SystemAlertItem[] =
     currentUserID === 999 ? mockSystemAlerts : serverAlerts || [];
 
-  // 🎛️ FILTER CONDITION LOGIC MATRIX
   const filteredTrades = rawTrades.filter((item: TradeLogItem) => {
     if (activeFilter === "ALL") return true;
     if (activeFilter === "FILLS") return item.status === "FILLED";
@@ -80,7 +71,6 @@ export default function ActivityPage() {
   return (
     <AppShell title="Activity Console">
       <div className="w-full bg-transparent flex flex-col gap-6 md:gap-10 animate-in fade-in duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]">
-        {/* SECTION 1: OVERHEAD AUDIT STATUS META */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-2">
           <div>
             <h1 className="text-2xl sm:text-3xl font-light tracking-tight text-on-surface">
@@ -98,11 +88,8 @@ export default function ActivityPage() {
           </div>
         </div>
 
-        {/* SECTION 2: RESPONSIVE ASYMMETRIC BENTO DOCK */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 md:gap-8 items-start">
-          {/* LEFT: MASTER EXECUTION STREAM TIMELINE */}
           <div className="md:col-span-12 xl:col-span-8 flex flex-col gap-4 sm:gap-6">
-            {/* Context Filter Panel */}
             <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-surface-container-low border border-outline-variant/20 backdrop-blur-md">
               <div className="flex gap-2">
                 {["ALL", "FILLS", "ERRORS"].map((filter) => (
@@ -131,7 +118,6 @@ export default function ActivityPage() {
               </div>
             </div>
 
-            {/* Structured Cyber Terminal Display Box */}
             <div className="group relative rounded-[24px] bg-surface-container-low border border-outline-variant/30 overflow-hidden hover:shadow-[0_20px_40px_rgba(0,0,0,0.2)] transition-all duration-700">
               <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-primary-fixed-dim/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
               <div
@@ -250,11 +236,10 @@ export default function ActivityPage() {
                 </table>
               </div>
 
-              {/* History Expansion Control */}
               {rawTrades.length >= tradeLimit && (
                 <div className="p-4 border-t border-outline-variant/20 bg-void-black/20 flex justify-center">
                   <button
-                    onClick={() => setTradeLimit((prev) => prev + 15)} // 🚀 FIXED: Increments limit state to update SWR query pool dynamically
+                    onClick={() => setTradeLimit((prev) => prev + 15)}
                     className="text-primary-fixed-dim font-mono text-[11px] tracking-wider uppercase hover:text-primary transition-colors flex items-center gap-1.5 duration-300"
                   >
                     Load More History
@@ -267,7 +252,6 @@ export default function ActivityPage() {
             </div>
           </div>
 
-          {/* RIGHT: RISK WARNINGS & TELEMETRY TIMELINES */}
           <div className="md:col-span-12 xl:col-span-4 flex flex-col gap-6 md:gap-8 w-full">
             <div className="rounded-[24px] bg-surface-container-low border border-outline-variant/30 p-6 relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-error/5 rounded-full blur-3xl pointer-events-none" />
