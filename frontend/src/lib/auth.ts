@@ -6,10 +6,11 @@ const TOKEN_STORAGE_KEY = "token";
 export interface User {
   id: number;
   username: string;
+  is_onboarded: boolean; // 🚀 Added to match dynamic database telemetry flags
 }
 
 /**
- * Set the JWT token in a cookie
+ * Set the JWT token in a cookie and localStorage
  */
 export function setToken(token: string): void {
   // Store token in a cookie that expires in 24 hours
@@ -18,7 +19,7 @@ export function setToken(token: string): void {
 }
 
 /**
- * Get the JWT token from cookies
+ * Get the JWT token from cookies or localStorage fallback
  */
 export function getToken(): string | null {
   const match = document.cookie.match(
@@ -31,7 +32,7 @@ export function getToken(): string | null {
 }
 
 /**
- * Remove the JWT token from cookies
+ * Remove the JWT token from cookies and localStorage
  */
 export function removeToken(): void {
   document.cookie = `${AUTH_COOKIE_NAME}=; path=/; max-age=0`;
@@ -45,13 +46,18 @@ export function removeToken(): void {
  */
 export function decodeToken(token: string): User | null {
   try {
-    const decoded = jwtDecode<{ user_id: number; username: string }>(token);
+    // Extended target type to parse out the backend claims payload parameters safely
+    const decoded = jwtDecode<{
+      user_id: number;
+      username: string;
+      is_onboarded?: boolean;
+    }>(token);
     return {
       id: decoded.user_id,
       username: decoded.username,
+      is_onboarded: !!decoded.is_onboarded, // Safe double-negation forces fallback to false if omitted
     };
   } catch {
-    // FIXED: Removed the unused 'err' variable
     return null;
   }
 }
@@ -65,7 +71,6 @@ export function isAuthenticated(): boolean {
 
   // Check if token is expired by decoding and checking exp
   try {
-    // FIXED: Passed the exact expected type instead of using 'any' or 'unknown'
     const decoded = jwtDecode<{ exp: number }>(token);
     return decoded.exp * 1000 > Date.now();
   } catch {

@@ -169,3 +169,12 @@ export const settingsApi = {
     );
   },
 };
+
+export const userApi = {
+  completeOnboarding: async (userID: number): Promise<{ status: string }> => {
+    return api.post<{ status: string }, { user_id: number }>(
+      "/api/v1/user/onboarding/complete",
+      { user_id: userID },
+    );
+  },
+};

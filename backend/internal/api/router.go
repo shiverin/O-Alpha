@@ -55,9 +55,16 @@ func NewRouter(h *Handler, cfg *config.Config) *gin.Engine {
 		v1.POST("/agent/stop", h.TerminateLiveAgent)
 
 		// User Database Configuration Triggers
-
 		v1.GET("/user/settings", h.GetUserSettings)
 		v1.POST("/user/settings", h.SaveUserSettings)
+
+		v1.POST("/user/onboarding/complete", h.CompleteUserOnboarding)
+
+		v1.GET("/user/portfolio/summary", h.GetPortfolioSummary)  // Overview widgets & sparklines
+		v1.GET("/user/portfolio/history", h.GetPortfolioHistory)
+		v1.GET("/user/portfolio/positions", h.GetActivePositions) // Open positions data grid & allocations ring
+		v1.GET("/user/portfolio/trades", h.GetExecutionStream)    // Live audit trail history
+		v1.GET("/user/portfolio/alerts", h.GetSystemAlerts)       // Safety & risk banner warnings
 	}
 
 	return r

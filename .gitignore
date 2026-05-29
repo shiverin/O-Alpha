@@ -29,3 +29,5 @@ progress.md
 .claude/
 
 repomix-output.xml
+
+*.xml

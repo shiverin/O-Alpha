@@ -17,7 +17,7 @@ cp .env.local .env
 DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@db.YOUR_PROJECT_REF.supabase.co:5432/postgres?sslmode=require
 
 # 3. Run services separately
-go run ./cmd/api/main.go         # In terminal 1
+make run-api                      # In terminal 1
 npm run dev                       # In terminal 2 (from frontend folder)
 ```
 
