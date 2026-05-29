@@ -43,6 +43,12 @@ interface MockPositionMetrics {
   exposure: number;
 }
 
+const PORTFOLIO_FLATLINE_Y = 70;
+const PORTFOLIO_FLAT_SPARKLINE = {
+  path: `M 0 ${PORTFOLIO_FLATLINE_Y} L 400 ${PORTFOLIO_FLATLINE_Y}`,
+  lastPoint: { x: 400, y: PORTFOLIO_FLATLINE_Y },
+};
+
 const fetcher = <T,>(path: string): Promise<T> => api.get<T>(path);
 
 export default function PortfolioPage() {
@@ -59,6 +65,11 @@ export default function PortfolioPage() {
     fetcher,
   );
 
+  const { data: serverHistory } = useSWR<ServerPortfolioSummary[]>(
+    currentUserID !== 999 ? "/api/v1/user/portfolio/history?limit=30" : null,
+    fetcher,
+  );
+
   const totalAssetValue =
     currentUserID === 999 || !serverSummary
       ? mockSummary.totalAssetValue
@@ -71,7 +82,39 @@ export default function PortfolioPage() {
     currentUserID === 999 || !serverSummary
       ? mockSummary.changeDollar24h
       : serverSummary.change_dollar_24h;
-  const sparklinePath = mockSummary.sparklinePath;
+
+  const sparkline = useMemo(() => {
+    if (!serverHistory || serverHistory.length < 2) {
+      return PORTFOLIO_FLAT_SPARKLINE;
+    }
+
+    const values = serverHistory.map((snapshot) => snapshot.total_asset_value);
+    const minVal = Math.min(...values);
+    const maxVal = Math.max(...values);
+    const valRange = maxVal - minVal;
+
+    if (valRange === 0) {
+      return PORTFOLIO_FLAT_SPARKLINE;
+    }
+
+    const points = serverHistory.map((snapshot, index) => {
+      const x = (index / (serverHistory.length - 1)) * 400;
+      const y =
+        85 - ((snapshot.total_asset_value - minVal) / valRange) * 70;
+      return { x, y };
+    });
+
+    const path = points.reduce(
+      (acc, point, index) =>
+        index === 0 ? `M ${point.x} ${point.y}` : `${acc} L ${point.x} ${point.y}`,
+      "",
+    );
+
+    return {
+      path,
+      lastPoint: points[points.length - 1],
+    };
+  }, [serverHistory]);
 
   const estimatedYield =
     currentUserID === 999 || !serverSummary
@@ -274,11 +317,11 @@ export default function PortfolioPage() {
                     </linearGradient>
                   </defs>
                   <path
-                    d={`${sparklinePath} L 400 100 L 0 100 Z`}
+                    d={`${sparkline.path} L 400 100 L 0 100 Z`}
                     fill="url(#cyan-fade)"
                   ></path>
                   <path
-                    d={sparklinePath}
+                    d={sparkline.path}
                     fill="none"
                     stroke="#00dbe9"
                     strokeWidth="1.5"
@@ -287,8 +330,8 @@ export default function PortfolioPage() {
                     }}
                   ></path>
                   <circle
-                    cx="400"
-                    cy="20"
+                    cx={sparkline.lastPoint.x}
+                    cy={sparkline.lastPoint.y}
                     fill="#00dbe9"
                     r="3.5"
                     style={{ filter: "drop-shadow(0 0 6px #00dbe9)" }}
