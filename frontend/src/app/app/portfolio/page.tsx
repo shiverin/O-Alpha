@@ -467,7 +467,7 @@ export default function PortfolioPage() {
                   <span className="text-on-surface font-medium">
                     {currentUserID === 999
                       ? mockMetrics.riskProfile.sharpeRatio
-                      : "1.00"}
+                      : "--"}
                   </span>
                 </p>
               </div>
