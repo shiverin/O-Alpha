@@ -108,7 +108,7 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError("Demo onboarding failed.");
+        setError("Demo Onboarding failed.");
       }
     } finally {
       setLoading(false);
@@ -225,7 +225,7 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
               disabled={loading}
             >
               <Icon name="login" size="small" color="text-primary-container" />
-              {loading ? "Logging in..." : "Demo onboarding"}
+              {loading ? "Logging in..." : "Demo Onboarding"}
             </button>
           </form>
         </div>
