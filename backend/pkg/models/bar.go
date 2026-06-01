@@ -24,9 +24,9 @@ const (
 
 // BacktestRequest configures a backtest run with support for multiple strategies.
 type BacktestRequest struct {
-	Symbol       string     `json:"symbol" binding:"required"`
-	StrategyType string     `json:"strategy_type" binding:"required"` // "MA_CROSSOVER" or "KALMAN"
-	Timeframe    string     `json:"timeframe,omitempty"`             // e.g. "1Day", "1Hour"
+	Symbol       string `json:"symbol" binding:"required"`
+	StrategyType string `json:"strategy_type" binding:"required"` // "MA_CROSSOVER" or "KALMAN"
+	Timeframe    string `json:"timeframe,omitempty"`              // e.g. "1Day", "1Hour"
 
 	// Kalman-specific parameters
 	QNoise     float64 `json:"q_noise,omitempty"`

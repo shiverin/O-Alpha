@@ -1,10 +1,12 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/oalpha/internal/agent"
 	"github.com/oalpha/internal/backtest"
 	"github.com/oalpha/internal/db"
 )
@@ -20,6 +22,7 @@ type AgentControlRequest struct {
 	ZThreshold   float64 `json:"z_threshold"`
 	FastPeriod   int     `json:"fast_period"`
 	SlowPeriod   int     `json:"slow_period"`
+	RiskProfile  string  `json:"risk_profile"`
 }
 
 // LaunchLiveAgent starts a user-scoped paper trading worker.
@@ -49,6 +52,8 @@ func (h *Handler) LaunchLiveAgent(c *gin.Context) {
 	}
 
 	var strat backtest.Strategy
+	useHMMEnsemble := false
+	riskProfile := agent.RiskProfileModerate
 	switch req.StrategyType {
 	case "KALMAN":
 		if req.QNoise == 0 {
@@ -73,8 +78,36 @@ func (h *Handler) LaunchLiveAgent(c *gin.Context) {
 			return
 		}
 		strat = backtest.NewMACrossoverStrategy(req.FastPeriod, req.SlowPeriod)
+	case "HMM", "HMM_ENSEMBLE":
+		req.StrategyType = "HMM_ENSEMBLE"
+		useHMMEnsemble = true
+		if req.FastPeriod == 0 {
+			req.FastPeriod = 20
+		}
+		if req.SlowPeriod == 0 {
+			req.SlowPeriod = 50
+		}
+		if req.FastPeriod >= req.SlowPeriod {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "fast_period must be less than slow_period"})
+			return
+		}
+		if req.QNoise == 0 {
+			req.QNoise = 0.001
+		}
+		if req.RNoise == 0 {
+			req.RNoise = 0.01
+		}
+		if req.ZThreshold == 0 {
+			req.ZThreshold = 2.0
+		}
+		var err error
+		riskProfile, req.RiskProfile, err = parseRiskProfile(req.RiskProfile)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 	default:
-		c.JSON(http.StatusBadRequest, gin.H{"error": "strategy_type must be KALMAN or MA_CROSSOVER"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "strategy_type must be KALMAN, MA_CROSSOVER, or HMM_ENSEMBLE"})
 		return
 	}
 
@@ -90,6 +123,7 @@ func (h *Handler) LaunchLiveAgent(c *gin.Context) {
 		"z_threshold":   req.ZThreshold,
 		"fast_period":   req.FastPeriod,
 		"slow_period":   req.SlowPeriod,
+		"risk_profile":  req.RiskProfile,
 	}
 	runID, err := h.AgentRepo.CreateAgentRun(
 		c.Request.Context(),
@@ -107,17 +141,36 @@ func (h *Handler) LaunchLiveAgent(c *gin.Context) {
 		return
 	}
 
-	err = h.AgentManager.StartAgent(
-		c.Request.Context(),
-		userID,
-		req.Symbol,
-		req.Timeframe,
-		strat,
-		true,
-		req.InitialCash,
-		runID,
-		req.UseWebSocket,
-	)
+	if useHMMEnsemble {
+		err = h.AgentManager.StartAgentV2(
+			c.Request.Context(),
+			userID,
+			req.Symbol,
+			req.Timeframe,
+			req.FastPeriod,
+			req.SlowPeriod,
+			req.QNoise,
+			req.RNoise,
+			req.ZThreshold,
+			true,
+			req.InitialCash,
+			runID,
+			riskProfile,
+			req.UseWebSocket,
+		)
+	} else {
+		err = h.AgentManager.StartAgent(
+			c.Request.Context(),
+			userID,
+			req.Symbol,
+			req.Timeframe,
+			strat,
+			true,
+			req.InitialCash,
+			runID,
+			req.UseWebSocket,
+		)
+	}
 	if err != nil {
 		_ = h.AgentRepo.MarkAgentRunFailed(c.Request.Context(), runID, err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -230,6 +283,19 @@ func (h *Handler) SaveUserSettings(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "synchronized"})
+}
+
+func parseRiskProfile(value string) (agent.RiskProfile, string, error) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "", "moderate":
+		return agent.RiskProfileModerate, "moderate", nil
+	case "conservative":
+		return agent.RiskProfileConservative, "conservative", nil
+	case "aggressive":
+		return agent.RiskProfileAggressive, "aggressive", nil
+	default:
+		return agent.RiskProfileModerate, "", fmt.Errorf("risk_profile must be conservative, moderate, or aggressive")
+	}
 }
 
 func validAgentSettings(riskProfile string, leverage, maxPositions int, stopLossPct, takeProfitPct float64, rebalanceFreq string) bool {

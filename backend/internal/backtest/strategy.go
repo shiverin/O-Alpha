@@ -6,11 +6,18 @@ import (
 	"github.com/oalpha/pkg/models"
 )
 
-// Strategy defines the interface for generating trading signals.
-// Implementations can be based on various algorithms (MA crossover, regime detection, pairs trading, etc.).
+// StrategyOutput wraps trade signals with metadata for execution and telemetry
+type StrategyOutput struct {
+	Signal          models.Signal
+	PositionSizePct float64                // Target sizing (e.g., 0.10 for 10% cash allocation)
+	RegimeLabel     string                 // Human-readable regime for tracking
+	Metadata        map[string]interface{} // Open slot for HMM probabilities or indicator scores
+}
+
 type Strategy interface {
-	// GenerateSignal returns a signal for the given bar data.
-	// The signal at index i should be based on data up to and including bar i.
-	// Signals are executed at the next bar's open to avoid look-ahead bias.
-	GenerateSignal(ctx context.Context, bars []models.Bar) ([]models.Signal, error)
+	// GenerateSignals processes historical data slices (ideal for Backtesting engines)
+	GenerateSignals(ctx context.Context, bars []models.Bar) ([]StrategyOutput, error)
+
+	// EvaluateLatest computes the decision context for the absolute trailing edge bar (Live/Paper loop)
+	EvaluateLatest(ctx context.Context, bars []models.Bar) (StrategyOutput, error)
 }

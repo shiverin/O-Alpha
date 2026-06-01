@@ -93,3 +93,28 @@ func rollingSMA(values []float64, period int) []float64 {
 	return out
 }
 
+func (s *MACrossoverStrategy) GenerateSignals(ctx context.Context, bars []models.Bar) ([]StrategyOutput, error) {
+	signals, err := s.GenerateSignal(ctx, bars) // Uses your existing logic
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]StrategyOutput, len(signals))
+	for i, signal := range signals {
+		out[i] = StrategyOutput{
+			Signal:          signal,
+			PositionSizePct: 0.10,
+			RegimeLabel:     "NORMAL",
+		}
+	}
+	return out, nil
+}
+
+func (s *MACrossoverStrategy) EvaluateLatest(ctx context.Context, bars []models.Bar) (StrategyOutput, error) {
+	outputs, err := s.GenerateSignals(ctx, bars)
+	if err != nil || len(outputs) == 0 {
+		return StrategyOutput{Signal: models.SignalHold}, err
+	}
+
+	return outputs[len(outputs)-1], nil
+}

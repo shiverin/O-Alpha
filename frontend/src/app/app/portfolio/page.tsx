@@ -99,14 +99,15 @@ export default function PortfolioPage() {
 
     const points = serverHistory.map((snapshot, index) => {
       const x = (index / (serverHistory.length - 1)) * 400;
-      const y =
-        85 - ((snapshot.total_asset_value - minVal) / valRange) * 70;
+      const y = 85 - ((snapshot.total_asset_value - minVal) / valRange) * 70;
       return { x, y };
     });
 
     const path = points.reduce(
       (acc, point, index) =>
-        index === 0 ? `M ${point.x} ${point.y}` : `${acc} L ${point.x} ${point.y}`,
+        index === 0
+          ? `M ${point.x} ${point.y}`
+          : `${acc} L ${point.x} ${point.y}`,
       "",
     );
 

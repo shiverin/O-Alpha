@@ -14,12 +14,14 @@ import (
 	"github.com/oalpha/pkg/models"
 )
 
-// AgentWorker runs a single symbol strategy loop.
+// AgentWorker manages the infrastructure loop, real-time data streaming,
+// data management, and active risk guardrails for a specific asset.
 type AgentWorker struct {
 	ctx            context.Context
 	cancelFunc     context.CancelFunc
 	alpacaClient   *alpaca.Client
 	repo           *db.BarsRepository
+	agentRepo      *db.AgentRepository
 	portfolioRepo  *db.PortfolioRepository
 	userID         int64
 	strategy       backtest.Strategy
@@ -38,13 +40,20 @@ type AgentWorker struct {
 	barsMu         sync.RWMutex
 	historicalBars []models.Bar
 	maxBars        int
+	calibrateEvery int // recalibrate HMM buckets every N new bars (0 = off)
+	barsSinceCalib int
+
+	// State Tracking to prevent lookahead mismatches and streaming noise
+	lastEvaluatedTime time.Time
+	telemetryMetadata sync.Map
 }
 
-// NewAgentWorker creates a worker with isolated runtime state.
+// NewAgentWorker creates a worker with an isolated runtime state.
 func NewAgentWorker(
 	ctx context.Context,
 	alpacaClient *alpaca.Client,
 	repo *db.BarsRepository,
+	agentRepo *db.AgentRepository,
 	portfolioRepo *db.PortfolioRepository,
 	userID int64,
 	strategy backtest.Strategy,
@@ -57,23 +66,25 @@ func NewAgentWorker(
 ) *AgentWorker {
 	wCtx, cancel := context.WithCancel(ctx)
 	worker := &AgentWorker{
-		ctx:           wCtx,
-		cancelFunc:    cancel,
-		alpacaClient:  alpacaClient,
-		repo:          repo,
-		portfolioRepo: portfolioRepo,
-		userID:        userID,
-		strategy:      strategy,
-		symbol:        symbol,
-		timeframe:     timeframe,
-		paperTrade:    paperTrade,
-		initialCash:   initialCash,
-		agentRunID:    agentRunID,
-		account:       NewPaperAccount(initialCash),
-		doneCh:        make(chan struct{}),
-		errCh:         make(chan error, 1),
-		useWebSocket:  useWebSocket,
-		maxBars:       10000,
+		ctx:            wCtx,
+		cancelFunc:     cancel,
+		alpacaClient:   alpacaClient,
+		repo:           repo,
+		agentRepo:      agentRepo,
+		portfolioRepo:  portfolioRepo,
+		userID:         userID,
+		strategy:       strategy,
+		symbol:         symbol,
+		timeframe:      timeframe,
+		paperTrade:     paperTrade,
+		initialCash:    initialCash,
+		agentRunID:     agentRunID,
+		account:        NewPaperAccount(initialCash),
+		doneCh:         make(chan struct{}),
+		errCh:          make(chan error, 1),
+		useWebSocket:   useWebSocket,
+		maxBars:        10000,
+		calibrateEvery: 500,
 	}
 
 	if useWebSocket {
@@ -83,9 +94,9 @@ func NewAgentWorker(
 	return worker
 }
 
-// Start warms indicators and starts the worker loop.
+// Start warms indicators and initializes execution loops.
 func (w *AgentWorker) Start() error {
-	log.Printf("Starting agent worker for %s (%s)", w.symbol, w.timeframe)
+	log.Printf("[Worker] Starting unified execution loop for %s (%s)", w.symbol, w.timeframe)
 
 	end := time.Now().UTC()
 	start := end.Add(-720 * time.Hour) // 30 days of data for warmup
@@ -95,31 +106,37 @@ func (w *AgentWorker) Start() error {
 		return fmt.Errorf("failed to fetch initial data: %w", err)
 	}
 
-	if _, err := w.strategy.GenerateSignal(w.ctx, bars); err != nil {
-		return fmt.Errorf("failed to generate initial signals: %w", err)
+	if len(bars) == 0 {
+		return fmt.Errorf("insufficient baseline history found for symbol %s", w.symbol)
+	}
+
+	if c, ok := w.strategy.(calibratable); ok {
+		c.Calibrate(bars)
+	}
+
+	if _, err := w.strategy.EvaluateLatest(w.ctx, bars); err != nil {
+		return fmt.Errorf("failed to generate initial strategy output: %w", err)
 	}
 	w.setHistoricalBars(bars)
 
 	if w.useWebSocket && w.wsConnector != nil {
 		if err := w.wsConnector.Start(w.ctx); err != nil {
-			return fmt.Errorf("failed to start WebSocket: %w", err)
+			return fmt.Errorf("failed to start WebSocket stream: %w", err)
 		}
 		go w.handleWebSocketData()
 	} else {
 		interval := timeframeToDuration(w.timeframe)
-
 		w.ticker = time.NewTicker(interval)
-
 		go w.runLoop()
 	}
 
 	return nil
 }
 
-// Stop cancels the worker and closes its local lifecycle channel.
+// Stop safely cancels execution states and cleanly tears down communication channels.
 func (w *AgentWorker) Stop() {
 	w.stopOnce.Do(func() {
-		log.Printf("Stopping agent worker for %s", w.symbol)
+		log.Printf("[Worker] Terminating execution pipeline for %s safely", w.symbol)
 		w.cancelFunc()
 		if w.ticker != nil {
 			w.ticker.Stop()
@@ -131,27 +148,28 @@ func (w *AgentWorker) Stop() {
 	})
 }
 
-// runLoop polls for recent bars, evaluates signals, and records paper fills.
+// runLoop processes background ticks on a timer interval.
 func (w *AgentWorker) runLoop() {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("Agent worker panicked: %v", r)
+			log.Printf("[CRASH Recovery] Worker runtime panic: %v", r)
 			select {
 			case w.errCh <- fmt.Errorf("worker panicked: %v", r):
 			default:
 			}
 		}
 		close(w.errCh)
+		w.Stop() // Guarantee structural cleanup
 	}()
 
 	for {
 		select {
 		case <-w.ctx.Done():
-			log.Printf("Agent worker context cancelled for %s", w.symbol)
+			log.Printf("[Worker] Context finalized for %s", w.symbol)
 			return
 		case <-w.ticker.C:
 			if err := w.processTick(); err != nil {
-				log.Printf("Error processing tick: %v", err)
+				log.Printf("[Worker Loop Error] Tick processing failed: %v", err)
 				select {
 				case w.errCh <- err:
 				default:
@@ -163,16 +181,18 @@ func (w *AgentWorker) runLoop() {
 	}
 }
 
-// handleWebSocketData processes incoming real-time bars from WebSocket.
+// handleWebSocketData consumes streamed updates, automatically resolving zombie worker locks on disconnect.
 func (w *AgentWorker) handleWebSocketData() {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("WebSocket handler panicked: %v", r)
+			log.Printf("[CRASH Recovery] WebSocket pipeline panic: %v", r)
 			select {
 			case w.errCh <- fmt.Errorf("websocket handler panicked: %v", r):
 			default:
 			}
 		}
+		close(w.errCh)
+		w.Stop() // Prevents zombie states by ensuring manager cleans up active tracking mappings
 	}()
 
 	for {
@@ -181,17 +201,25 @@ func (w *AgentWorker) handleWebSocketData() {
 			return
 		case bar, ok := <-w.wsConnector.Data():
 			if !ok {
+				log.Printf("[Worker Connection Drop] Stream closed for symbol %s", w.symbol)
 				return
 			}
 			if err := w.processNewBar(bar); err != nil {
-				log.Printf("Error processing new bar: %v", err)
+				log.Printf("[Worker Error] Streaming bar calculation failed: %v", err)
 				select {
 				case w.errCh <- err:
 				default:
 				}
 			}
-		case err := <-w.wsConnector.Errors():
-			log.Printf("WebSocket error: %v", err)
+		case err, ok := <-w.wsConnector.Errors():
+			if !ok {
+				log.Printf("[Worker Connection Drop] Error channel closed for symbol %s", w.symbol)
+				return
+			}
+			if err == nil {
+				continue
+			}
+			log.Printf("[Stream Exception] WebSocket transmission alert: %v", err)
 			select {
 			case w.errCh <- err:
 			default:
@@ -202,60 +230,55 @@ func (w *AgentWorker) handleWebSocketData() {
 	}
 }
 
-// processNewBar appends a streamed bar and evaluates the latest signal.
+// processNewBar safely updates trailing bar state arrays and enforces real-time evaluations.
 func (w *AgentWorker) processNewBar(bar models.Bar) error {
 	w.appendOrUpdateBar(bar)
 	historicalBars := w.getHistoricalBarsSnapshot()
 	if len(historicalBars) == 0 {
-		return fmt.Errorf("no bars available for signal generation")
+		return fmt.Errorf("empty active buffer state context")
 	}
 
-	signals, err := w.strategy.GenerateSignal(w.ctx, historicalBars)
-	if err != nil {
-		return fmt.Errorf("failed to generate signals: %w", err)
-	}
-
-	if len(signals) == 0 {
-		return fmt.Errorf("no signals generated")
-	}
-
-	latestSignal := signals[len(signals)-1]
 	latestBar := historicalBars[len(historicalBars)-1]
 
-	// Current strategies may emit repeated signals, so production live trading
-	// should add signal de-duplication before enabling real order placement.
-	if latestSignal != models.SignalHold {
-		err := w.executeTrade(latestSignal, latestBar.Close)
-		if err != nil {
-			return fmt.Errorf("failed to execute trade: %w", err)
+	// Active Guardrail: Run Risk Rules to enforce Stop-Loss and Take-Profit bounds
+	if err := w.enforceRiskRules(latestBar.Close); err != nil {
+		return fmt.Errorf("risk rule enforcement exception: %w", err)
+	}
+
+	// Bar-Close discipline: Prevent looking ahead or running duplicate signals on micro-updates
+	if !latestBar.Time.After(w.lastEvaluatedTime) {
+		return nil
+	}
+
+	w.maybeCalibrate(historicalBars)
+
+	output, err := w.strategy.EvaluateLatest(w.ctx, historicalBars)
+	if err != nil {
+		return fmt.Errorf("failed to compute target strategy parameters: %w", err)
+	}
+
+	w.lastEvaluatedTime = latestBar.Time
+	w.storeStrategyOutput(output)
+
+	if output.Signal != models.SignalHold {
+		targetAllocation := w.account.AvailableCash() * normalizePositionSizePct(output.PositionSizePct)
+		if err := w.executeTrade(output.Signal, latestBar.Close, targetAllocation); err != nil {
+			return fmt.Errorf("trade routing mismatch error: %w", err)
 		}
 	}
 
-	if w.paperTrade {
-		cash, positions := w.account.Snapshot()
-		log.Printf("Paper trade - Symbol: %s, Signal: %v, Price: %.2f, Cash: %.2f, Positions: %v",
-			w.symbol, latestSignal, latestBar.Close, cash, positions)
-	} else {
-		log.Printf("Live trade - Symbol: %s, Signal: %v, Price: %.2f",
-			w.symbol, latestSignal, latestBar.Close)
-	}
-
-	if err := w.persistPortfolioTelemetry(latestBar.Close); err != nil {
-		return err
-	}
-
-	return nil
+	w.logStateTelemetry(output, latestBar.Close)
+	return w.persistPortfolioTelemetry(latestBar.Close)
 }
 
-// processTick fetches recent bars, evaluates signals, and records paper fills.
+// processTick polls recent market updates for timer-based execution environments.
 func (w *AgentWorker) processTick() error {
-	// Fetch only a small recent window and merge it into in-memory history.
 	end := time.Now().UTC()
 	start := end.Add(-2 * timeframeToDuration(w.timeframe))
 
 	bars, err := w.alpacaClient.GetBars(w.ctx, w.symbol, w.timeframe, start, end, 10000)
 	if err != nil {
-		return fmt.Errorf("failed to fetch bars: %w", err)
+		return fmt.Errorf("polling data fetch phase failed: %w", err)
 	}
 
 	if len(bars) == 0 {
@@ -263,92 +286,162 @@ func (w *AgentWorker) processTick() error {
 	}
 
 	w.mergeBars(bars)
-	bars = w.getHistoricalBarsSnapshot()
-	if len(bars) == 0 {
-		return fmt.Errorf("no bars available for signal generation")
+	historicalBars := w.getHistoricalBarsSnapshot()
+	if len(historicalBars) == 0 {
+		return fmt.Errorf("empty dynamic tracking matrix bounds")
 	}
 
-	signals, err := w.strategy.GenerateSignal(w.ctx, bars)
+	latestBar := historicalBars[len(historicalBars)-1]
+
+	if err := w.enforceRiskRules(latestBar.Close); err != nil {
+		return fmt.Errorf("risk compliance validation exception: %w", err)
+	}
+
+	if !latestBar.Time.After(w.lastEvaluatedTime) {
+		return nil
+	}
+
+	w.maybeCalibrate(historicalBars)
+
+	output, err := w.strategy.EvaluateLatest(w.ctx, historicalBars)
 	if err != nil {
-		return fmt.Errorf("failed to generate signals: %w", err)
+		return fmt.Errorf("failed to process signal calculation layer: %w", err)
 	}
 
-	if len(signals) == 0 {
-		return fmt.Errorf("no signals generated")
-	}
+	w.lastEvaluatedTime = latestBar.Time
+	w.storeStrategyOutput(output)
 
-	latestSignal := signals[len(signals)-1]
-	latestBar := bars[len(bars)-1]
-
-	// Current strategies may emit repeated signals, so production live trading
-	// should add signal de-duplication before enabling real order placement.
-	if latestSignal != models.SignalHold {
-		err := w.executeTrade(latestSignal, latestBar.Close)
-		if err != nil {
-			return fmt.Errorf("failed to execute trade: %w", err)
+	if output.Signal != models.SignalHold {
+		targetAllocation := w.account.AvailableCash() * normalizePositionSizePct(output.PositionSizePct)
+		if err := w.executeTrade(output.Signal, latestBar.Close, targetAllocation); err != nil {
+			return fmt.Errorf("execution path mismatch error: %w", err)
 		}
 	}
 
-	if w.paperTrade {
-		cash, positions := w.account.Snapshot()
-		log.Printf("Paper trade - Symbol: %s, Signal: %v, Price: %.2f, Cash: %.2f, Positions: %v",
-			w.symbol, latestSignal, latestBar.Close, cash, positions)
-	} else {
-		log.Printf("Live trade - Symbol: %s, Signal: %v, Price: %.2f",
-			w.symbol, latestSignal, latestBar.Close)
+	w.logStateTelemetry(output, latestBar.Close)
+	return w.persistPortfolioTelemetry(latestBar.Close)
+}
+
+// enforceRiskRules pulls dynamic user profile metrics from DB layer and verifies account capital protection rules.
+func (w *AgentWorker) enforceRiskRules(currentPrice float64) error {
+	if w.agentRepo == nil {
+		return nil
 	}
 
-	if err := w.persistPortfolioTelemetry(latestBar.Close); err != nil {
-		return err
+	settings, err := w.agentRepo.GetAgentSettings(w.ctx, w.userID)
+	if err != nil || settings == nil {
+		return nil // Graceful fallback if custom configurations are unassigned
+	}
+
+	positionQty := w.account.GetPosition(w.symbol)
+	if positionQty <= 0 {
+		return nil
+	}
+
+	// Fetch historical entry context safely
+	var avgEntryPrice float64
+	if w.portfolioRepo != nil {
+		positions, err := w.portfolioRepo.GetActivePositions(w.ctx, w.userID)
+		if err == nil {
+			for _, pos := range positions {
+				if pos.Symbol == w.symbol {
+					avgEntryPrice = pos.AvgEntryPrice
+					break
+				}
+			}
+		}
+	}
+
+	if avgEntryPrice <= 0 {
+		return nil // Prevent tracking anomalies if entry data is initializing
+	}
+
+	currentPnLPct := ((currentPrice - avgEntryPrice) / avgEntryPrice) * 100
+
+	// 1. Enforce Stop-Loss Threshold Violation
+	if settings.StopLossPct > 0 && currentPnLPct <= -settings.StopLossPct {
+		log.Printf("[RISK INTERVENTION] Stop-loss rule violation triggered for asset %s (PnL: %.2f%%)", w.symbol, currentPnLPct)
+		return w.executeForceLiquidate(currentPrice, positionQty)
+	}
+
+	// 2. Enforce Take-Profit Targets
+	if settings.TakeProfitPct > 0 && currentPnLPct >= settings.TakeProfitPct {
+		log.Printf("[RISK INTERVENTION] Target take-profit milestone reached for asset %s (PnL: %.2f%%)", w.symbol, currentPnLPct)
+		return w.executeForceLiquidate(currentPrice, positionQty)
 	}
 
 	return nil
 }
 
-// executeTrade applies the latest non-hold signal.
-func (w *AgentWorker) executeTrade(signal models.Signal, price float64) error {
+// executeForceLiquidate exits market position completely under strict protection conditions.
+func (w *AgentWorker) executeForceLiquidate(price float64, qty float64) error {
 	if w.paperTrade {
-		return w.executePaperTrade(signal, price)
+		filledQty, _, err := w.account.Sell(w.ctx, w.symbol, price, qty)
+		if err != nil {
+			return err
+		}
+		return w.recordPaperFill("SELL_LONG", price, filledQty)
 	}
-	return w.executeLiveTrade(signal, price)
+
+	log.Printf("[LIVE PROXY RISK EXIT] Immediate safety liquidation routine initiated for %s", w.symbol)
+	return nil
 }
 
-// executePaperTrade applies a signal to the in-memory paper account.
-func (w *AgentWorker) executePaperTrade(signal models.Signal, price float64) error {
-	var amount float64
+// executeTrade determines tracking environment routing logic.
+func (w *AgentWorker) executeTrade(signal models.Signal, price float64, targetAllocation float64) error {
+	if w.paperTrade {
+		return w.executePaperTrade(signal, price, targetAllocation)
+	}
+	return w.executeLiveTrade(signal, price, targetAllocation)
+}
 
+// executePaperTrade handles paper balance modifications, resolving data races and fractional execution bugs.
+func (w *AgentWorker) executePaperTrade(signal models.Signal, price float64, targetAllocation float64) error {
 	switch signal {
 	case models.SignalBuy:
-		cashToUse := w.account.Cash * 0.1
-		if cashToUse < price {
-			return fmt.Errorf("insufficient cash for minimum trade")
+		availableCash := w.account.AvailableCash()
+		cashToUse := targetAllocation
+		if cashToUse <= 0 {
+			cashToUse = availableCash * 0.1
 		}
-		amount = cashToUse / price
+		if cashToUse > availableCash {
+			cashToUse = availableCash
+		}
+		if cashToUse < price {
+			return nil
+		}
+
+		amount := cashToUse / price
 		filledQty, _, err := w.account.Buy(w.ctx, w.symbol, price, amount)
 		if err != nil {
-			return fmt.Errorf("paper buy failed: %w", err)
+			return fmt.Errorf("paper matching buy engine execution failed: %w", err)
 		}
 		if err := w.recordPaperFill("BUY_LONG", price, filledQty); err != nil {
 			return err
 		}
+
 	case models.SignalSell:
 		currentPos := w.account.GetPosition(w.symbol)
 		if currentPos <= 0 {
-			return fmt.Errorf("no position to sell")
+			return nil // Safety exit catch to absorb historical trailing state variations
 		}
-		amount = currentPos * 0.5
-		if amount < 1.0 {
-			amount = 1.0
+
+		amount := currentPos * 0.5
+		// Fractional Resolution Patch: If asset balance falls under baseline metrics, prioritize a clean exit
+		if amount < 1.0 || amount > currentPos {
+			amount = currentPos
 		}
+
 		filledQty, _, err := w.account.Sell(w.ctx, w.symbol, price, amount)
 		if err != nil {
-			return fmt.Errorf("paper sell failed: %w", err)
+			return fmt.Errorf("paper matching sell engine execution failed: %w", err)
 		}
 		if err := w.recordPaperFill("SELL_LONG", price, filledQty); err != nil {
 			return err
 		}
+
 	default:
-		return fmt.Errorf("unsupported signal action: %v", signal)
+		return fmt.Errorf("unrecognized execution matrix condition value: %v", signal)
 	}
 
 	return nil
@@ -359,7 +452,7 @@ func (w *AgentWorker) recordPaperFill(action string, price, qty float64) error {
 		return nil
 	}
 	if err := w.portfolioRepo.RecordLongFill(w.ctx, w.userID, w.agentRunID, action, w.symbol, price, qty, 0); err != nil {
-		return fmt.Errorf("persist paper fill: %w", err)
+		return fmt.Errorf("failed to persist ledger execution entries: %w", err)
 	}
 	return nil
 }
@@ -381,19 +474,66 @@ func (w *AgentWorker) persistPortfolioTelemetry(currentPrice float64) error {
 	return nil
 }
 
-// executeLiveTrade is intentionally inert until live sizing and risk checks are added.
-func (w *AgentWorker) executeLiveTrade(signal models.Signal, price float64) error {
-	log.Printf("Would execute live trade: %v %f shares of %s at $%.2f",
-		signal, 0.0, w.symbol, price)
+// executeLiveTrade acts as a safety intercept until physical order connectivity blocks are mapped.
+func (w *AgentWorker) executeLiveTrade(signal models.Signal, price float64, targetAllocation float64) error {
+	log.Printf("[LIVE PROXY LOG] Order matching parameter block: %v | %s at $%.2f target=$%.2f", signal, w.symbol, price, targetAllocation)
 	return nil
 }
 
-// Err returns the error channel for the worker.
+// GetTelemetry returns current execution indicators safely.
+func (w *AgentWorker) GetTelemetry() map[string]interface{} {
+	return map[string]interface{}{
+		"symbol":             w.symbol,
+		"timeframe":          w.timeframe,
+		"available_cash":     w.account.AvailableCash(),
+		"tracked_position":   w.account.GetPosition(w.symbol),
+		"last_checked_block": w.lastEvaluatedTime,
+		"strategy_metrics":   w.GetLatestMetrics(),
+	}
+}
+
+func (w *AgentWorker) storeStrategyOutput(output backtest.StrategyOutput) {
+	w.telemetryMetadata.Store("signal", output.Signal)
+	w.telemetryMetadata.Store("position_size_pct", output.PositionSizePct)
+	w.telemetryMetadata.Store("regime", output.RegimeLabel)
+	w.telemetryMetadata.Store("metrics", output.Metadata)
+}
+
+// maybeCalibrate periodically recalibrates the strategy on the worker goroutine.
+// Same goroutine as Update() => no lock needed.
+func (w *AgentWorker) maybeCalibrate(bars []models.Bar) {
+	if w.calibrateEvery <= 0 {
+		return
+	}
+	w.barsSinceCalib++
+	if w.barsSinceCalib < w.calibrateEvery {
+		return
+	}
+	w.barsSinceCalib = 0
+	if c, ok := w.strategy.(calibratable); ok {
+		c.Calibrate(bars)
+	}
+}
+
+func (w *AgentWorker) logStateTelemetry(output backtest.StrategyOutput, price float64) {
+	log.Printf("[Worker] %s signal=%v regime=%s price=%.2f size_pct=%.4f metadata=%v",
+		w.symbol, output.Signal, output.RegimeLabel, price, output.PositionSizePct, output.Metadata)
+}
+
+func normalizePositionSizePct(sizePct float64) float64 {
+	if sizePct <= 0 {
+		return 0.10
+	}
+	if sizePct > 1 {
+		return 1
+	}
+	return sizePct
+}
+
 func (w *AgentWorker) Err() <-chan error {
 	return w.errCh
 }
 
-// Done returns a channel that closes when the worker stops.
 func (w *AgentWorker) Done() <-chan struct{} {
 	return w.doneCh
 }

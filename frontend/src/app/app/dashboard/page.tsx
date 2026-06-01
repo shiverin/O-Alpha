@@ -120,12 +120,15 @@ export default function DashboardPage() {
       } else {
         await agentApi.start({
           symbol: "AAPL",
-          strategy_type: "KALMAN",
+          strategy_type: "HMM_ENSEMBLE",
           timeframe: "1Hour",
           initial_cash: serverSummary?.total_asset_value ?? 50000,
-          q_noise: 0.01,
-          r_noise: 0.5,
+          q_noise: 0.001,
+          r_noise: 0.01,
           z_threshold: 2,
+          fast_period: 20,
+          slow_period: 50,
+          risk_profile: agentRiskProfile,
         });
         setIsAgentActive(true);
       }
@@ -141,6 +144,12 @@ export default function DashboardPage() {
   const calculatedLeverageText = useMemo(() => {
     return `${(1.0 + (leverageMultiplier / 100) * 4).toFixed(1)}x`;
   }, [leverageMultiplier]);
+
+  const agentRiskProfile = useMemo(() => {
+    if (riskTolerance <= 40) return "conservative";
+    if (riskTolerance >= 80) return "aggressive";
+    return "moderate";
+  }, [riskTolerance]);
 
   const displayPnL = useMemo(() => {
     if (

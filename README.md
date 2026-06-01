@@ -103,11 +103,11 @@ make up
 
 Launches isolated containers for:
 
-* TimescaleDB
-* Redis
-* API
-* Ingest
-* Frontend
+- TimescaleDB
+- Redis
+- API
+- Ingest
+- Frontend
 
 ---
 
@@ -192,9 +192,9 @@ Database migrations are designed to run safely during container or service initi
 
 Financial market ingestion behavior is controlled through:
 
-* `INGEST_SYMBOLS`
-* `INGEST_INTERVAL`
-* `INGEST_LOOKBACK`
+- `INGEST_SYMBOLS`
+- `INGEST_INTERVAL`
+- `INGEST_LOOKBACK`
 
 inside the `.env` file.
 
@@ -234,13 +234,13 @@ Ensure `sslmode=require` is appended to the end of your database connection stri
 
 Verify that:
 
-* Your local Redis daemon is running:
+- Your local Redis daemon is running:
 
 ```bash
 redis-server
 ```
 
-* Or confirm containers are healthy:
+- Or confirm containers are healthy:
 
 ```bash
 make logs
@@ -258,8 +258,8 @@ Use explicit `localhost` endpoints instead of strict loopback aliases like `127.
 
 Ensure services communicate using internal Docker service names:
 
-* `timescale`
-* `redis`
+- `timescale`
+- `redis`
 
 instead of `localhost`.
 
@@ -269,5 +269,5 @@ instead of `localhost`.
 
 Project maintained by:
 
-* Tan Jia Jun
-* Zhao Shi Zhen
+- Tan Jia Jun
+- Zhao Shi Zhen
