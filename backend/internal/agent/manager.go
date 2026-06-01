@@ -14,18 +14,27 @@ import (
 // AgentManager orchestrates the runtime lifecycles of live AgentWorkers.
 type AgentManager struct {
 	mu            sync.RWMutex
-	activeAgents  map[string]*AgentWorker
+	activeAgents  map[string]agentWorkerRuntime
 	alpacaClient  *alpaca.Client
 	repo          *db.BarsRepository
+	agentRepo     *db.AgentRepository
 	portfolioRepo *db.PortfolioRepository
 }
 
+type agentWorkerRuntime interface {
+	Stop()
+	Done() <-chan struct{}
+	Err() <-chan error
+	GetLatestMetrics() map[string]interface{}
+}
+
 // NewAgentManager constructs an agent orchestrator.
-func NewAgentManager(client *alpaca.Client, repo *db.BarsRepository, portfolioRepo *db.PortfolioRepository) *AgentManager {
+func NewAgentManager(client *alpaca.Client, repo *db.BarsRepository, agentRepo *db.AgentRepository, portfolioRepo *db.PortfolioRepository) *AgentManager {
 	return &AgentManager{
-		activeAgents:  make(map[string]*AgentWorker),
+		activeAgents:  make(map[string]agentWorkerRuntime),
 		alpacaClient:  client,
 		repo:          repo,
+		agentRepo:     agentRepo,
 		portfolioRepo: portfolioRepo,
 	}
 }
@@ -59,6 +68,7 @@ func (m *AgentManager) StartAgent(
 		context.Background(), // Decouple worker lifetime from the HTTP request context.
 		m.alpacaClient,
 		m.repo,
+		m.agentRepo,
 		m.portfolioRepo,
 		userID,
 		strat,
@@ -76,29 +86,85 @@ func (m *AgentManager) StartAgent(
 
 	m.activeAgents[key] = worker
 
-	go func(agentKey string, w *AgentWorker) {
-		for {
-			select {
-			case <-w.Done():
+	go m.monitorWorker(key, worker, "agent worker")
+
+	return nil
+}
+
+// StartAgentV2 provisions the HMM ensemble through the unified worker runtime.
+func (m *AgentManager) StartAgentV2(
+	ctx context.Context,
+	userID int64,
+	symbol string,
+	timeframe string,
+	maFastPeriod int,
+	maSlowPeriod int,
+	kalmanQNoise float64,
+	kalmanRNoise float64,
+	kalmanZThreshold float64,
+	paperTrade bool,
+	initialCash float64,
+	agentRunID int64,
+	riskProfile RiskProfile,
+	useWebSocket bool,
+) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	key := m.GenerateKey(userID, symbol)
+	if _, exists := m.activeAgents[key]; exists {
+		return fmt.Errorf("agent for symbol %s is already running for this user", symbol)
+	}
+
+	maStrat := backtest.NewMACrossoverStrategy(maFastPeriod, maSlowPeriod)
+	kalmanStrat := backtest.NewKalmanStrategy(kalmanQNoise, kalmanRNoise, 20, kalmanZThreshold)
+	ensemble := NewEnsembleDecisionLayer(maStrat, kalmanStrat, 50, riskProfile)
+	worker := NewAgentWorker(
+		context.Background(), // Decouple worker lifetime from the HTTP request context.
+		m.alpacaClient,
+		m.repo,
+		m.agentRepo,
+		m.portfolioRepo,
+		userID,
+		ensemble,
+		symbol,
+		timeframe,
+		paperTrade,
+		initialCash,
+		agentRunID,
+		useWebSocket,
+	)
+
+	if err := worker.Start(); err != nil {
+		return fmt.Errorf("failed to start HMM ensemble agent: %w", err)
+	}
+
+	m.activeAgents[key] = worker
+	go m.monitorWorker(key, worker, "HMM ensemble agent")
+
+	return nil
+}
+
+func (m *AgentManager) monitorWorker(agentKey string, worker agentWorkerRuntime, label string) {
+	for {
+		select {
+		case <-worker.Done():
+			m.mu.Lock()
+			delete(m.activeAgents, agentKey)
+			m.mu.Unlock()
+			return
+		case err, ok := <-worker.Err():
+			if !ok {
 				m.mu.Lock()
 				delete(m.activeAgents, agentKey)
 				m.mu.Unlock()
 				return
-			case err, ok := <-w.Err():
-				if !ok {
-					m.mu.Lock()
-					delete(m.activeAgents, agentKey)
-					m.mu.Unlock()
-					return
-				}
-				if err != nil {
-					log.Printf("Background agent worker error [%s]: %v", agentKey, err)
-				}
+			}
+			if err != nil {
+				log.Printf("Background %s error [%s]: %v", label, agentKey, err)
 			}
 		}
-	}(key, worker)
-
-	return nil
+	}
 }
 
 // StopAgent terminates an active worker.
@@ -124,4 +190,15 @@ func (m *AgentManager) IsAgentRunning(userID int64, symbol string) bool {
 	key := m.GenerateKey(userID, symbol)
 	_, exists := m.activeAgents[key]
 	return exists
+}
+
+func (w *AgentWorker) GetLatestMetrics() map[string]interface{} {
+	metricsMap := make(map[string]interface{})
+	w.telemetryMetadata.Range(func(key, value interface{}) bool {
+		if keyString, ok := key.(string); ok {
+			metricsMap[keyString] = value
+		}
+		return true
+	})
+	return metricsMap
 }

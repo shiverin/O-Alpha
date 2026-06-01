@@ -42,7 +42,7 @@ func main() {
 
 	alpacaClient := alpaca.NewClient(cfg.AlpacaDataURL, cfg.AlpacaAPIKey, cfg.AlpacaAPISecret)
 
-	agentManager := agent.NewAgentManager(alpacaClient, repo, portfolioRepo)
+	agentManager := agent.NewAgentManager(alpacaClient, repo, agentRepo, portfolioRepo)
 
 	h := api.NewHandler(repo, agentManager, agentRepo, portfolioRepo)
 	r := api.NewRouter(h, cfg)

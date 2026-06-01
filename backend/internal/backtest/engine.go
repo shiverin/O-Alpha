@@ -17,13 +17,13 @@ func RunBacktest(ctx context.Context, bars []models.Bar, strat Strategy, initial
 		initialCash = 100_000
 	}
 
-	signals, err := strat.GenerateSignal(ctx, bars)
+	outputs, err := strat.GenerateSignals(ctx, bars)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate signals: %w", err)
 	}
 
-	if len(signals) != len(bars) {
-		return nil, fmt.Errorf("signals length (%d) does not match bars length (%d)", len(signals), len(bars))
+	if len(outputs) != len(bars) {
+		return nil, fmt.Errorf("signals length (%d) does not match bars length (%d)", len(outputs), len(bars))
 	}
 
 	cash := initialCash
@@ -34,11 +34,16 @@ func RunBacktest(ctx context.Context, bars []models.Bar, strat Strategy, initial
 	for i := 0; i < len(bars); i++ {
 		// Execute pending signal from previous bar at this bar's open.
 		if i > 0 {
-			switch signals[i-1] {
+			switch outputs[i-1].Signal {
 			case models.SignalBuy:
 				if shares == 0 && bars[i].Open > 0 {
-					shares = cash / bars[i].Open
-					cash = 0
+					allocationPct := outputs[i-1].PositionSizePct
+					if allocationPct <= 0 || allocationPct > 1 {
+						allocationPct = 1
+					}
+					allocation := cash * allocationPct
+					shares = allocation / bars[i].Open
+					cash -= allocation
 					numTrades++
 				}
 			case models.SignalSell:

@@ -15,7 +15,7 @@ func RunMigrations(databaseURL, migrationsPath string) error {
 	if err != nil {
 		return fmt.Errorf("create migrator: %w", err)
 	}
-	
+
 	defer func() {
 		_, _ = m.Close()
 	}()

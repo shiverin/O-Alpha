@@ -99,3 +99,9 @@ func (a *PaperAccount) Snapshot() (float64, map[string]float64) {
 
 	return a.Cash, positions
 }
+
+func (a *PaperAccount) AvailableCash() float64 {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	return a.Cash
+}

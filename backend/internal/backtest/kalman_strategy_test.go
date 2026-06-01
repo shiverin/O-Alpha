@@ -94,3 +94,31 @@ func TestKalmanStrategy_GenerateSignalPerBar(t *testing.T) {
 		t.Errorf("Expected Buy on last bar, got %v", signals[len(signals)-1])
 	}
 }
+
+func TestKalmanStrategy_GenerateSignalIsIdempotent(t *testing.T) {
+	strategy := NewKalmanStrategy(0.01, 0.5, 5, 2.0)
+	ctx := context.Background()
+
+	bars := []models.Bar{
+		{Close: 100.0}, {Close: 100.1}, {Close: 100.0}, {Close: 99.9},
+		{Close: 100.0}, {Close: 90.0}, {Close: 91.0}, {Close: 92.0},
+	}
+
+	first, err := strategy.GenerateSignal(ctx, bars)
+	if err != nil {
+		t.Fatalf("first GenerateSignal failed: %v", err)
+	}
+	second, err := strategy.GenerateSignal(ctx, bars)
+	if err != nil {
+		t.Fatalf("second GenerateSignal failed: %v", err)
+	}
+
+	if len(first) != len(second) {
+		t.Fatalf("signal lengths differ: first=%d second=%d", len(first), len(second))
+	}
+	for i := range first {
+		if first[i] != second[i] {
+			t.Fatalf("signal at index %d changed across identical evaluations: first=%v second=%v", i, first[i], second[i])
+		}
+	}
+}

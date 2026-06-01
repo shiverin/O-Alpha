@@ -41,8 +41,8 @@ type SignalWeight struct {
 // RegimeConfiguration maps HMM regimes to signal weights and position sizing
 type RegimeConfiguration struct {
 	// Weights for each regime state
-	LowVolTrendWeights  SignalWeight
-	MediumWeights       SignalWeight
+	LowVolTrendWeights   SignalWeight
+	MediumWeights        SignalWeight
 	HighVolStressWeights SignalWeight
 
 	// Position sizing scalars (0.0-1.0) per regime
@@ -51,8 +51,8 @@ type RegimeConfiguration struct {
 	HighVolStressScalar float64
 
 	// Confidence thresholds for signal generation
-	BuyThreshold       float64
-	SellThreshold      float64
+	BuyThreshold  float64
+	SellThreshold float64
 }
 
 // NewRegimeConfiguration returns production-grade defaults
@@ -75,13 +75,13 @@ func NewRegimeConfiguration() RegimeConfiguration {
 		},
 
 		// Position sizing scalars
-		LowVolTrendScalar:    1.0,   // Full allocation
-		MediumScalar:         0.75,  // 75% allocation
-		HighVolStressScalar:  0.25,  // 25% allocation (capital preservation)
+		LowVolTrendScalar:   1.0,  // Full allocation
+		MediumScalar:        0.75, // 75% allocation
+		HighVolStressScalar: 0.25, // 25% allocation (capital preservation)
 
 		// Ensemble voting thresholds
-		BuyThreshold:  0.5,   // At least 50% vote weight
-		SellThreshold: -0.5,  // At least 50% vote weight (negative)
+		BuyThreshold:  0.5,  // At least 50% vote weight
+		SellThreshold: -0.5, // At least 50% vote weight (negative)
 	}
 }
 
@@ -113,12 +113,12 @@ func NewPositionSizingRules() PositionSizingRules {
 
 // EnsembleDecisionLayer aggregates signals from multiple strategies based on regime
 type EnsembleDecisionLayer struct {
-	maStrategy       *backtest.MACrossoverStrategy
-	kalmanStrategy   *backtest.KalmanStrategy
-	hmmDetector      *HMMRegimeDetector
-	regimeConfig     RegimeConfiguration
-	positionSizing   PositionSizingRules
-	riskProfile      RiskProfile
+	maStrategy     *backtest.MACrossoverStrategy
+	kalmanStrategy *backtest.KalmanStrategy
+	hmmDetector    *HMMRegimeDetector
+	regimeConfig   RegimeConfiguration
+	positionSizing PositionSizingRules
+	riskProfile    RiskProfile
 
 	// State tracking
 	lastRegime      MarketRegime
@@ -133,6 +133,12 @@ func NewEnsembleDecisionLayer(
 	hmmWindowSize int,
 	riskProfile RiskProfile,
 ) *EnsembleDecisionLayer {
+	if maStrategy == nil {
+		maStrategy = backtest.NewMACrossoverStrategy(20, 50)
+	}
+	if kalmanStrategy == nil {
+		kalmanStrategy = backtest.NewKalmanStrategy(0.001, 0.01, 20, 2.0)
+	}
 	return &EnsembleDecisionLayer{
 		maStrategy:     maStrategy,
 		kalmanStrategy: kalmanStrategy,
@@ -294,7 +300,7 @@ func (e *EnsembleDecisionLayer) applyRegimeGating(score float64, regime MarketRe
 func (e *EnsembleDecisionLayer) computeFinalConfidence(score float64, regimeConfidence float64) float64 {
 	// Absolute score indicates agreement
 	scoreConfidence := absoluteValue(score) * 0.7 // Score contrib: 70%
-	regimeWeighting := regimeConfidence * 0.3      // Regime contrib: 30%
+	regimeWeighting := regimeConfidence * 0.3     // Regime contrib: 30%
 
 	return (scoreConfidence + regimeWeighting)
 }
@@ -367,4 +373,43 @@ func absoluteValue(x float64) float64 {
 		return -x
 	}
 	return x
+}
+
+func (e *EnsembleDecisionLayer) EvaluateLatest(ctx context.Context, bars []models.Bar) (backtest.StrategyOutput, error) {
+	signal, confidence, regime, score, err := e.EvaluateSignal(ctx, bars)
+	if err != nil {
+		return backtest.StrategyOutput{Signal: models.SignalHold}, err
+	}
+
+	probs := e.GetStateProbabilities()
+	return backtest.StrategyOutput{
+		Signal:          signal,
+		PositionSizePct: e.getBaseSize() * e.getRegimeMultiplier(regime),
+		RegimeLabel:     regime.String(),
+		Metadata: map[string]interface{}{
+			"confidence":         confidence,
+			"score":              score,
+			"probability_low":    probs[0],
+			"probability_medium": probs[1],
+			"probability_high":   probs[2],
+		},
+	}, nil
+}
+
+// GenerateSignals evaluates rolling history sequentially to support HMM backtesting
+func (e *EnsembleDecisionLayer) GenerateSignals(ctx context.Context, bars []models.Bar) ([]backtest.StrategyOutput, error) {
+	e.Reset()
+	out := make([]backtest.StrategyOutput, len(bars))
+	for i := range bars {
+		if i < 50 { // Minimum lookback warmup boundary
+			out[i] = backtest.StrategyOutput{Signal: models.SignalHold}
+			continue
+		}
+		res, err := e.EvaluateLatest(ctx, bars[:i+1])
+		if err != nil {
+			return nil, err
+		}
+		out[i] = res
+	}
+	return out, nil
 }

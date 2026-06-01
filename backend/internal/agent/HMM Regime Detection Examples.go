@@ -1,3 +1,5 @@
+//go:build ignore
+
 package agent
 
 import (
@@ -285,10 +287,10 @@ func ExampleRegimeTransitions() {
 	// Phase 1: Low volatility, uptrend
 	for i := 0; i < 50; i++ {
 		bars[i] = Bar{
-			Close: 100.0 + float64(i)*0.1,
-			Open:  100.0 + float64(i)*0.1,
-			High:  100.0 + float64(i)*0.1 + 0.3,
-			Low:   100.0 + float64(i)*0.1 - 0.3,
+			Close:  100.0 + float64(i)*0.1,
+			Open:   100.0 + float64(i)*0.1,
+			High:   100.0 + float64(i)*0.1 + 0.3,
+			Low:    100.0 + float64(i)*0.1 - 0.3,
 			Volume: 1000000,
 		}
 	}
@@ -297,10 +299,10 @@ func ExampleRegimeTransitions() {
 	for i := 50; i < 100; i++ {
 		j := i - 50
 		bars[i] = Bar{
-			Close: 105.0 + float64(j%5)*0.5,
-			Open:  105.0 + float64(j%5)*0.5,
-			High:  105.0 + float64(j%5)*0.5 + 2.0,
-			Low:   105.0 + float64(j%5)*0.5 - 2.0,
+			Close:  105.0 + float64(j%5)*0.5,
+			Open:   105.0 + float64(j%5)*0.5,
+			High:   105.0 + float64(j%5)*0.5 + 2.0,
+			Low:    105.0 + float64(j%5)*0.5 - 2.0,
 			Volume: 2000000,
 		}
 	}
@@ -309,10 +311,10 @@ func ExampleRegimeTransitions() {
 	for i := 100; i < 150; i++ {
 		j := i - 100
 		bars[i] = Bar{
-			Close: 110.0 + float64(j)*0.08,
-			Open:  110.0 + float64(j)*0.08,
-			High:  110.0 + float64(j)*0.08 + 0.2,
-			Low:   110.0 + float64(j)*0.08 - 0.2,
+			Close:  110.0 + float64(j)*0.08,
+			Open:   110.0 + float64(j)*0.08,
+			High:   110.0 + float64(j)*0.08 + 0.2,
+			Low:    110.0 + float64(j)*0.08 - 0.2,
 			Volume: 1500000,
 		}
 	}
@@ -350,7 +352,7 @@ func generateRealisticBars(count int, startPrice float64, volatility float64, dr
 
 	for i := 0; i < count; i++ {
 		// Pseudo-random walk
-		pseudoRandom := float64((i*7)%11 - 5) / 5.0 // -1 to +1
+		pseudoRandom := float64((i*7)%11-5) / 5.0 // -1 to +1
 		ret := drift + (volatility * pseudoRandom)
 		newPrice := price * (1.0 + ret)
 
@@ -381,7 +383,7 @@ func generateTradingDay(barCount int, startPrice float64) []Bar {
 			volatility = 0.001
 		}
 
-		pseudoRandom := float64((i*13)%20 - 10) / 10.0
+		pseudoRandom := float64((i*13)%20-10) / 10.0
 		ret := drift + (volatility * pseudoRandom)
 		newPrice := price * (1.0 + ret)
 
@@ -390,7 +392,7 @@ func generateTradingDay(barCount int, startPrice float64) []Bar {
 			High:   price * (1.0 + volatility*2),
 			Low:    price * (1.0 - volatility*2),
 			Close:  newPrice,
-			Volume: int64(1000000 + (i%500000)),
+			Volume: int64(1000000 + (i % 500000)),
 		}
 		price = newPrice
 	}

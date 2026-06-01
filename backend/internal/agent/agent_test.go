@@ -10,6 +10,8 @@ import (
 	"github.com/oalpha/pkg/models"
 )
 
+type Bar = models.Bar
+
 // ===== HMM REGIME DETECTOR TESTS =====
 
 func TestHMMInitialization(t *testing.T) {
@@ -81,7 +83,7 @@ func TestHMMVolatilityCalculation(t *testing.T) {
 	// Create bars with known returns
 	bars := []Bar{
 		{Open: 100, High: 102, Low: 99, Close: 100, Volume: 1000},
-		{Open: 100, High: 101, Low: 99, Close: 101, Volume: 1000}, // +1%
+		{Open: 100, High: 101, Low: 99, Close: 101, Volume: 1000},  // +1%
 		{Open: 101, High: 102, Low: 100, Close: 100, Volume: 1000}, // -0.99%
 		{Open: 100, High: 103, Low: 99, Close: 102, Volume: 1000},  // +2%
 	}
@@ -241,11 +243,11 @@ func TestRegimeMultiplierScaling(t *testing.T) {
 
 func TestSignalVoting(t *testing.T) {
 	tests := []struct {
-		maSig     models.Signal
-		kalSig    models.Signal
-		weights   SignalWeight
-		expected  float64
-		name      string
+		maSig    models.Signal
+		kalSig   models.Signal
+		weights  SignalWeight
+		expected float64
+		name     string
 	}{
 		// Both buy
 		{models.SignalBuy, models.SignalBuy, SignalWeight{0.5, 0.5}, 1.0, "Both buy"},
@@ -494,5 +496,38 @@ func TestEndToEndSignalGeneration(t *testing.T) {
 	t.Logf("Total signals generated: %d", signalCount)
 	if signalCount < 0 {
 		t.Errorf("signal count invalid: %d", signalCount)
+	}
+}
+
+func TestAgentWorkerSellIgnoresBuySizingMinimum(t *testing.T) {
+	worker := &AgentWorker{
+		ctx:     context.Background(),
+		account: NewPaperAccount(0),
+		symbol:  "TEST",
+	}
+	worker.account.Positions["TEST"] = 2
+
+	if err := worker.executePaperTrade(models.SignalSell, 100, 10); err != nil {
+		t.Fatalf("sell should not be blocked by buy-side position sizing: %v", err)
+	}
+
+	if position := worker.account.GetPosition("TEST"); position != 1 {
+		t.Fatalf("expected half the position to be sold, got %.2f shares", position)
+	}
+}
+
+func TestAgentWorkerBuyBelowOneShareIsNoop(t *testing.T) {
+	worker := &AgentWorker{
+		ctx:     context.Background(),
+		account: NewPaperAccount(50),
+		symbol:  "TEST",
+	}
+
+	if err := worker.executePaperTrade(models.SignalBuy, 100, 50); err != nil {
+		t.Fatalf("tiny buy should be skipped without killing the worker: %v", err)
+	}
+
+	if position := worker.account.GetPosition("TEST"); position != 0 {
+		t.Fatalf("expected no position for below-one-share buy, got %.2f shares", position)
 	}
 }

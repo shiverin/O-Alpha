@@ -170,7 +170,7 @@ export const userApi = {
 
 export interface AgentControlPayload {
   symbol: string;
-  strategy_type: "KALMAN" | "MA_CROSSOVER";
+  strategy_type: "KALMAN" | "MA_CROSSOVER" | "HMM_ENSEMBLE";
   timeframe?: string;
   initial_cash?: number;
   use_websocket?: boolean;
@@ -179,6 +179,7 @@ export interface AgentControlPayload {
   z_threshold?: number;
   fast_period?: number;
   slow_period?: number;
+  risk_profile?: "conservative" | "moderate" | "aggressive";
 }
 
 export const agentApi = {

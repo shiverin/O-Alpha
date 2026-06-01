@@ -3,16 +3,18 @@ package agent
 import (
 	"fmt"
 	"math"
-	"github.com/oalpha/pkg/models" 
+	"time"
+
+	"github.com/oalpha/pkg/models"
 )
 
 // MarketRegime represents the current market state
 type MarketRegime int
 
 const (
-	RegimeLowVolTrend MarketRegime = iota // State 0: Low volatility, trending
-	RegimeMedium                           // State 1: Medium volatility, neutral
-	RegimeHighVolStress                    // State 2: High volatility, stress
+	RegimeLowVolTrend   MarketRegime = iota // State 0: Low volatility, trending
+	RegimeMedium                            // State 1: Medium volatility, neutral
+	RegimeHighVolStress                     // State 2: High volatility, stress
 )
 
 // String returns the regime name
@@ -31,9 +33,10 @@ func (mr MarketRegime) String() string {
 
 // HMMRegimeDetector implements a Hidden Markov Model for regime detection
 // States:
-//   0: Low Volatility + Trending (bull)
-//   1: Medium Volatility + Neutral (range)
-//   2: High Volatility + Stress (bear)
+//
+//	0: Low Volatility + Trending (bull)
+//	1: Medium Volatility + Neutral (range)
+//	2: High Volatility + Stress (bear)
 type HMMRegimeDetector struct {
 	// State transition matrix [current_state][next_state]
 	transitionMatrix [3][3]float64
@@ -64,6 +67,10 @@ type HMMRegimeDetector struct {
 
 	// Minimum bars required before generating regime signal
 	minBarsRequired int
+
+	lastProcessedTime time.Time
+	cachedRegime      MarketRegime
+	cachedConfidence  float64
 }
 
 // NewHMMRegimeDetector creates a new HMM detector with institutional defaults
@@ -82,25 +89,25 @@ func NewHMMRegimeDetector(windowSize int) *HMMRegimeDetector {
 
 	// Transition probabilities: regime persistence with drift possibility
 	detector.transitionMatrix = [3][3]float64{
-		{0.80, 0.15, 0.05},  // From LowVolTrend: likely stay, drift to Medium, rare jump to HighVol
-		{0.25, 0.50, 0.25},  // From Medium: symmetric to all states
-		{0.10, 0.30, 0.60},  // From HighVolStress: likely stay, possible drift to Medium
+		{0.80, 0.15, 0.05}, // From LowVolTrend: likely stay, drift to Medium, rare jump to HighVol
+		{0.25, 0.50, 0.25}, // From Medium: symmetric to all states
+		{0.10, 0.30, 0.60}, // From HighVolStress: likely stay, possible drift to Medium
 	}
 
 	// Volatility emissions (realized volatility percentile)
 	// Low state emits low volatility
 	detector.volatilityEmissionMatrix = [3][3]float64{
-		{0.70, 0.25, 0.05},  // LowVolTrend: mostly low vol, some medium, rare high
-		{0.20, 0.60, 0.20},  // Medium: balanced
-		{0.05, 0.25, 0.70},  // HighVolStress: mostly high vol, some medium, rare low
+		{0.70, 0.25, 0.05}, // LowVolTrend: mostly low vol, some medium, rare high
+		{0.20, 0.60, 0.20}, // Medium: balanced
+		{0.05, 0.25, 0.70}, // HighVolStress: mostly high vol, some medium, rare low
 	}
 
 	// Trend emissions (rolling momentum)
 	// Low state emits uptrend
 	detector.trendEmissionMatrix = [3][3]float64{
-		{0.10, 0.20, 0.70},  // LowVolTrend: strong uptrend
-		{0.33, 0.34, 0.33},  // Medium: balanced
-		{0.60, 0.30, 0.10},  // HighVolStress: downtrend
+		{0.10, 0.20, 0.70}, // LowVolTrend: strong uptrend
+		{0.33, 0.34, 0.33}, // Medium: balanced
+		{0.60, 0.30, 0.10}, // HighVolStress: downtrend
 	}
 
 	// Default bucket thresholds (will be updated based on rolling percentiles)
@@ -153,9 +160,9 @@ func (hmm *HMMRegimeDetector) discretizeVolatility(vol float64) int {
 
 // discretizeTrend converts continuous trend to bucket index
 func (hmm *HMMRegimeDetector) discretizeTrend(trend float64) int {
-	if trend < hmm.trendBuckets[0] {
+	if trend < hmm.trendBuckets[1] {
 		return 0 // Down
-	} else if trend < hmm.trendBuckets[1] {
+	} else if trend < hmm.trendBuckets[2] {
 		return 1 // Neutral
 	}
 	return 2 // Up
@@ -167,6 +174,11 @@ func (hmm *HMMRegimeDetector) discretizeTrend(trend float64) int {
 func (hmm *HMMRegimeDetector) Update(bars []models.Bar) (MarketRegime, float64, error) {
 	if len(bars) < hmm.minBarsRequired {
 		return RegimeMedium, 0.0, fmt.Errorf("insufficient bars: have %d, need %d", len(bars), hmm.minBarsRequired)
+	}
+
+	latestBar := bars[len(bars)-1]
+	if !latestBar.Time.IsZero() && !hmm.lastProcessedTime.IsZero() && !latestBar.Time.After(hmm.lastProcessedTime) {
+		return hmm.cachedRegime, hmm.cachedConfidence, nil
 	}
 
 	// Extract rolling window
@@ -184,8 +196,14 @@ func (hmm *HMMRegimeDetector) Update(bars []models.Bar) (MarketRegime, float64, 
 	trend := hmm.calculateRollingTrend(windowBars)
 	trendBucket := hmm.discretizeTrend(trend)
 
-	// Viterbi forward pass with observation likelihood
-	regime, confidence := hmm.viterbiStep(volatilityBucket, trendBucket)
+	// Forward filter pass with observation likelihood
+	regime, confidence := hmm.forwardFilterStep(volatilityBucket, trendBucket)
+
+	if !latestBar.Time.IsZero() {
+		hmm.lastProcessedTime = latestBar.Time
+	}
+	hmm.cachedRegime = regime
+	hmm.cachedConfidence = confidence
 
 	return regime, confidence, nil
 }
@@ -228,9 +246,7 @@ func (hmm *HMMRegimeDetector) calculateRollingTrend(bars []models.Bar) float64 {
 	return (lastClose - firstClose) / firstClose
 }
 
-// viterbiStep performs one step of Viterbi algorithm
-// This is a simplified version; full Viterbi would track entire sequence
-func (hmm *HMMRegimeDetector) viterbiStep(volBucket, trendBucket int) (MarketRegime, float64) {
+func (hmm *HMMRegimeDetector) forwardFilterStep(volBucket, trendBucket int) (MarketRegime, float64) {
 	// Observation likelihood: combine volatility and trend emissions
 	observationLikelihoods := [3]float64{
 		hmm.volatilityEmissionMatrix[0][volBucket] * hmm.trendEmissionMatrix[0][trendBucket],
@@ -310,4 +326,7 @@ func (hmm *HMMRegimeDetector) Reset() {
 	hmm.stateSequence = hmm.stateSequence[:0]
 	hmm.obsProbs = hmm.obsProbs[:0]
 	hmm.stateProbabilities = [3]float64{0.33, 0.34, 0.33}
+	hmm.lastProcessedTime = time.Time{}
+	hmm.cachedRegime = RegimeMedium
+	hmm.cachedConfidence = 0
 }
