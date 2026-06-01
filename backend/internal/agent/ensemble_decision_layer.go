@@ -184,12 +184,12 @@ func (e *EnsembleDecisionLayer) EvaluateSignal(
 	// Step 2: Generate signals from both strategies
 	maSignals, err := e.maStrategy.GenerateSignal(ctx, bars)
 	if err != nil {
-		return models.SignalHold, 0.0, regime, 0.0, fmt.Errorf("MA strategy failed: %w", err)
+		return models.SignalHold, 0.0, regime, 0.0, fmt.Errorf("ma strategy failed: %w", err)
 	}
 
 	kalmanSignals, err := e.kalmanStrategy.GenerateSignal(ctx, bars)
 	if err != nil {
-		return models.SignalHold, 0.0, regime, 0.0, fmt.Errorf("Kalman strategy failed: %w", err)
+		return models.SignalHold, 0.0, regime, 0.0, fmt.Errorf("kalman strategy failed: %w", err)
 	}
 
 	if len(maSignals) == 0 || len(kalmanSignals) == 0 {

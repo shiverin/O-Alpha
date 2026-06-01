@@ -40,6 +40,8 @@ type AgentWorker struct {
 	barsMu         sync.RWMutex
 	historicalBars []models.Bar
 	maxBars        int
+	calibrateEvery int // recalibrate HMM buckets every N new bars (0 = off)
+	barsSinceCalib int
 
 	// State Tracking to prevent lookahead mismatches and streaming noise
 	lastEvaluatedTime time.Time
@@ -64,24 +66,25 @@ func NewAgentWorker(
 ) *AgentWorker {
 	wCtx, cancel := context.WithCancel(ctx)
 	worker := &AgentWorker{
-		ctx:           wCtx,
-		cancelFunc:    cancel,
-		alpacaClient:  alpacaClient,
-		repo:          repo,
-		agentRepo:     agentRepo,
-		portfolioRepo: portfolioRepo,
-		userID:        userID,
-		strategy:      strategy,
-		symbol:        symbol,
-		timeframe:     timeframe,
-		paperTrade:    paperTrade,
-		initialCash:   initialCash,
-		agentRunID:    agentRunID,
-		account:       NewPaperAccount(initialCash),
-		doneCh:        make(chan struct{}),
-		errCh:         make(chan error, 1),
-		useWebSocket:  useWebSocket,
-		maxBars:       10000,
+		ctx:            wCtx,
+		cancelFunc:     cancel,
+		alpacaClient:   alpacaClient,
+		repo:           repo,
+		agentRepo:      agentRepo,
+		portfolioRepo:  portfolioRepo,
+		userID:         userID,
+		strategy:       strategy,
+		symbol:         symbol,
+		timeframe:      timeframe,
+		paperTrade:     paperTrade,
+		initialCash:    initialCash,
+		agentRunID:     agentRunID,
+		account:        NewPaperAccount(initialCash),
+		doneCh:         make(chan struct{}),
+		errCh:          make(chan error, 1),
+		useWebSocket:   useWebSocket,
+		maxBars:        10000,
+		calibrateEvery: 500,
 	}
 
 	if useWebSocket {
@@ -105,6 +108,10 @@ func (w *AgentWorker) Start() error {
 
 	if len(bars) == 0 {
 		return fmt.Errorf("insufficient baseline history found for symbol %s", w.symbol)
+	}
+
+	if c, ok := w.strategy.(calibratable); ok {
+		c.Calibrate(bars)
 	}
 
 	if _, err := w.strategy.EvaluateLatest(w.ctx, bars); err != nil {
@@ -243,6 +250,8 @@ func (w *AgentWorker) processNewBar(bar models.Bar) error {
 		return nil
 	}
 
+	w.maybeCalibrate(historicalBars)
+
 	output, err := w.strategy.EvaluateLatest(w.ctx, historicalBars)
 	if err != nil {
 		return fmt.Errorf("failed to compute target strategy parameters: %w", err)
@@ -291,6 +300,8 @@ func (w *AgentWorker) processTick() error {
 	if !latestBar.Time.After(w.lastEvaluatedTime) {
 		return nil
 	}
+
+	w.maybeCalibrate(historicalBars)
 
 	output, err := w.strategy.EvaluateLatest(w.ctx, historicalBars)
 	if err != nil {
@@ -486,6 +497,22 @@ func (w *AgentWorker) storeStrategyOutput(output backtest.StrategyOutput) {
 	w.telemetryMetadata.Store("position_size_pct", output.PositionSizePct)
 	w.telemetryMetadata.Store("regime", output.RegimeLabel)
 	w.telemetryMetadata.Store("metrics", output.Metadata)
+}
+
+// maybeCalibrate periodically recalibrates the strategy on the worker goroutine.
+// Same goroutine as Update() => no lock needed.
+func (w *AgentWorker) maybeCalibrate(bars []models.Bar) {
+	if w.calibrateEvery <= 0 {
+		return
+	}
+	w.barsSinceCalib++
+	if w.barsSinceCalib < w.calibrateEvery {
+		return
+	}
+	w.barsSinceCalib = 0
+	if c, ok := w.strategy.(calibratable); ok {
+		c.Calibrate(bars)
+	}
 }
 
 func (w *AgentWorker) logStateTelemetry(output backtest.StrategyOutput, price float64) {

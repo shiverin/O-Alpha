@@ -167,16 +167,18 @@ func TestHMMRegimePersistence(t *testing.T) {
 
 	// Update through bars
 	for i := 50; i < len(bars); i++ {
-		hmm.Update(bars[:i+1])
+		if _, _, err := hmm.Update(bars[:i+1]); err != nil {
+			t.Fatalf("HMM update failed at bar %d: %v", i, err)
+		}
+	}
+
+	if len(hmm.stateSequence) == 0 {
+		t.Fatalf("state sequence should not be empty")
 	}
 
 	persistence := hmm.GetRegimePersistence(hmm.stateSequence[len(hmm.stateSequence)-1])
 	if persistence <= 0 {
 		t.Errorf("persistence should be positive, got %d", persistence)
-	}
-
-	if len(hmm.stateSequence) == 0 {
-		t.Errorf("state sequence should not be empty")
 	}
 }
 
@@ -354,7 +356,9 @@ func TestEnsembleReset(t *testing.T) {
 	modelBars := barsToModelBars(bars)
 
 	ctx := context.Background()
-	ensemble.EvaluateSignal(ctx, modelBars)
+	if _, _, _, _, err := ensemble.EvaluateSignal(ctx, modelBars); err != nil {
+		t.Fatalf("evaluation failed: %v", err)
+	}
 
 	stateSeqBefore := len(ensemble.hmmDetector.GetRegimeSequence())
 	if stateSeqBefore == 0 {
@@ -530,4 +534,88 @@ func TestAgentWorkerBuyBelowOneShareIsNoop(t *testing.T) {
 	if position := worker.account.GetPosition("TEST"); position != 0 {
 		t.Fatalf("expected no position for below-one-share buy, got %.2f shares", position)
 	}
+}
+
+func TestEnsembleCalibrationUpdatesBucketsFromRollingHistory(t *testing.T) {
+	ensemble := NewEnsembleDecisionLayer(nil, nil, 10, RiskProfileModerate)
+	originalVolBuckets := ensemble.hmmDetector.volatilityBuckets
+	originalTrendBuckets := ensemble.hmmDetector.trendBuckets
+
+	bars := barsToModelBars(generateSyntheticBars(80, 100.0, 0.04, 0.001))
+	ensemble.Calibrate(bars)
+
+	volBuckets := ensemble.hmmDetector.volatilityBuckets
+	trendBuckets := ensemble.hmmDetector.trendBuckets
+	if volBuckets == originalVolBuckets && trendBuckets == originalTrendBuckets {
+		t.Fatalf("expected calibration to update at least one bucket set")
+	}
+	if !(volBuckets[0] <= volBuckets[1] && volBuckets[1] <= volBuckets[2]) {
+		t.Fatalf("volatility buckets must be sorted ascending, got %v", volBuckets)
+	}
+	if !(trendBuckets[0] <= trendBuckets[1] && trendBuckets[1] <= trendBuckets[2]) {
+		t.Fatalf("trend buckets must be sorted ascending, got %v", trendBuckets)
+	}
+}
+
+func TestAgentWorkerMaybeCalibrateOnlyOnNewBarCadence(t *testing.T) {
+	strategy := &calibrationCountingStrategy{}
+	worker := &AgentWorker{
+		ctx:            context.Background(),
+		account:        NewPaperAccount(10000),
+		strategy:       strategy,
+		symbol:         "TEST",
+		calibrateEvery: 2,
+	}
+
+	baseTime := time.Now().Truncate(time.Minute)
+	bars := []models.Bar{
+		{Symbol: "TEST", Time: baseTime, Open: 100, High: 101, Low: 99, Close: 100, Volume: 1000},
+		{Symbol: "TEST", Time: baseTime.Add(time.Minute), Open: 100, High: 102, Low: 99, Close: 101, Volume: 1000},
+	}
+
+	if err := worker.processNewBar(bars[0]); err != nil {
+		t.Fatalf("first bar failed: %v", err)
+	}
+	if strategy.calibrations != 0 {
+		t.Fatalf("expected no calibration after first new bar, got %d", strategy.calibrations)
+	}
+
+	if err := worker.processNewBar(bars[1]); err != nil {
+		t.Fatalf("second bar failed: %v", err)
+	}
+	if strategy.calibrations != 1 {
+		t.Fatalf("expected calibration on second new bar, got %d", strategy.calibrations)
+	}
+
+	if err := worker.processNewBar(bars[1]); err != nil {
+		t.Fatalf("duplicate bar failed: %v", err)
+	}
+	if strategy.calibrations != 1 {
+		t.Fatalf("duplicate bar should not advance calibration, got %d", strategy.calibrations)
+	}
+	if strategy.evaluations != 2 {
+		t.Fatalf("duplicate bar should not trigger evaluation, got %d evaluations", strategy.evaluations)
+	}
+}
+
+type calibrationCountingStrategy struct {
+	calibrations int
+	evaluations  int
+}
+
+func (s *calibrationCountingStrategy) GenerateSignals(ctx context.Context, bars []models.Bar) ([]backtest.StrategyOutput, error) {
+	outputs := make([]backtest.StrategyOutput, len(bars))
+	for i := range outputs {
+		outputs[i] = backtest.StrategyOutput{Signal: models.SignalHold, PositionSizePct: 0.10}
+	}
+	return outputs, nil
+}
+
+func (s *calibrationCountingStrategy) EvaluateLatest(ctx context.Context, bars []models.Bar) (backtest.StrategyOutput, error) {
+	s.evaluations++
+	return backtest.StrategyOutput{Signal: models.SignalHold, PositionSizePct: 0.10}, nil
+}
+
+func (s *calibrationCountingStrategy) Calibrate(bars []models.Bar) {
+	s.calibrations++
 }
