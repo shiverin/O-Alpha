@@ -6,10 +6,12 @@ import (
 
 // Metrics holds performance statistics.
 type Metrics struct {
-	Sharpe      float64
-	Sortino     float64
-	MaxDrawdown float64
-	TotalReturn float64
+	Sharpe           float64
+	Sortino          float64
+	Calmar           float64
+	MaxDrawdown      float64
+	TotalReturn      float64
+	AnnualizedReturn float64
 }
 
 const tradingDaysPerYear = 252.0
@@ -32,16 +34,31 @@ func ComputeMetrics(equity []float64) Metrics {
 	}
 
 	totalReturn := (equity[len(equity)-1] - equity[0]) / equity[0]
+	annualizedReturn := calculateAnnualizedReturn(equity)
 	sharpe := annualizedSharpe(returns)
 	sortino := annualizedSortino(returns)
 	maxDD := maxDrawdown(equity)
+	calmar := 0.0
+	if maxDD > 0 {
+		calmar = annualizedReturn / maxDD
+	}
 
 	return Metrics{
-		Sharpe:      sharpe,
-		Sortino:     sortino,
-		MaxDrawdown: maxDD,
-		TotalReturn: totalReturn,
+		Sharpe:           sharpe,
+		Sortino:          sortino,
+		Calmar:           calmar,
+		MaxDrawdown:      maxDD,
+		TotalReturn:      totalReturn,
+		AnnualizedReturn: annualizedReturn,
 	}
+}
+
+func calculateAnnualizedReturn(equity []float64) float64 {
+	if len(equity) < 2 || equity[0] <= 0 || equity[len(equity)-1] <= 0 {
+		return 0
+	}
+	periods := float64(len(equity) - 1)
+	return math.Pow(equity[len(equity)-1]/equity[0], tradingDaysPerYear/periods) - 1
 }
 
 func annualizedSharpe(returns []float64) float64 {

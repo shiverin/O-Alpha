@@ -72,7 +72,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	if err := syncAllSymbolsDelta(ctx, repo, client, cfg.IngestSymbols, cfg.IngestInterval, cfg.IngestLookback); err != nil {
+	if err := syncAllSymbolsDelta(ctx, repo, client, cfg.IngestSymbols, cfg.IngestInterval, cfg.IngestLookback, cfg.IngestForceBackfill); err != nil {
 		log.Error().Err(err).Msg("startup delta resync encountered warnings")
 	}
 
@@ -86,7 +86,7 @@ func main() {
 				return
 			case <-ticker.C:
 				log.Info().Msg("Cron cycle triggered. Evaluating time delta gaps...")
-				if err := syncAllSymbolsDelta(ctx, repo, client, cfg.IngestSymbols, cfg.IngestInterval, cfg.IngestLookback); err != nil {
+				if err := syncAllSymbolsDelta(ctx, repo, client, cfg.IngestSymbols, cfg.IngestInterval, cfg.IngestLookback, cfg.IngestForceBackfill); err != nil {
 					log.Error().Err(err).Msg("periodic delta resync failed")
 				}
 			}
@@ -100,7 +100,7 @@ func main() {
 }
 
 // syncAllSymbolsDelta runs one delta sync per configured symbol.
-func syncAllSymbolsDelta(ctx context.Context, repo *db.BarsRepository, client *alpaca.Client, symbols []string, interval string, defaultLookback time.Duration) error {
+func syncAllSymbolsDelta(ctx context.Context, repo *db.BarsRepository, client *alpaca.Client, symbols []string, interval string, defaultLookback time.Duration, forceBackfill bool) error {
 	var wg sync.WaitGroup
 	errCh := make(chan error, len(symbols))
 
@@ -108,7 +108,7 @@ func syncAllSymbolsDelta(ctx context.Context, repo *db.BarsRepository, client *a
 		wg.Add(1)
 		go func(sym string) {
 			defer wg.Done()
-			if err := syncSingleSymbolDelta(ctx, repo, client, sym, interval, defaultLookback); err != nil {
+			if err := syncSingleSymbolDelta(ctx, repo, client, sym, interval, defaultLookback, forceBackfill); err != nil {
 				errCh <- err
 				log.Error().Err(err).Str("symbol", sym).Msg("delta sync task failed")
 			}
@@ -128,7 +128,7 @@ func syncAllSymbolsDelta(ctx context.Context, repo *db.BarsRepository, client *a
 
 // syncSingleSymbolDelta starts from the latest stored bar and relies on upserts
 // to absorb an overlapping boundary candle.
-func syncSingleSymbolDelta(ctx context.Context, repo *db.BarsRepository, client *alpaca.Client, symbol, interval string, defaultLookback time.Duration) error {
+func syncSingleSymbolDelta(ctx context.Context, repo *db.BarsRepository, client *alpaca.Client, symbol, interval string, defaultLookback time.Duration, forceBackfill bool) error {
 	end := time.Now().UTC()
 	var start time.Time
 
@@ -137,7 +137,10 @@ func syncSingleSymbolDelta(ctx context.Context, repo *db.BarsRepository, client 
 		return err
 	}
 
-	if found {
+	if forceBackfill {
+		start = end.Add(-defaultLookback)
+		log.Info().Str("symbol", symbol).Time("lookback_start", start).Msg("Force backfill enabled. Replaying configured lookback")
+	} else if found {
 		start = latestTime
 		log.Info().Str("symbol", symbol).Time("last_recorded", start).Msg("Delta sync mapping initialized")
 	} else {

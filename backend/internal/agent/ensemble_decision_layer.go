@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 
 	"github.com/oalpha/internal/backtest"
 	"github.com/oalpha/pkg/models"
@@ -116,6 +117,9 @@ type EnsembleDecisionLayer struct {
 	maStrategy     *backtest.MACrossoverStrategy
 	kalmanStrategy *backtest.KalmanStrategy
 	hmmDetector    *HMMRegimeDetector
+	regimeDetector RegimeDetector
+	riskOverlay    *RegimeRiskOverlay
+	regimeMode     RegimeMode
 	regimeConfig   RegimeConfiguration
 	positionSizing PositionSizingRules
 	riskProfile    RiskProfile
@@ -126,7 +130,8 @@ type EnsembleDecisionLayer struct {
 	lastSignalScore float64
 }
 
-// NewEnsembleDecisionLayer creates a new ensemble with all three engines
+// NewEnsembleDecisionLayer creates a base MA+Kalman alpha ensemble with an
+// HMM risk overlay. The HMM is not allowed to create directional alpha.
 func NewEnsembleDecisionLayer(
 	maStrategy *backtest.MACrossoverStrategy,
 	kalmanStrategy *backtest.KalmanStrategy,
@@ -139,10 +144,14 @@ func NewEnsembleDecisionLayer(
 	if kalmanStrategy == nil {
 		kalmanStrategy = backtest.NewKalmanStrategy(0.001, 0.01, 20, 2.0)
 	}
+	hmmDetector := NewHMMRegimeDetector(hmmWindowSize)
 	return &EnsembleDecisionLayer{
 		maStrategy:     maStrategy,
 		kalmanStrategy: kalmanStrategy,
-		hmmDetector:    NewHMMRegimeDetector(hmmWindowSize),
+		hmmDetector:    hmmDetector,
+		regimeDetector: hmmDetector,
+		riskOverlay:    NewRegimeRiskOverlay(DefaultRiskOverlayPolicy()),
+		regimeMode:     RegimeModeOverlay,
 		regimeConfig:   NewRegimeConfiguration(),
 		positionSizing: NewPositionSizingRules(),
 		riskProfile:    riskProfile,
@@ -151,13 +160,36 @@ func NewEnsembleDecisionLayer(
 	}
 }
 
+func NewEnsembleDecisionLayerForMode(
+	maStrategy *backtest.MACrossoverStrategy,
+	kalmanStrategy *backtest.KalmanStrategy,
+	hmmWindowSize int,
+	riskProfile RiskProfile,
+	mode RegimeMode,
+) (*EnsembleDecisionLayer, error) {
+	ensemble := NewEnsembleDecisionLayer(maStrategy, kalmanStrategy, hmmWindowSize, riskProfile)
+	switch mode {
+	case "", RegimeModeOverlay:
+		ensemble.regimeMode = RegimeModeOverlay
+	case RegimeModeNone:
+		ensemble.regimeMode = RegimeModeNone
+		ensemble.hmmDetector = nil
+		ensemble.regimeDetector = nil
+		ensemble.riskOverlay = nil
+	default:
+		return nil, fmt.Errorf("unsupported regime mode: %s", mode)
+	}
+	return ensemble, nil
+}
+
 // UpdateRiskProfile changes the position sizing profile
 func (e *EnsembleDecisionLayer) UpdateRiskProfile(profile RiskProfile) {
 	e.riskProfile = profile
 	log.Printf("[Ensemble] Risk profile updated to %s", profile.String())
 }
 
-// EvaluateSignal runs all three engines and returns a composite decision
+// EvaluateSignal runs the base MA+Kalman alpha engine and returns its
+// directional decision. The HMM overlay is intentionally not an alpha source.
 // Returns: (signal, confidence, regime, score, error)
 func (e *EnsembleDecisionLayer) EvaluateSignal(
 	ctx context.Context,
@@ -167,10 +199,16 @@ func (e *EnsembleDecisionLayer) EvaluateSignal(
 		return models.SignalHold, 0.0, RegimeMedium, 0.0, fmt.Errorf("insufficient bars for ensemble: need 50, have %d", len(bars))
 	}
 
-	// Step 1: Detect regime
-	regime, regimeConfidence, err := e.hmmDetector.Update(bars)
-	if err != nil {
-		return models.SignalHold, 0.0, RegimeMedium, 0.0, fmt.Errorf("HMM update failed: %w", err)
+	regime := RegimeMedium
+	regimeConfidence := 1.0
+	if e.regimeMode == RegimeModeOverlay && e.regimeDetector != nil {
+		var err error
+		regime, regimeConfidence, err = e.regimeDetector.Update(bars)
+		if err != nil {
+			regime = RegimeMedium
+			regimeConfidence = 0
+			log.Printf("[Ensemble] risk overlay detector update failed: %v", err)
+		}
 	}
 
 	// Track regime persistence for logging
@@ -181,7 +219,6 @@ func (e *EnsembleDecisionLayer) EvaluateSignal(
 		e.lastRegimeBars++
 	}
 
-	// Step 2: Generate signals from both strategies
 	maSignals, err := e.maStrategy.GenerateSignal(ctx, bars)
 	if err != nil {
 		return models.SignalHold, 0.0, regime, 0.0, fmt.Errorf("ma strategy failed: %w", err)
@@ -196,43 +233,22 @@ func (e *EnsembleDecisionLayer) EvaluateSignal(
 		return models.SignalHold, 0.0, regime, 0.0, fmt.Errorf("no signals generated")
 	}
 
-	// Get latest signals
 	latestMA := maSignals[len(maSignals)-1]
 	latestKalman := kalmanSignals[len(kalmanSignals)-1]
 
-	// Step 3: Apply regime-based weighting
-	weights := e.getWeightsForRegime(regime)
-
-	// Step 4: Ensemble voting
-	signalScore := e.computeEnsembleScore(latestMA, latestKalman, weights)
+	signalScore := e.computeEnsembleScore(latestMA, latestKalman, e.regimeConfig.MediumWeights)
 	e.lastSignalScore = signalScore
 
-	// Step 5: Regime-aware gating
-	finalSignal := e.applyRegimeGating(signalScore, regime)
+	finalSignal := e.applyBaseThreshold(signalScore)
 
-	// Step 6: Compute final confidence (account for regime + ensemble agreement)
 	finalConfidence := e.computeFinalConfidence(signalScore, regimeConfidence)
 
-	log.Printf("[Ensemble] Regime=%s(%.2f) MA=%v Kalman=%v Score=%.3f Signal=%v Confidence=%.2f",
+	log.Printf("[Ensemble] BaseAlpha regime=%s(%.2f) MA=%v Kalman=%v Score=%.3f Signal=%v Confidence=%.2f",
 		regime.String(), regimeConfidence,
 		latestMA, latestKalman,
 		signalScore, finalSignal, finalConfidence)
 
 	return finalSignal, finalConfidence, regime, signalScore, nil
-}
-
-// getWeightsForRegime returns signal weights based on market regime
-func (e *EnsembleDecisionLayer) getWeightsForRegime(regime MarketRegime) SignalWeight {
-	switch regime {
-	case RegimeLowVolTrend:
-		return e.regimeConfig.LowVolTrendWeights
-	case RegimeMedium:
-		return e.regimeConfig.MediumWeights
-	case RegimeHighVolStress:
-		return e.regimeConfig.HighVolStressWeights
-	default:
-		return e.regimeConfig.MediumWeights
-	}
 }
 
 // computeEnsembleScore converts signals into weighted vote (-1.0 to +1.0)
@@ -265,34 +281,16 @@ func signalToVote(signal models.Signal) float64 {
 
 // applyRegimeGating applies regime-aware signal filtering
 func (e *EnsembleDecisionLayer) applyRegimeGating(score float64, regime MarketRegime) models.Signal {
-	switch regime {
-	case RegimeLowVolTrend:
-		// Low vol trending: normal thresholds, favor momentum
-		if score >= e.regimeConfig.BuyThreshold {
-			return models.SignalBuy
-		}
-		if score <= e.regimeConfig.SellThreshold {
-			return models.SignalSell
-		}
+	return e.applyBaseThreshold(score)
+}
 
-	case RegimeMedium:
-		// Medium: balanced
-		if score >= e.regimeConfig.BuyThreshold {
-			return models.SignalBuy
-		}
-		if score <= e.regimeConfig.SellThreshold {
-			return models.SignalSell
-		}
-
-	case RegimeHighVolStress:
-		// High vol stress: suppress buy signals, only allow mean-reversion sells
-		if score <= e.regimeConfig.SellThreshold*0.8 { // Lower threshold for exits
-			return models.SignalSell
-		}
-		// Suppress buy signals entirely in stress regime
-		return models.SignalHold
+func (e *EnsembleDecisionLayer) applyBaseThreshold(score float64) models.Signal {
+	if score >= e.regimeConfig.BuyThreshold {
+		return models.SignalBuy
 	}
-
+	if score <= e.regimeConfig.SellThreshold {
+		return models.SignalSell
+	}
 	return models.SignalHold
 }
 
@@ -332,6 +330,9 @@ func (e *EnsembleDecisionLayer) getBaseSize() float64 {
 
 // getRegimeMultiplier returns the scalar for current regime
 func (e *EnsembleDecisionLayer) getRegimeMultiplier(regime MarketRegime) float64 {
+	if e.regimeMode == RegimeModeNone {
+		return 1.0
+	}
 	switch regime {
 	case RegimeLowVolTrend:
 		return e.positionSizing.LowVolTrendMultiplier
@@ -351,7 +352,10 @@ func (e *EnsembleDecisionLayer) GetRegimeInfo() (MarketRegime, int) {
 
 // GetStateProbabilities returns HMM state probabilities
 func (e *EnsembleDecisionLayer) GetStateProbabilities() [3]float64 {
-	return e.hmmDetector.GetProbabilities()
+	if e.regimeDetector == nil {
+		return [3]float64{0, 1, 0}
+	}
+	return e.regimeDetector.GetProbabilities()
 }
 
 // GetLastSignalScore returns the last computed ensemble score
@@ -361,7 +365,12 @@ func (e *EnsembleDecisionLayer) GetLastSignalScore() float64 {
 
 // Reset clears internal state (useful for backtesting)
 func (e *EnsembleDecisionLayer) Reset() {
-	e.hmmDetector.Reset()
+	if e.regimeDetector != nil {
+		e.regimeDetector.Reset()
+	}
+	if e.riskOverlay != nil {
+		e.riskOverlay.Reset()
+	}
 	e.lastRegime = RegimeMedium
 	e.lastRegimeBars = 0
 	e.lastSignalScore = 0.0
@@ -382,18 +391,67 @@ func (e *EnsembleDecisionLayer) EvaluateLatest(ctx context.Context, bars []model
 	}
 
 	probs := e.GetStateProbabilities()
+	basePositionSize := e.getBaseSize()
+	adjustedPositionSize := basePositionSize
+	var overlayDecision *RegimeOverlayDecision
+	if e.regimeMode == RegimeModeOverlay && e.riskOverlay != nil {
+		probSlice := []float64{probs[0], probs[1], probs[2]}
+		baseExposure := 0.0
+		if signal == models.SignalBuy {
+			baseExposure = basePositionSize
+		}
+		decision := e.riskOverlay.Apply(RegimeOverlayInput{
+			BaseExposure:      baseExposure,
+			PosteriorProbs:    probSlice,
+			StateRoles:        []RegimeRiskRole{RegimeRiskLowVol, RegimeRiskNormal, RegimeRiskHighVol},
+			ModelHealthy:      true,
+			RealizedAnnualVol: annualizedWindowVolatility(bars, e.hmmDetector),
+		})
+		overlayDecision = &decision
+		if signal == models.SignalBuy {
+			adjustedPositionSize = decision.AdjustedExposure
+			if adjustedPositionSize <= 0 {
+				signal = models.SignalHold
+			}
+		}
+	}
+
+	metadata := map[string]interface{}{
+		"confidence":             confidence,
+		"score":                  score,
+		"regime_mode":            e.regimeMode.String(),
+		"probability_low":        probs[0],
+		"probability_medium":     probs[1],
+		"probability_high":       probs[2],
+		"base_position_size_pct": basePositionSize,
+		"position_size_pct":      adjustedPositionSize,
+	}
+	if overlayDecision != nil {
+		metadata["hmm_overlay_multiplier"] = overlayDecision.Multiplier
+		metadata["hmm_overlay_raw_multiplier"] = overlayDecision.RawMultiplier
+		metadata["hmm_overlay_role"] = string(overlayDecision.EffectiveRole)
+		metadata["hmm_overlay_confidence"] = overlayDecision.Confidence
+		metadata["hmm_overlay_reasons"] = overlayDecision.Reasons
+		metadata["hmm_overlay_vetoed"] = overlayDecision.Vetoed
+	}
+
 	return backtest.StrategyOutput{
 		Signal:          signal,
-		PositionSizePct: e.getBaseSize() * e.getRegimeMultiplier(regime),
+		PositionSizePct: adjustedPositionSize,
 		RegimeLabel:     regime.String(),
-		Metadata: map[string]interface{}{
-			"confidence":         confidence,
-			"score":              score,
-			"probability_low":    probs[0],
-			"probability_medium": probs[1],
-			"probability_high":   probs[2],
-		},
+		Metadata:        metadata,
 	}, nil
+}
+
+func annualizedWindowVolatility(bars []models.Bar, detector *HMMRegimeDetector) float64 {
+	if detector == nil || len(bars) < 2 {
+		return 0
+	}
+	start := len(bars) - detector.WindowSize()
+	if start < 0 {
+		start = 0
+	}
+	return RealizedVolatility(bars[start:]) * math.Sqrt(252)
 }
 
 // GenerateSignals evaluates rolling history sequentially to support HMM backtesting
