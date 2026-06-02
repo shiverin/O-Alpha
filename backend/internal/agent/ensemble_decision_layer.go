@@ -436,6 +436,7 @@ func (e *EnsembleDecisionLayer) EvaluateLatest(ctx context.Context, bars []model
 	metadata := map[string]interface{}{
 		"confidence":             confidence,
 		"score":                  score,
+		"regime_mode":            e.regimeMode.String(),
 		"probability_low":        probs[0],
 		"probability_medium":     probs[1],
 		"probability_high":       probs[2],

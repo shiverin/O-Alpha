@@ -106,6 +106,7 @@ func (m *AgentManager) StartAgentV2(
 	initialCash float64,
 	agentRunID int64,
 	riskProfile RiskProfile,
+	regimeMode RegimeMode,
 	useWebSocket bool,
 ) error {
 	m.mu.Lock()
@@ -118,7 +119,10 @@ func (m *AgentManager) StartAgentV2(
 
 	maStrat := backtest.NewMACrossoverStrategy(maFastPeriod, maSlowPeriod)
 	kalmanStrat := backtest.NewKalmanStrategy(kalmanQNoise, kalmanRNoise, 20, kalmanZThreshold)
-	ensemble := NewEnsembleDecisionLayer(maStrat, kalmanStrat, 50, riskProfile)
+	ensemble, err := NewEnsembleDecisionLayerForMode(maStrat, kalmanStrat, 50, riskProfile, regimeMode)
+	if err != nil {
+		return err
+	}
 	worker := NewAgentWorker(
 		context.Background(), // Decouple worker lifetime from the HTTP request context.
 		m.alpacaClient,

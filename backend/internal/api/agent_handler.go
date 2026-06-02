@@ -12,17 +12,19 @@ import (
 )
 
 type AgentControlRequest struct {
-	Symbol       string  `json:"symbol" binding:"required"`
-	StrategyType string  `json:"strategy_type" binding:"required"`
-	Timeframe    string  `json:"timeframe"`
-	InitialCash  float64 `json:"initial_cash"`
-	UseWebSocket bool    `json:"use_websocket"`
-	QNoise       float64 `json:"q_noise"`
-	RNoise       float64 `json:"r_noise"`
-	ZThreshold   float64 `json:"z_threshold"`
-	FastPeriod   int     `json:"fast_period"`
-	SlowPeriod   int     `json:"slow_period"`
-	RiskProfile  string  `json:"risk_profile"`
+	Symbol             string  `json:"symbol" binding:"required"`
+	StrategyType       string  `json:"strategy_type" binding:"required"`
+	Timeframe          string  `json:"timeframe"`
+	InitialCash        float64 `json:"initial_cash"`
+	UseWebSocket       bool    `json:"use_websocket"`
+	QNoise             float64 `json:"q_noise"`
+	RNoise             float64 `json:"r_noise"`
+	ZThreshold         float64 `json:"z_threshold"`
+	FastPeriod         int     `json:"fast_period"`
+	SlowPeriod         int     `json:"slow_period"`
+	RiskProfile        string  `json:"risk_profile"`
+	RegimeMode         string  `json:"regime_mode"`
+	RiskOverlayEnabled *bool   `json:"risk_overlay_enabled"`
 }
 
 // LaunchLiveAgent starts a user-scoped paper trading worker.
@@ -54,6 +56,7 @@ func (h *Handler) LaunchLiveAgent(c *gin.Context) {
 	var strat backtest.Strategy
 	useHMMEnsemble := false
 	riskProfile := agent.RiskProfileModerate
+	regimeMode := agent.RegimeModeOverlay
 	switch req.StrategyType {
 	case "KALMAN":
 		if req.QNoise == 0 {
@@ -106,6 +109,11 @@ func (h *Handler) LaunchLiveAgent(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
+		regimeMode, req.RegimeMode, err = parseRegimeMode(req.RegimeMode, req.RiskOverlayEnabled)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": "strategy_type must be KALMAN, MA_CROSSOVER, or HMM_ENSEMBLE"})
 		return
@@ -124,6 +132,10 @@ func (h *Handler) LaunchLiveAgent(c *gin.Context) {
 		"fast_period":   req.FastPeriod,
 		"slow_period":   req.SlowPeriod,
 		"risk_profile":  req.RiskProfile,
+		"regime_mode":   req.RegimeMode,
+	}
+	if req.RiskOverlayEnabled != nil {
+		parameters["risk_overlay_enabled"] = *req.RiskOverlayEnabled
 	}
 	runID, err := h.AgentRepo.CreateAgentRun(
 		c.Request.Context(),
@@ -156,6 +168,7 @@ func (h *Handler) LaunchLiveAgent(c *gin.Context) {
 			req.InitialCash,
 			runID,
 			riskProfile,
+			regimeMode,
 			req.UseWebSocket,
 		)
 	} else {
@@ -295,6 +308,26 @@ func parseRiskProfile(value string) (agent.RiskProfile, string, error) {
 		return agent.RiskProfileAggressive, "aggressive", nil
 	default:
 		return agent.RiskProfileModerate, "", fmt.Errorf("risk_profile must be conservative, moderate, or aggressive")
+	}
+}
+
+func parseRegimeMode(value string, riskOverlayEnabled *bool) (agent.RegimeMode, string, error) {
+	raw := strings.ToLower(strings.TrimSpace(value))
+	if raw == "" && riskOverlayEnabled != nil {
+		if *riskOverlayEnabled {
+			raw = string(agent.RegimeModeOverlay)
+		} else {
+			raw = string(agent.RegimeModeNone)
+		}
+	}
+
+	switch raw {
+	case "", "overlay", "risk_overlay", "hmm_overlay", "on", "enabled", "true":
+		return agent.RegimeModeOverlay, string(agent.RegimeModeOverlay), nil
+	case "none", "off", "disabled", "false", "no_hmm":
+		return agent.RegimeModeNone, string(agent.RegimeModeNone), nil
+	default:
+		return agent.RegimeModeOverlay, "", fmt.Errorf("regime_mode must be overlay or none")
 	}
 }
 
