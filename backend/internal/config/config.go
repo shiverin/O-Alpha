@@ -22,9 +22,10 @@ type Config struct {
 	AlpacaAPISecret string
 	AlpacaDataURL   string
 
-	IngestSymbols  []string
-	IngestInterval string
-	IngestLookback time.Duration
+	IngestSymbols       []string
+	IngestInterval      string
+	IngestLookback      time.Duration
+	IngestForceBackfill bool
 }
 
 // Load reads configuration from the environment.
@@ -32,16 +33,17 @@ func Load() (*Config, error) {
 	_ = godotenv.Load(".env", "../.env")
 
 	cfg := &Config{
-		DatabaseURL:        os.Getenv("DATABASE_URL"),
-		RedisURL:           os.Getenv("REDIS_URL"),
-		MigrationsPath:     envOr("MIGRATIONS_PATH", "file://migrations"),
-		HTTPAddr:           envOr("HTTP_ADDR", ":8080"),
-		JWTSecret:          envOr("JWT_SECRET", "dev-change-me"),
-		CORSAllowedOrigins: splitCSV(envOr("CORS_ALLOWED_ORIGINS", "http://localhost:3000")),
-		AlpacaAPIKey:       os.Getenv("ALPACA_API_KEY"),
-		AlpacaAPISecret:    os.Getenv("ALPACA_API_SECRET"),
-		AlpacaDataURL:      envOr("ALPACA_DATA_URL", "https://data.alpaca.markets"),
-		IngestInterval:     envOr("INGEST_INTERVAL", "1h"),
+		DatabaseURL:         os.Getenv("DATABASE_URL"),
+		RedisURL:            os.Getenv("REDIS_URL"),
+		MigrationsPath:      envOr("MIGRATIONS_PATH", "file://migrations"),
+		HTTPAddr:            envOr("HTTP_ADDR", ":8080"),
+		JWTSecret:           envOr("JWT_SECRET", "dev-change-me"),
+		CORSAllowedOrigins:  splitCSV(envOr("CORS_ALLOWED_ORIGINS", "http://localhost:3000")),
+		AlpacaAPIKey:        os.Getenv("ALPACA_API_KEY"),
+		AlpacaAPISecret:     os.Getenv("ALPACA_API_SECRET"),
+		AlpacaDataURL:       envOr("ALPACA_DATA_URL", "https://data.alpaca.markets"),
+		IngestInterval:      envOr("INGEST_INTERVAL", "1h"),
+		IngestForceBackfill: envBool("INGEST_FORCE_BACKFILL"),
 	}
 
 	if cfg.DatabaseURL == "" {
@@ -84,4 +86,13 @@ func envOr(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func envBool(key string) bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv(key))) {
+	case "1", "true", "t", "yes", "y", "on":
+		return true
+	default:
+		return false
+	}
 }

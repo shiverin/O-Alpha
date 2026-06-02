@@ -17,12 +17,12 @@ type Bar = models.Bar
 func TestHMMInitialization(t *testing.T) {
 	hmm := NewHMMRegimeDetector(50)
 
-	if hmm.windowSize != 50 {
-		t.Errorf("expected window size 50, got %d", hmm.windowSize)
+	if hmm.WindowSize() != 50 {
+		t.Errorf("expected window size 50, got %d", hmm.WindowSize())
 	}
 
-	if len(hmm.stateSequence) != 0 {
-		t.Errorf("expected empty state sequence, got length %d", len(hmm.stateSequence))
+	if len(hmm.GetRegimeSequence()) != 0 {
+		t.Errorf("expected empty state sequence, got length %d", len(hmm.GetRegimeSequence()))
 	}
 
 	probs := hmm.GetProbabilities()
@@ -47,7 +47,7 @@ func TestHMMVolatilityDiscretization(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		result := hmm.discretizeVolatility(tt.vol)
+		result := hmm.DiscretizeVolatility(tt.vol)
 		if result != tt.expected {
 			t.Errorf("%s: expected bucket %d, got %d", tt.name, tt.expected, result)
 		}
@@ -70,7 +70,7 @@ func TestHMMTrendDiscretization(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		result := hmm.discretizeTrend(tt.trend)
+		result := hmm.DiscretizeTrend(tt.trend)
 		if result != tt.expected {
 			t.Errorf("%s: expected bucket %d, got %d", tt.name, tt.expected, result)
 		}
@@ -88,7 +88,7 @@ func TestHMMVolatilityCalculation(t *testing.T) {
 		{Open: 100, High: 103, Low: 99, Close: 102, Volume: 1000},  // +2%
 	}
 
-	vol := hmm.calculateRealizedVolatility(bars)
+	vol := hmm.CalculateRealizedVolatility(bars)
 	if vol <= 0 {
 		t.Errorf("volatility should be positive, got %.6f", vol)
 	}
@@ -110,7 +110,7 @@ func TestHMMTrendCalculation(t *testing.T) {
 		{Open: 102, High: 104, Low: 101, Close: 103, Volume: 1000},
 	}
 
-	upTrend := hmm.calculateRollingTrend(upBars)
+	upTrend := hmm.CalculateRollingTrend(upBars)
 	if upTrend <= 0 {
 		t.Errorf("uptrend should be positive, got %.6f", upTrend)
 	}
@@ -123,7 +123,7 @@ func TestHMMTrendCalculation(t *testing.T) {
 		{Open: 98, High: 98, Low: 96, Close: 97, Volume: 1000},
 	}
 
-	downTrend := hmm.calculateRollingTrend(downBars)
+	downTrend := hmm.CalculateRollingTrend(downBars)
 	if downTrend >= 0 {
 		t.Errorf("downtrend should be negative, got %.6f", downTrend)
 	}
@@ -172,11 +172,12 @@ func TestHMMRegimePersistence(t *testing.T) {
 		}
 	}
 
-	if len(hmm.stateSequence) == 0 {
+	sequence := hmm.GetRegimeSequence()
+	if len(sequence) == 0 {
 		t.Fatalf("state sequence should not be empty")
 	}
 
-	persistence := hmm.GetRegimePersistence(hmm.stateSequence[len(hmm.stateSequence)-1])
+	persistence := hmm.GetRegimePersistence(sequence[len(sequence)-1])
 	if persistence <= 0 {
 		t.Errorf("persistence should be positive, got %d", persistence)
 	}
@@ -274,7 +275,7 @@ func TestSignalVoting(t *testing.T) {
 	}
 }
 
-func TestRegimeGating(t *testing.T) {
+func TestBaseThresholdIgnoresRegimeForAlpha(t *testing.T) {
 	maStrat := backtest.NewMACrossoverStrategy(20, 50)
 	kalmanStrat := backtest.NewKalmanStrategy(0.001, 0.01, 20, 2.0)
 	ensemble := NewEnsembleDecisionLayer(maStrat, kalmanStrat, 50, RiskProfileModerate)
@@ -285,18 +286,13 @@ func TestRegimeGating(t *testing.T) {
 		expected models.Signal
 		name     string
 	}{
-		// Low vol trend: normal thresholds
 		{0.7, RegimeLowVolTrend, models.SignalBuy, "Low vol buy"},
 		{-0.7, RegimeLowVolTrend, models.SignalSell, "Low vol sell"},
 		{0.3, RegimeLowVolTrend, models.SignalHold, "Low vol hold"},
-
-		// Medium: balanced
 		{0.6, RegimeMedium, models.SignalBuy, "Medium buy"},
 		{-0.6, RegimeMedium, models.SignalSell, "Medium sell"},
-
-		// High vol stress: suppress buys, allow exits
-		{0.9, RegimeHighVolStress, models.SignalHold, "Stress suppress buy"},
-		{-0.8, RegimeHighVolStress, models.SignalSell, "Stress allow sell"},
+		{0.9, RegimeHighVolStress, models.SignalBuy, "Stress no longer suppresses alpha buy"},
+		{-0.8, RegimeHighVolStress, models.SignalSell, "Stress keeps alpha sell"},
 		{0.3, RegimeHighVolStress, models.SignalHold, "Stress hold"},
 	}
 
@@ -538,14 +534,12 @@ func TestAgentWorkerBuyBelowOneShareIsNoop(t *testing.T) {
 
 func TestEnsembleCalibrationUpdatesBucketsFromRollingHistory(t *testing.T) {
 	ensemble := NewEnsembleDecisionLayer(nil, nil, 10, RiskProfileModerate)
-	originalVolBuckets := ensemble.hmmDetector.volatilityBuckets
-	originalTrendBuckets := ensemble.hmmDetector.trendBuckets
+	originalVolBuckets, originalTrendBuckets := ensemble.hmmDetector.Buckets()
 
 	bars := barsToModelBars(generateSyntheticBars(80, 100.0, 0.04, 0.001))
 	ensemble.Calibrate(bars)
 
-	volBuckets := ensemble.hmmDetector.volatilityBuckets
-	trendBuckets := ensemble.hmmDetector.trendBuckets
+	volBuckets, trendBuckets := ensemble.hmmDetector.Buckets()
 	if volBuckets == originalVolBuckets && trendBuckets == originalTrendBuckets {
 		t.Fatalf("expected calibration to update at least one bucket set")
 	}
