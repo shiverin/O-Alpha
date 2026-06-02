@@ -173,7 +173,7 @@ func (o *RegimeRiskOverlay) classify(input RegimeOverlayInput) (RegimeRiskRole, 
 	}
 
 	roleProbs := make(map[RegimeRiskRole]float64)
-	var bestRole RegimeRiskRole = RegimeRiskUnknown
+	bestRole := RegimeRiskUnknown
 	var bestProb float64
 	for i, prob := range input.PosteriorProbs {
 		role := input.StateRoles[i]

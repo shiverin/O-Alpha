@@ -251,23 +251,6 @@ func (e *EnsembleDecisionLayer) EvaluateSignal(
 	return finalSignal, finalConfidence, regime, signalScore, nil
 }
 
-// getWeightsForRegime returns signal weights based on market regime
-func (e *EnsembleDecisionLayer) getWeightsForRegime(regime MarketRegime) SignalWeight {
-	if e.regimeMode == RegimeModeNone {
-		return e.regimeConfig.MediumWeights
-	}
-	switch regime {
-	case RegimeLowVolTrend:
-		return e.regimeConfig.LowVolTrendWeights
-	case RegimeMedium:
-		return e.regimeConfig.MediumWeights
-	case RegimeHighVolStress:
-		return e.regimeConfig.HighVolStressWeights
-	default:
-		return e.regimeConfig.MediumWeights
-	}
-}
-
 // computeEnsembleScore converts signals into weighted vote (-1.0 to +1.0)
 func (e *EnsembleDecisionLayer) computeEnsembleScore(
 	maSignal models.Signal,

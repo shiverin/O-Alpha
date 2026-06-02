@@ -120,16 +120,6 @@ func ObservationSymbol(volBucket, trendBucket int) int {
 	return volBucket*3 + trendBucket
 }
 
-func volBucketOfSymbol(symbol int) int {
-	if symbol < 0 {
-		return 0
-	}
-	if symbol >= hmmNumSymbols {
-		return 2
-	}
-	return symbol / 3
-}
-
 // percentile does linear interpolation on a slice that is already sorted ascending.
 func percentile(sorted []float64, p float64) float64 {
 	n := len(sorted)

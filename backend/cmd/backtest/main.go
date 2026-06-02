@@ -278,13 +278,14 @@ func writeTradeCSV(path, symbol, timeframe, mode string, trades []models.Trade) 
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 
 	writer := csv.NewWriter(file)
-	defer writer.Flush()
 
 	header := []string{"symbol", "timeframe", "mode", "entry_time", "exit_time", "entry_price", "exit_price", "quantity", "entry_value", "exit_value", "pnl", "return_pct"}
 	if err := writer.Write(header); err != nil {
+		if closeErr := file.Close(); closeErr != nil {
+			return fmt.Errorf("write trade csv header: %w; close: %v", err, closeErr)
+		}
 		return err
 	}
 	for _, trade := range trades {
@@ -303,10 +304,20 @@ func writeTradeCSV(path, symbol, timeframe, mode string, trades []models.Trade) 
 			formatFloat(trade.ReturnPct),
 		}
 		if err := writer.Write(row); err != nil {
+			if closeErr := file.Close(); closeErr != nil {
+				return fmt.Errorf("write trade csv row: %w; close: %v", err, closeErr)
+			}
 			return err
 		}
 	}
-	return writer.Error()
+	writer.Flush()
+	if err := writer.Error(); err != nil {
+		if closeErr := file.Close(); closeErr != nil {
+			return fmt.Errorf("flush trade csv: %w; close: %v", err, closeErr)
+		}
+		return err
+	}
+	return file.Close()
 }
 
 func formatFloat(value float64) string {
