@@ -44,6 +44,76 @@ func TestRunBacktestWithOutputsPreservesIdleCash(t *testing.T) {
 	}
 }
 
+func TestRunBacktestPartialAllocationPreservesCash(t *testing.T) {
+	start := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	bars := []models.Bar{
+		{Time: start, Symbol: "TEST", Open: 100, High: 100, Low: 100, Close: 100},
+		{Time: start.Add(time.Hour), Symbol: "TEST", Open: 100, High: 110, Low: 100, Close: 110},
+	}
+	outputs := []StrategyOutput{
+		{Signal: models.SignalBuy, PositionSizePct: 0.10},
+		{Signal: models.SignalHold},
+	}
+
+	result, err := RunBacktestWithOutputs(bars, outputs, 10000)
+	if err != nil {
+		t.Fatalf("backtest: %v", err)
+	}
+	if got := result.EquityCurve[1].Equity; got != 10100 {
+		t.Fatalf("expected equity 10100 after 10%% allocation rises from 100 to 110, got %.2f", got)
+	}
+}
+
+func TestRunBacktestSellAddsProceedsToCash(t *testing.T) {
+	start := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	bars := []models.Bar{
+		{Time: start, Symbol: "TEST", Open: 100, High: 100, Low: 100, Close: 100},
+		{Time: start.Add(time.Hour), Symbol: "TEST", Open: 100, High: 100, Low: 100, Close: 100},
+		{Time: start.Add(2 * time.Hour), Symbol: "TEST", Open: 120, High: 120, Low: 120, Close: 120},
+	}
+	outputs := []StrategyOutput{
+		{Signal: models.SignalBuy, PositionSizePct: 0.10},
+		{Signal: models.SignalSell},
+		{Signal: models.SignalHold},
+	}
+
+	result, err := RunBacktestWithOutputs(bars, outputs, 10000)
+	if err != nil {
+		t.Fatalf("backtest: %v", err)
+	}
+	if result.FinalEquity != 10200 {
+		t.Fatalf("expected final cash to include residual cash plus sale proceeds, got %.2f", result.FinalEquity)
+	}
+}
+
+func TestRunBacktestRepeatedBuyMaintainsTargetExposure(t *testing.T) {
+	start := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	bars := []models.Bar{
+		{Time: start, Symbol: "TEST", Open: 100, High: 100, Low: 100, Close: 100},
+		{Time: start.Add(time.Hour), Symbol: "TEST", Open: 100, High: 100, Low: 100, Close: 100},
+		{Time: start.Add(2 * time.Hour), Symbol: "TEST", Open: 100, High: 100, Low: 100, Close: 100},
+	}
+	outputs := []StrategyOutput{
+		{Signal: models.SignalBuy, PositionSizePct: 0.10},
+		{Signal: models.SignalBuy, PositionSizePct: 0.10},
+		{Signal: models.SignalHold},
+	}
+
+	result, err := RunBacktestWithOutputs(bars, outputs, 10000)
+	if err != nil {
+		t.Fatalf("backtest: %v", err)
+	}
+	if len(result.Trades) != 1 {
+		t.Fatalf("expected one closed position after final liquidation, got %d", len(result.Trades))
+	}
+	if result.Trades[0].Quantity != 10 {
+		t.Fatalf("repeated buy should not stack beyond the 10%% target; got quantity %.2f", result.Trades[0].Quantity)
+	}
+	if result.FinalEquity != 10000 {
+		t.Fatalf("expected flat-price final equity unchanged, got %.2f", result.FinalEquity)
+	}
+}
+
 func TestRunBuyAndHoldUsesFullAllocation(t *testing.T) {
 	start := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	bars := []models.Bar{

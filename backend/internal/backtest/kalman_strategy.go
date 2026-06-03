@@ -78,6 +78,10 @@ func (s *KalmanStrategy) GenerateSignals(ctx context.Context, bars []models.Bar)
 			Signal:          signal,
 			PositionSizePct: 0.10,
 			RegimeLabel:     "NORMAL",
+			AlphaScore:      signalToSignedScore(signal),
+			Confidence:      confidenceFromSignal(signal),
+			TargetWeight:    targetWeightFromSignal(signal, 0.10),
+			Engine:          "kalman",
 		}
 	}
 	return out, nil

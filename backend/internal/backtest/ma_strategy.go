@@ -105,6 +105,10 @@ func (s *MACrossoverStrategy) GenerateSignals(ctx context.Context, bars []models
 			Signal:          signal,
 			PositionSizePct: 0.10,
 			RegimeLabel:     "NORMAL",
+			AlphaScore:      signalToSignedScore(signal),
+			Confidence:      confidenceFromSignal(signal),
+			TargetWeight:    targetWeightFromSignal(signal, 0.10),
+			Engine:          "ma_crossover",
 		}
 	}
 	return out, nil

@@ -45,7 +45,7 @@ func RunBacktestWithOutputs(bars []models.Bar, outputs []StrategyOutput, initial
 	shares := 0.0
 	entryTime := bars[0].Time
 	entryPrice := 0.0
-	entryValue := 0.0
+	costBasis := 0.0
 	numTrades := 0
 	exposureBars := 0
 	turnoverValue := 0.0
@@ -56,36 +56,19 @@ func RunBacktestWithOutputs(bars []models.Bar, outputs []StrategyOutput, initial
 	for i := 0; i < len(bars); i++ {
 		// Execute pending signal from previous bar at this bar's open.
 		if i > 0 {
-			switch outputs[i-1].Signal {
-			case models.SignalBuy:
-				if shares == 0 && bars[i].Open > 0 {
-					allocationPct := outputs[i-1].PositionSizePct
-					if allocationPct <= 0 || allocationPct > 1 {
-						allocationPct = 1
-					}
-					allocation := cash * allocationPct
-					shares = allocation / bars[i].Open
-					cash -= allocation
-					entryTime = bars[i].Time
-					entryPrice = bars[i].Open
-					entryValue = allocation
-					turnoverValue += allocation
-					numTrades++
-				}
-			case models.SignalSell:
-				if shares > 0 {
-					proceeds := shares * bars[i].Open
-					cash += proceeds
-					pnl := proceeds - entryValue
-					tradePNLs = append(tradePNLs, pnl)
-					trades = append(trades, buildClosedTrade(entryTime, bars[i].Time, entryPrice, bars[i].Open, shares, entryValue, proceeds, pnl))
-					turnoverValue += proceeds
-					shares = 0
-					entryPrice = 0
-					entryValue = 0
-					numTrades++
-				}
-			}
+			cash, shares, costBasis, entryTime, entryPrice, numTrades, turnoverValue, tradePNLs, trades = executeSingleSymbolTarget(
+				bars[i],
+				outputs[i-1],
+				cash,
+				shares,
+				costBasis,
+				entryTime,
+				entryPrice,
+				numTrades,
+				turnoverValue,
+				tradePNLs,
+				trades,
+			)
 		}
 
 		equity := cash + shares*bars[i].Close
@@ -101,9 +84,9 @@ func RunBacktestWithOutputs(bars []models.Bar, outputs []StrategyOutput, initial
 	if shares > 0 {
 		proceeds := shares * bars[len(bars)-1].Close
 		cash += proceeds
-		pnl := proceeds - entryValue
+		pnl := proceeds - costBasis
 		tradePNLs = append(tradePNLs, pnl)
-		trades = append(trades, buildClosedTrade(entryTime, bars[len(bars)-1].Time, entryPrice, bars[len(bars)-1].Close, shares, entryValue, proceeds, pnl))
+		trades = append(trades, buildClosedTrade(entryTime, bars[len(bars)-1].Time, entryPrice, bars[len(bars)-1].Close, shares, costBasis, proceeds, pnl))
 		turnoverValue += proceeds
 		numTrades++
 	}
@@ -137,6 +120,107 @@ func RunBacktestWithOutputs(bars []models.Bar, outputs []StrategyOutput, initial
 		ExposurePercent:  exposurePercent,
 		Turnover:         turnover,
 	}, nil
+}
+
+func executeSingleSymbolTarget(
+	bar models.Bar,
+	output StrategyOutput,
+	cash float64,
+	shares float64,
+	costBasis float64,
+	entryTime time.Time,
+	entryPrice float64,
+	numTrades int,
+	turnoverValue float64,
+	tradePNLs []float64,
+	trades []models.Trade,
+) (float64, float64, float64, time.Time, float64, int, float64, []float64, []models.Trade) {
+	const epsilon = 1e-9
+	if bar.Open <= 0 {
+		return cash, shares, costBasis, entryTime, entryPrice, numTrades, turnoverValue, tradePNLs, trades
+	}
+
+	var targetWeight float64
+	var shouldRebalance bool
+	switch output.Signal {
+	case models.SignalBuy:
+		targetWeight = normalizeSingleSymbolTargetWeight(output)
+		shouldRebalance = true
+	case models.SignalSell:
+		targetWeight = 0
+		shouldRebalance = true
+	default:
+		if output.TargetWeight != 0 {
+			targetWeight = normalizeSingleSymbolTargetWeight(output)
+			shouldRebalance = true
+		}
+	}
+	if !shouldRebalance {
+		return cash, shares, costBasis, entryTime, entryPrice, numTrades, turnoverValue, tradePNLs, trades
+	}
+
+	equityAtOpen := cash + shares*bar.Open
+	if equityAtOpen <= 0 {
+		return cash, shares, costBasis, entryTime, entryPrice, numTrades, turnoverValue, tradePNLs, trades
+	}
+	targetShares := equityAtOpen * targetWeight / bar.Open
+	deltaShares := targetShares - shares
+	if deltaShares > epsilon {
+		cost := deltaShares * bar.Open
+		if cost > cash {
+			cost = cash
+			deltaShares = cost / bar.Open
+		}
+		if deltaShares <= epsilon {
+			return cash, shares, costBasis, entryTime, entryPrice, numTrades, turnoverValue, tradePNLs, trades
+		}
+		if shares <= epsilon {
+			entryTime = bar.Time
+			entryPrice = bar.Open
+		}
+		cash -= cost
+		shares += deltaShares
+		costBasis += cost
+		turnoverValue += cost
+		numTrades++
+		return cash, shares, costBasis, entryTime, entryPrice, numTrades, turnoverValue, tradePNLs, trades
+	}
+
+	if deltaShares < -epsilon && shares > epsilon {
+		sellQty := -deltaShares
+		if sellQty > shares {
+			sellQty = shares
+		}
+		proceeds := sellQty * bar.Open
+		closedCost := costBasis * (sellQty / shares)
+		pnl := proceeds - closedCost
+		cash += proceeds
+		shares -= sellQty
+		costBasis -= closedCost
+		if shares <= epsilon {
+			shares = 0
+			costBasis = 0
+		}
+		tradePNLs = append(tradePNLs, pnl)
+		trades = append(trades, buildClosedTrade(entryTime, bar.Time, entryPrice, bar.Open, sellQty, closedCost, proceeds, pnl))
+		turnoverValue += proceeds
+		numTrades++
+	}
+	return cash, shares, costBasis, entryTime, entryPrice, numTrades, turnoverValue, tradePNLs, trades
+}
+
+func normalizeSingleSymbolTargetWeight(output StrategyOutput) float64 {
+	weight := output.TargetWeight
+	if weight == 0 {
+		weight = output.PositionSizePct
+	}
+	if weight <= 0 {
+		return 1
+	}
+	if weight > 1 {
+		return 1
+	}
+	return weight
 }
 
 func buildClosedTrade(entryTime, exitTime time.Time, entryPrice, exitPrice, quantity, entryValue, exitValue, pnl float64) models.Trade {
