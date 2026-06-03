@@ -24,9 +24,13 @@ const (
 
 // BacktestRequest configures a backtest run with support for multiple strategies.
 type BacktestRequest struct {
-	Symbol       string `json:"symbol" binding:"required"`
-	StrategyType string `json:"strategy_type" binding:"required"` // "MA_CROSSOVER" or "KALMAN"
-	Timeframe    string `json:"timeframe,omitempty"`              // e.g. "1Day", "1Hour"
+	Symbol       string   `json:"symbol,omitempty"`
+	Symbols      []string `json:"symbols,omitempty"`
+	UniverseName string   `json:"universe_name,omitempty"`
+	StrategyType string   `json:"strategy_type" binding:"required"` // "MA_CROSSOVER", "KALMAN", or portfolio strategy types
+	Timeframe    string   `json:"timeframe,omitempty"`              // e.g. "1Day", "1Hour"
+	Feed         string   `json:"feed,omitempty"`
+	Adjustment   string   `json:"adjustment,omitempty"`
 
 	// Kalman-specific parameters
 	QNoise     float64 `json:"q_noise,omitempty"`
@@ -34,11 +38,12 @@ type BacktestRequest struct {
 	ZThreshold float64 `json:"z_threshold,omitempty"`
 
 	// MA-specific parameters
-	FastPeriod  int        `json:"fast_period,omitempty"`
-	SlowPeriod  int        `json:"slow_period,omitempty"`
-	InitialCash float64    `json:"initial_cash"`
-	Start       *time.Time `json:"start,omitempty"`
-	End         *time.Time `json:"end,omitempty"`
+	FastPeriod  int                    `json:"fast_period,omitempty"`
+	SlowPeriod  int                    `json:"slow_period,omitempty"`
+	InitialCash float64                `json:"initial_cash"`
+	Start       *time.Time             `json:"start,omitempty"`
+	End         *time.Time             `json:"end,omitempty"`
+	Parameters  map[string]interface{} `json:"parameters,omitempty"`
 }
 
 // EquityPoint is one point on the equity curve.

@@ -1,0 +1,21 @@
+{
+  "command": "/Users/shizhen/Documents/O-Alpha/research/ml/.venv/bin/python research/ml/audit_ranker_attribution.py --fold-artifacts-root reports/batches/2026-06-03_yahoo100_daily_ranker_walkforward_slow_horizons_2018_2026/fold_artifacts --variant stocks_h63_s15_top3_reb63_z10 --out-dir reports/batches/2026-06-03_ranker_attribution_h63_s15",
+  "git_sha": "95297ef020ff5a266d098dfacb9bb23934b0dda5",
+  "fold_artifacts_root": "reports/batches/2026-06-03_yahoo100_daily_ranker_walkforward_slow_horizons_2018_2026/fold_artifacts",
+  "variant": "stocks_h63_s15_top3_reb63_z10",
+  "variant_artifact_dir": "reports/batches/2026-06-03_yahoo100_daily_ranker_walkforward_slow_horizons_2018_2026/fold_artifacts/stocks_h63_s15_top3_reb63_z10",
+  "variant_artifact_dir_exists": true,
+  "mega_cap_symbols": [
+    "AAPL",
+    "AMZN",
+    "AVGO",
+    "GOOG",
+    "GOOGL",
+    "LLY",
+    "META",
+    "MSFT",
+    "NVDA",
+    "TSLA"
+  ],
+  "report_sha256": "18e7a069be41694111f070b4c89d547c96ecb5a37e254b2a8c326f12d189a40f"
+}

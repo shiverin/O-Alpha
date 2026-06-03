@@ -9,6 +9,8 @@ import (
 	"github.com/oalpha/internal/agent"
 	"github.com/oalpha/internal/backtest"
 	"github.com/oalpha/internal/db"
+	"github.com/oalpha/internal/ml"
+	"github.com/oalpha/pkg/models"
 )
 
 type AgentControlRequest struct {
@@ -25,6 +27,15 @@ type AgentControlRequest struct {
 	RiskProfile        string  `json:"risk_profile"`
 	RegimeMode         string  `json:"regime_mode"`
 	RiskOverlayEnabled *bool   `json:"risk_overlay_enabled"`
+	BaseStrategyType   string  `json:"base_strategy_type"`
+	ModelPath          string  `json:"model_path"`
+	MetadataPath       string  `json:"metadata_path"`
+	ModelRegistryRoot  string  `json:"model_registry_root"`
+	ModelName          string  `json:"model_name"`
+	StrategyScope      string  `json:"strategy_scope"`
+	MLEnterLong        float64 `json:"ml_enter_long"`
+	MLMaxWeight        float64 `json:"ml_max_weight"`
+	MLFailOpenOnError  *bool   `json:"ml_fail_open_on_error"`
 }
 
 // LaunchLiveAgent starts a user-scoped paper trading worker.
@@ -58,6 +69,39 @@ func (h *Handler) LaunchLiveAgent(c *gin.Context) {
 	riskProfile := agent.RiskProfileModerate
 	regimeMode := agent.RegimeModeOverlay
 	switch req.StrategyType {
+	case "ML_META_LABEL":
+		baseReq := models.BacktestRequest{
+			Symbol:     req.Symbol,
+			QNoise:     req.QNoise,
+			RNoise:     req.RNoise,
+			ZThreshold: req.ZThreshold,
+			FastPeriod: req.FastPeriod,
+			SlowPeriod: req.SlowPeriod,
+			Parameters: mlAgentParams(req),
+		}
+		baseType := strings.ToUpper(strings.TrimSpace(req.BaseStrategyType))
+		if baseType == "" {
+			baseType = "MA_CROSSOVER"
+		}
+		base, err := buildBaseSingleSymbolStrategy(baseType, baseReq)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		predictor, featureSpec, artifactThresholds, calibration, err := loadMLPredictorFromParams(baseReq.Parameters)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		strat = &ml.MLMetaLabelStrategy{
+			Symbol:         req.Symbol,
+			BaseStrategy:   base,
+			FeatureBuilder: ml.NewFeatureBuilder(featureSpec),
+			Predictor:      predictor,
+			Calibration:    calibration,
+			Thresholds:     mlThresholdsFromParams(baseReq.Parameters, artifactThresholds),
+			MaxWeight:      req.MLMaxWeight,
+		}
 	case "KALMAN":
 		if req.QNoise == 0 {
 			req.QNoise = 0.01
@@ -115,7 +159,7 @@ func (h *Handler) LaunchLiveAgent(c *gin.Context) {
 			return
 		}
 	default:
-		c.JSON(http.StatusBadRequest, gin.H{"error": "strategy_type must be KALMAN, MA_CROSSOVER, or HMM_ENSEMBLE"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "strategy_type must be KALMAN, MA_CROSSOVER, HMM_ENSEMBLE, or ML_META_LABEL"})
 		return
 	}
 
@@ -133,6 +177,19 @@ func (h *Handler) LaunchLiveAgent(c *gin.Context) {
 		"slow_period":   req.SlowPeriod,
 		"risk_profile":  req.RiskProfile,
 		"regime_mode":   req.RegimeMode,
+	}
+	if req.StrategyType == "ML_META_LABEL" {
+		parameters["base_strategy_type"] = req.BaseStrategyType
+		parameters["model_path"] = req.ModelPath
+		parameters["metadata_path"] = req.MetadataPath
+		parameters["model_registry_root"] = req.ModelRegistryRoot
+		parameters["model_name"] = req.ModelName
+		parameters["strategy_scope"] = req.StrategyScope
+		parameters["ml_enter_long"] = req.MLEnterLong
+		parameters["ml_max_weight"] = req.MLMaxWeight
+		if req.MLFailOpenOnError != nil {
+			parameters["ml_fail_open_on_error"] = *req.MLFailOpenOnError
+		}
 	}
 	if req.RiskOverlayEnabled != nil {
 		parameters["risk_overlay_enabled"] = *req.RiskOverlayEnabled
@@ -198,6 +255,27 @@ func (h *Handler) LaunchLiveAgent(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "activated", "symbol": req.Symbol, "run_id": runID})
+}
+
+func mlAgentParams(req AgentControlRequest) map[string]interface{} {
+	params := map[string]interface{}{
+		"model_path":          req.ModelPath,
+		"metadata_path":       req.MetadataPath,
+		"model_registry_root": req.ModelRegistryRoot,
+		"model_name":          req.ModelName,
+		"strategy_scope":      req.StrategyScope,
+		"ml_max_weight":       req.MLMaxWeight,
+	}
+	if req.ModelName == "" {
+		params["model_name"] = "ml_meta_label"
+	}
+	if req.MLEnterLong > 0 {
+		params["enter_long"] = req.MLEnterLong
+	}
+	if req.MLFailOpenOnError != nil {
+		params["fail_open_on_error"] = *req.MLFailOpenOnError
+	}
+	return params
 }
 
 // TerminateLiveAgent stops a user-scoped worker.

@@ -75,6 +75,10 @@ func main() {
 	if err := syncAllSymbolsDelta(ctx, repo, client, cfg.IngestSymbols, cfg.IngestInterval, cfg.IngestLookback, cfg.IngestForceBackfill); err != nil {
 		log.Error().Err(err).Msg("startup delta resync encountered warnings")
 	}
+	if cfg.IngestRunOnce {
+		log.Info().Msg("INGEST_RUN_ONCE enabled. Exiting after startup resync")
+		return
+	}
 
 	ticker := time.NewTicker(tickInterval)
 	defer ticker.Stop()

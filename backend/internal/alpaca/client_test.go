@@ -98,49 +98,69 @@ func TestPlaceOrderValidation(t *testing.T) {
 	assert.Contains(t, err.Error(), "order cannot be nil")
 
 	// Test empty symbol
+	qty := 10.0
 	_, err = c.PlaceOrder(context.Background(), &OrderRequest{
-		Qty:  10,
-		Side: "buy",
-		Type: "market",
+		Qty:         &qty,
+		Side:        "buy",
+		Type:        "market",
+		TimeInForce: "day",
 	})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "symbol is required")
 
 	// Test non-positive quantity
+	zeroQty := 0.0
 	_, err = c.PlaceOrder(context.Background(), &OrderRequest{
-		Symbol: "AAPL",
-		Qty:    0,
-		Side:   "buy",
-		Type:   "market",
+		Symbol:      "AAPL",
+		Qty:         &zeroQty,
+		Side:        "buy",
+		Type:        "market",
+		TimeInForce: "day",
 	})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "quantity must be positive")
 
+	negativeQty := -5.0
 	_, err = c.PlaceOrder(context.Background(), &OrderRequest{
-		Symbol: "AAPL",
-		Qty:    -5,
-		Side:   "buy",
-		Type:   "market",
+		Symbol:      "AAPL",
+		Qty:         &negativeQty,
+		Side:        "buy",
+		Type:        "market",
+		TimeInForce: "day",
 	})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "quantity must be positive")
 
 	// Test invalid side
 	_, err = c.PlaceOrder(context.Background(), &OrderRequest{
-		Symbol: "AAPL",
-		Qty:    10,
-		Side:   "invalid",
-		Type:   "market",
+		Symbol:      "AAPL",
+		Qty:         &qty,
+		Side:        "invalid",
+		Type:        "market",
+		TimeInForce: "day",
 	})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "side must be 'buy' or 'sell'")
 
+	notional := 100.0
+	_, err = c.PlaceOrder(context.Background(), &OrderRequest{
+		Symbol:      "AAPL",
+		Qty:         &qty,
+		Notional:    &notional,
+		Side:        "buy",
+		Type:        "market",
+		TimeInForce: "day",
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "exactly one of qty or notional is required")
+
 	// Test valid order (should succeed)
 	orderResp, err := c.PlaceOrder(context.Background(), &OrderRequest{
-		Symbol: "AAPL",
-		Qty:    10,
-		Side:   "buy",
-		Type:   "market",
+		Symbol:      "AAPL",
+		Qty:         &qty,
+		Side:        "buy",
+		Type:        "market",
+		TimeInForce: "day",
 	})
 	assert.NoError(t, err)
 	assert.NotNil(t, orderResp)

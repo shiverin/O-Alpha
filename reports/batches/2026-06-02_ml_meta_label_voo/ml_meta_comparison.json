@@ -1,0 +1,66 @@
+{
+  "generated_at": "2026-06-02T08:52:26.46827Z",
+  "symbol": "VOO",
+  "timeframe": "1Day",
+  "start": "2020-07-27T12:00:00+08:00",
+  "end": "2026-06-01T12:00:00+08:00",
+  "bar_count": 1469,
+  "base": {
+    "total_return": 0.04193729029451322,
+    "annualized_return": 0.007077107336200816,
+    "sharpe": 0.5966507318766371,
+    "sortino": 0.46722879738825684,
+    "calmar": 0.20793735896859783,
+    "max_drawdown": 0.034034804381975356,
+    "num_trades": 26,
+    "win_rate": 0.5384615384615384,
+    "profit_factor": 2.236817238360493,
+    "exposure_percent": 0.6814159292035398,
+    "turnover": 2.67997404881558,
+    "final_equity": 104193.72902945132
+  },
+  "ml_meta": {
+    "total_return": 0,
+    "annualized_return": 0,
+    "sharpe": 0,
+    "sortino": 0,
+    "calmar": 0,
+    "max_drawdown": 0,
+    "num_trades": 0,
+    "win_rate": 0,
+    "profit_factor": 0,
+    "exposure_percent": 0,
+    "turnover": 0,
+    "final_equity": 100000
+  },
+  "buy_hold": {
+    "total_return": 1.3572442701642893,
+    "annualized_return": 0.15858463112803411,
+    "sharpe": 0.970156085561521,
+    "sortino": 0.950366102754775,
+    "calmar": 0.6263109083167503,
+    "max_drawdown": 0.2532043255549232,
+    "num_trades": 2,
+    "win_rate": 1,
+    "profit_factor": 0,
+    "exposure_percent": 0.9993192648059904,
+    "turnover": 3.357244270164289,
+    "final_equity": 235724.42701642893
+  },
+  "diagnostics": {
+    "artifact": "ml_meta_label@2026-06-02T08:52:03Z",
+    "base_strategy": "MA_CROSSOVER",
+    "context_loaded": [
+      "SPY",
+      "QQQ",
+      "IWM"
+    ],
+    "fast_period": 20,
+    "ml_threshold": 0.5,
+    "slow_period": 50
+  },
+  "artifacts": {
+    "metadata": "../reports/batches/2026-06-02_ml_meta_label_voo/artifact/metadata.json",
+    "model": ""
+  }
+}

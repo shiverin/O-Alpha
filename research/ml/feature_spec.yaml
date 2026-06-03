@@ -1,0 +1,55 @@
+version: ml_meta_label_v1
+required_lookback: 64
+context_symbols:
+  - SPY
+  - QQQ
+  - IWM
+features:
+  - fracdiff_close_d0_5
+  - fracdiff_log_close_d0_5
+  - log_ret_1
+  - log_ret_2
+  - log_ret_5
+  - log_ret_10
+  - log_ret_21
+  - rolling_ret_21
+  - rolling_ret_63
+  - distance_to_20d_high
+  - distance_to_20d_low
+  - close_to_vwap_proxy
+  - close_to_close_vol_20
+  - ewma_vol_20
+  - parkinson_vol_20
+  - garman_klass_vol_20
+  - rogers_satchell_vol_20
+  - atr_pct_14
+  - ma_fast_minus_slow_pct
+  - ma_fast_slope
+  - ma_slow_slope
+  - kalman_residual
+  - kalman_zscore
+  - ensemble_score
+  - ensemble_confidence
+  - hmm_regime_probability_low
+  - hmm_regime_probability_medium
+  - hmm_regime_probability_high
+  - spy_ret_1
+  - spy_ret_5
+  - spy_vol_20
+  - qqq_ret_1
+  - qqq_ret_5
+  - iwm_ret_1
+  - iwm_ret_5
+  - sector_etf_ret_1
+  - sector_etf_ret_5
+  - relative_strength_vs_spy_21
+  - beta_to_spy_63
+  - residual_ret_vs_spy_21
+  - volume_z_20
+  - dollar_volume_z_20
+  - order_book_imbalance
+  - signed_volume_imbalance_20
+  - amihud_illiquidity_20
+  - high_low_spread_proxy
+  - turnover_proxy
+  - gap_pct

@@ -435,11 +435,19 @@ func (e *EnsembleDecisionLayer) EvaluateLatest(ctx context.Context, bars []model
 		metadata["hmm_overlay_vetoed"] = overlayDecision.Vetoed
 	}
 
+	targetWeight := adjustedPositionSize
+	if signal != models.SignalBuy {
+		targetWeight = 0
+	}
 	return backtest.StrategyOutput{
 		Signal:          signal,
 		PositionSizePct: adjustedPositionSize,
 		RegimeLabel:     regime.String(),
 		Metadata:        metadata,
+		AlphaScore:      score,
+		Confidence:      confidence,
+		TargetWeight:    targetWeight,
+		Engine:          "hmm_ensemble",
 	}, nil
 }
 

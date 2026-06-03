@@ -53,6 +53,11 @@ type barsResponse struct {
 	NextPageToken string      `json:"next_page_token"`
 }
 
+type multiBarsResponse struct {
+	Bars          map[string][]alpacaBar `json:"bars"`
+	NextPageToken string                 `json:"next_page_token"`
+}
+
 type alpacaBar struct {
 	T string  `json:"t"`
 	O float64 `json:"o"`
@@ -64,9 +69,16 @@ type alpacaBar struct {
 
 // GetBars fetches historical bars with pagination.
 func (c *Client) GetBars(ctx context.Context, symbol, timeframe string, start, end time.Time, limit int) ([]models.Bar, error) {
+	return c.GetBarsWithDataset(ctx, symbol, timeframe, start, end, limit, "iex", "raw")
+}
+
+// GetBarsWithDataset fetches historical bars for a single symbol with explicit
+// feed and adjustment parameters.
+func (c *Client) GetBarsWithDataset(ctx context.Context, symbol, timeframe string, start, end time.Time, limit int, feed string, adjustment string) ([]models.Bar, error) {
 	if limit <= 0 {
 		limit = 10000
 	}
+	feed, adjustment = normalizeMarketDataOptions(feed, adjustment)
 
 	var all []models.Bar
 	pageToken := ""
@@ -82,8 +94,8 @@ func (c *Client) GetBars(ctx context.Context, symbol, timeframe string, start, e
 		q.Set("start", start.UTC().Format(time.RFC3339))
 		q.Set("end", end.UTC().Format(time.RFC3339))
 		q.Set("limit", strconv.Itoa(limit))
-		q.Set("adjustment", "raw")
-		q.Set("feed", "iex")
+		q.Set("adjustment", adjustment)
+		q.Set("feed", feed)
 		if pageToken != "" {
 			q.Set("page_token", pageToken)
 		}
@@ -147,6 +159,94 @@ func (c *Client) GetBars(ctx context.Context, symbol, timeframe string, start, e
 	return all, nil
 }
 
+func (c *Client) GetBarsMulti(
+	ctx context.Context,
+	symbols []string,
+	timeframe string,
+	start time.Time,
+	end time.Time,
+	limit int,
+	feed string,
+	adjustment string,
+) (map[string][]models.Bar, error) {
+	if limit <= 0 {
+		limit = 10000
+	}
+	feed, adjustment = normalizeMarketDataOptions(feed, adjustment)
+	normalizedSymbols := normalizeSymbols(symbols)
+	if len(normalizedSymbols) == 0 {
+		return nil, fmt.Errorf("at least one symbol is required")
+	}
+
+	all := make(map[string][]models.Bar, len(normalizedSymbols))
+	pageToken := ""
+	for {
+		u, err := url.Parse(fmt.Sprintf("%s/v2/stocks/bars", c.baseURL))
+		if err != nil {
+			return nil, err
+		}
+
+		q := u.Query()
+		q.Set("symbols", strings.Join(normalizedSymbols, ","))
+		q.Set("timeframe", timeframe)
+		q.Set("start", start.UTC().Format(time.RFC3339))
+		q.Set("end", end.UTC().Format(time.RFC3339))
+		q.Set("limit", strconv.Itoa(limit))
+		q.Set("adjustment", adjustment)
+		q.Set("feed", feed)
+		if pageToken != "" {
+			q.Set("page_token", pageToken)
+		}
+		u.RawQuery = q.Encode()
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("APCA-API-KEY-ID", c.apiKey)
+		req.Header.Set("APCA-API-SECRET-KEY", c.apiSecret)
+
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("alpaca multi-bars request: %w", err)
+		}
+		body, err := io.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("read multi-bars body: %w", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("alpaca multi-bars status %d: %s", resp.StatusCode, string(body))
+		}
+
+		var payload multiBarsResponse
+		if err := json.Unmarshal(body, &payload); err != nil {
+			return nil, fmt.Errorf("decode multi-bars: %w", err)
+		}
+		for symbol, symbolBars := range payload.Bars {
+			normalized := strings.ToUpper(symbol)
+			for _, ab := range symbolBars {
+				bar, err := alpacaBarToModel(normalized, ab)
+				if err != nil {
+					return nil, err
+				}
+				all[normalized] = append(all[normalized], bar)
+			}
+		}
+		if payload.NextPageToken == "" {
+			break
+		}
+		pageToken = payload.NextPageToken
+	}
+
+	for _, symbol := range normalizedSymbols {
+		if _, ok := all[symbol]; !ok {
+			all[symbol] = nil
+		}
+	}
+	return all, nil
+}
+
 // ValidateBar checks OHLCV consistency.
 func ValidateBar(b models.Bar) error {
 	if b.Open < 0 || b.High < 0 || b.Low < 0 || b.Close < 0 {
@@ -169,10 +269,12 @@ func ValidateBar(b models.Bar) error {
 
 // OrderRequest represents a request to place an order with Alpaca.
 type OrderRequest struct {
-	Symbol string `json:"symbol"`
-	Qty    int    `json:"qty"`
-	Side   string `json:"side"` // "buy" or "sell"
-	Type   string `json:"type"` // "market", "limit", etc.
+	Symbol      string   `json:"symbol"`
+	Qty         *float64 `json:"qty,omitempty"`
+	Notional    *float64 `json:"notional,omitempty"`
+	Side        string   `json:"side"` // "buy" or "sell"
+	Type        string   `json:"type"` // initially "market"
+	TimeInForce string   `json:"time_in_force"`
 }
 
 // OrderResponse represents the response from placing an order with Alpaca.
@@ -185,6 +287,15 @@ type OrderResponse struct {
 	Status string `json:"status"`
 }
 
+type Asset struct {
+	Symbol       string `json:"symbol"`
+	Tradable     bool   `json:"tradable"`
+	Marginable   bool   `json:"marginable"`
+	Shortable    bool   `json:"shortable"`
+	EasyToBorrow bool   `json:"easy_to_borrow"`
+	Fractionable bool   `json:"fractionable"`
+}
+
 // PlaceOrder places an order with the Alpaca Trading API.
 func (c *Client) PlaceOrder(ctx context.Context, req *OrderRequest) (*OrderResponse, error) {
 	if req == nil {
@@ -193,11 +304,29 @@ func (c *Client) PlaceOrder(ctx context.Context, req *OrderRequest) (*OrderRespo
 	if req.Symbol == "" {
 		return nil, fmt.Errorf("symbol is required")
 	}
-	if req.Qty <= 0 {
+	if (req.Qty == nil && req.Notional == nil) || (req.Qty != nil && req.Notional != nil) {
+		return nil, fmt.Errorf("exactly one of qty or notional is required")
+	}
+	if req.Qty != nil && *req.Qty <= 0 {
 		return nil, fmt.Errorf("quantity must be positive")
+	}
+	if req.Notional != nil && *req.Notional <= 0 {
+		return nil, fmt.Errorf("notional must be positive")
 	}
 	if req.Side != "buy" && req.Side != "sell" {
 		return nil, fmt.Errorf("side must be 'buy' or 'sell'")
+	}
+	if req.Type == "" {
+		req.Type = "market"
+	}
+	if req.Type != "market" {
+		return nil, fmt.Errorf("order type must be market")
+	}
+	if req.TimeInForce == "" {
+		req.TimeInForce = "day"
+	}
+	if req.TimeInForce != "day" {
+		return nil, fmt.Errorf("time_in_force must be day")
 	}
 
 	body, err := json.Marshal(req)
@@ -237,4 +366,91 @@ func (c *Client) PlaceOrder(ctx context.Context, req *OrderRequest) (*OrderRespo
 		return nil, fmt.Errorf("decode order response: %w", err)
 	}
 	return &orderResp, nil
+}
+
+func (c *Client) GetAsset(ctx context.Context, symbol string) (*Asset, error) {
+	symbol = strings.ToUpper(strings.TrimSpace(symbol))
+	if symbol == "" {
+		return nil, fmt.Errorf("symbol is required")
+	}
+	u, err := url.Parse(fmt.Sprintf("%s/v2/assets/%s", c.baseURL, url.PathEscape(symbol)))
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("APCA-API-KEY-ID", c.apiKey)
+	req.Header.Set("APCA-API-SECRET-KEY", c.apiSecret)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("alpaca asset request: %w", err)
+	}
+	body, err := io.ReadAll(resp.Body)
+	_ = resp.Body.Close()
+	if err != nil {
+		return nil, fmt.Errorf("read asset body: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("alpaca asset status %d: %s", resp.StatusCode, string(body))
+	}
+	var asset Asset
+	if err := json.Unmarshal(body, &asset); err != nil {
+		return nil, fmt.Errorf("decode asset: %w", err)
+	}
+	return &asset, nil
+}
+
+func alpacaBarToModel(symbol string, ab alpacaBar) (models.Bar, error) {
+	t, err := time.Parse(time.RFC3339Nano, ab.T)
+	if err != nil {
+		t, err = time.Parse(time.RFC3339, ab.T)
+		if err != nil {
+			return models.Bar{}, fmt.Errorf("parse time %q: %w", ab.T, err)
+		}
+	}
+	b := models.Bar{
+		Time:   t.UTC(),
+		Symbol: strings.ToUpper(symbol),
+		Open:   ab.O,
+		High:   ab.H,
+		Low:    ab.L,
+		Close:  ab.C,
+		Volume: int64(ab.V),
+	}
+	if err := ValidateBar(b); err != nil {
+		return models.Bar{}, fmt.Errorf("invalid bar at %s: %w", b.Time, err)
+	}
+	return b, nil
+}
+
+func normalizeMarketDataOptions(feed string, adjustment string) (string, string) {
+	feed = strings.ToLower(strings.TrimSpace(feed))
+	adjustment = strings.ToLower(strings.TrimSpace(adjustment))
+	if feed == "" {
+		feed = "iex"
+	}
+	if adjustment == "" {
+		adjustment = "raw"
+	}
+	return feed, adjustment
+}
+
+func normalizeSymbols(symbols []string) []string {
+	out := make([]string, 0, len(symbols))
+	seen := make(map[string]struct{}, len(symbols))
+	for _, symbol := range symbols {
+		normalized := strings.ToUpper(strings.TrimSpace(symbol))
+		if normalized == "" {
+			continue
+		}
+		if _, ok := seen[normalized]; ok {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		out = append(out, normalized)
+	}
+	return out
 }
