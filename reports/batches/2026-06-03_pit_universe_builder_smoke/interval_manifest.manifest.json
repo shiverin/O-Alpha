@@ -1,0 +1,9 @@
+{
+  "name": "synthetic_interval",
+  "url": "",
+  "input": "reports/batches/2026-06-03_pit_universe_builder_smoke/interval_input.csv",
+  "input_sha256": "072d504d0dfd3d80cec40b5d867eab03bd6c4fedaa04d392909728229fdbc2a7",
+  "format": "interval",
+  "command": "/Users/shizhen/Documents/O-Alpha/research/ml/.venv/bin/python research/ml/build_pit_universe.py --input reports/batches/2026-06-03_pit_universe_builder_smoke/interval_input.csv --format interval --source-name synthetic_interval --out reports/batches/2026-06-03_pit_universe_builder_smoke/interval_manifest.json",
+  "git_sha": "95297ef020ff5a266d098dfacb9bb23934b0dda5"
+}

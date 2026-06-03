@@ -1,0 +1,17 @@
+{
+  "command": "/Users/shizhen/Documents/O-Alpha/research/ml/.venv/bin/python research/ml/compare_active_sleeves.py --bars-csv reports/batches/2026-06-03_yahoo100_ml_manifest/export_2015_2024/bars.csv --benchmark VOO --start-year 2017 --end-year 2024 --out-dir reports/batches/2026-06-03_yahoo100_active_sleeve_python_compare_2017_2024",
+  "bars_csv": "reports/batches/2026-06-03_yahoo100_ml_manifest/export_2015_2024/bars.csv",
+  "bars_csv_sha256": "efbb20b1d95986e966cf9399228a71bb7ab2370c693f3750f87d38346975b728",
+  "benchmark": "VOO",
+  "cost_model": {
+    "mode": "next_open",
+    "spread_bps": 2.0,
+    "slippage_bps": 1.0,
+    "commission_per_share": 0.0,
+    "min_commission": 0.0,
+    "sec_fees_bps_sell": 0.0
+  },
+  "rebalance_band_half_l1": 0.025,
+  "start_year": 2017,
+  "end_year": 2024
+}
