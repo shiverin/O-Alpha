@@ -1,0 +1,9 @@
+horizon_bars: 21
+profit_take_vol_mult: 1.5
+stop_loss_vol_mult: 1.0
+vol_lookback: 20
+min_event_spacing_bars: 5
+embargo_pct: 0.01
+use_next_open_for_entry: false
+vertical_barrier_label: 0
+label_sides: long
