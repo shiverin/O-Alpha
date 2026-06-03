@@ -77,11 +77,13 @@ func main() {
 	fmt.Println("\nTest 4: Order Request Validation")
 	fmt.Println("---------------------------------")
 
+	qty := 10.0
 	orderReq := &alpaca.OrderRequest{
-		Symbol: "AAPL",
-		Qty:    10,
-		Side:   "buy",
-		Type:   "market",
+		Symbol:      "AAPL",
+		Qty:         &qty,
+		Side:        "buy",
+		Type:        "market",
+		TimeInForce: "day",
 	}
 
 	orderResp, err := client.PlaceOrder(ctx, orderReq)

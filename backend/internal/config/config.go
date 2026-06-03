@@ -26,6 +26,7 @@ type Config struct {
 	IngestInterval      string
 	IngestLookback      time.Duration
 	IngestForceBackfill bool
+	IngestRunOnce       bool
 }
 
 // Load reads configuration from the environment.
@@ -44,6 +45,7 @@ func Load() (*Config, error) {
 		AlpacaDataURL:       envOr("ALPACA_DATA_URL", "https://data.alpaca.markets"),
 		IngestInterval:      envOr("INGEST_INTERVAL", "1h"),
 		IngestForceBackfill: envBool("INGEST_FORCE_BACKFILL"),
+		IngestRunOnce:       envBool("INGEST_RUN_ONCE"),
 	}
 
 	if cfg.DatabaseURL == "" {

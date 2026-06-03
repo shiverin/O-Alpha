@@ -9,6 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/oalpha/internal/backtest"
 	"github.com/oalpha/pkg/models"
 )
 
@@ -27,11 +28,25 @@ func NewBarsRepository(db *pgxpool.Pool) *BarsRepository {
 	return &BarsRepository{db: db}
 }
 
-// InsertBars upserts bars; conflicts on (time, symbol, timeframe) update OHLCV.
+type BarQueryOptions struct {
+	Feed         string
+	Adjustment   string
+	Source       string
+	AlignMode    backtest.AlignMode
+	MaxStaleBars int
+}
+
+// InsertBars upserts raw IEX Alpaca bars for backward-compatible callers.
 func (r *BarsRepository) InsertBars(ctx context.Context, bars []models.Bar, timeframe string) (int64, error) {
+	return r.InsertBarsDataset(ctx, bars, timeframe, "iex", "raw", "alpaca")
+}
+
+// InsertBarsDataset upserts bars for a specific feed/adjustment/source dataset.
+func (r *BarsRepository) InsertBarsDataset(ctx context.Context, bars []models.Bar, timeframe string, feed string, adjustment string, source string) (int64, error) {
 	if len(bars) == 0 {
 		return 0, nil
 	}
+	feed, adjustment, source = normalizeDataset(feed, adjustment, source)
 
 	tx, err := r.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
@@ -40,9 +55,9 @@ func (r *BarsRepository) InsertBars(ctx context.Context, bars []models.Bar, time
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	const q = `
-		INSERT INTO bars (time, symbol, timeframe, open, high, low, close, volume)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		ON CONFLICT (time, symbol, timeframe) DO UPDATE SET
+		INSERT INTO bars (time, symbol, timeframe, feed, adjustment, source, open, high, low, close, volume)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		ON CONFLICT (time, symbol, timeframe, feed, adjustment, source) DO UPDATE SET
 			open = EXCLUDED.open,
 			high = EXCLUDED.high,
 			low = EXCLUDED.low,
@@ -68,7 +83,7 @@ func (r *BarsRepository) InsertBars(ctx context.Context, bars []models.Bar, time
 			}
 			seenAssets[symbol] = struct{}{}
 		}
-		batch.Queue(q, b.Time, symbol, timeframe, b.Open, b.High, b.Low, b.Close, b.Volume)
+		batch.Queue(q, b.Time, symbol, timeframe, feed, adjustment, source, b.Open, b.High, b.Low, b.Close, b.Volume)
 	}
 
 	br := tx.SendBatch(ctx, batch)
@@ -89,16 +104,23 @@ func (r *BarsRepository) InsertBars(ctx context.Context, bars []models.Bar, time
 	return inserted, nil
 }
 
-// GetBars returns bars for symbol and timeframe ordered by time ascending.
+// GetBars returns default raw IEX Alpaca bars for symbol and timeframe ordered by time ascending.
 func (r *BarsRepository) GetBars(ctx context.Context, symbol, timeframe string, start, end time.Time) ([]models.Bar, error) {
+	return r.GetBarsDataset(ctx, symbol, timeframe, start, end, BarQueryOptions{})
+}
+
+// GetBarsDataset returns one symbol from one immutable market-data dataset.
+func (r *BarsRepository) GetBarsDataset(ctx context.Context, symbol, timeframe string, start, end time.Time, opts BarQueryOptions) ([]models.Bar, error) {
 	symbol = normalizeSymbol(symbol)
+	feed, adjustment, source := normalizeDataset(opts.Feed, opts.Adjustment, opts.Source)
 	const q = `
 		SELECT time, symbol, open, high, low, close, volume
 		FROM bars
 		WHERE symbol = $1 AND timeframe = $2 AND time >= $3 AND time <= $4
+			AND feed = $5 AND adjustment = $6 AND source = $7
 		ORDER BY time ASC`
 
-	rows, err := r.db.Query(ctx, q, symbol, timeframe, start, end)
+	rows, err := r.db.Query(ctx, q, symbol, timeframe, start, end, feed, adjustment, source)
 	if err != nil {
 		return nil, fmt.Errorf("query bars: %w", err)
 	}
@@ -115,10 +137,64 @@ func (r *BarsRepository) GetBars(ctx context.Context, symbol, timeframe string, 
 	return bars, rows.Err()
 }
 
+func (r *BarsRepository) GetBarsMulti(
+	ctx context.Context,
+	symbols []string,
+	timeframe string,
+	start time.Time,
+	end time.Time,
+	opts BarQueryOptions,
+) (backtest.AlignedBars, error) {
+	normalizedSymbols := normalizeSymbols(symbols)
+	if len(normalizedSymbols) == 0 {
+		return backtest.AlignedBars{}, fmt.Errorf("at least one symbol is required")
+	}
+	feed, adjustment, source := normalizeDataset(opts.Feed, opts.Adjustment, opts.Source)
+	const q = `
+		SELECT time, symbol, open, high, low, close, volume
+		FROM bars
+		WHERE symbol = ANY($1) AND timeframe = $2 AND time >= $3 AND time <= $4
+			AND feed = $5 AND adjustment = $6 AND source = $7
+		ORDER BY time ASC, symbol ASC`
+
+	rows, err := r.db.Query(ctx, q, normalizedSymbols, timeframe, start, end, feed, adjustment, source)
+	if err != nil {
+		return backtest.AlignedBars{}, fmt.Errorf("query multi-symbol bars: %w", err)
+	}
+	defer rows.Close()
+
+	grouped := make(map[string][]models.Bar, len(normalizedSymbols))
+	for _, symbol := range normalizedSymbols {
+		grouped[symbol] = nil
+	}
+	for rows.Next() {
+		var b models.Bar
+		if err := rows.Scan(&b.Time, &b.Symbol, &b.Open, &b.High, &b.Low, &b.Close, &b.Volume); err != nil {
+			return backtest.AlignedBars{}, fmt.Errorf("scan multi-symbol bar: %w", err)
+		}
+		grouped[b.Symbol] = append(grouped[b.Symbol], b)
+	}
+	if err := rows.Err(); err != nil {
+		return backtest.AlignedBars{}, err
+	}
+
+	alignMode := opts.AlignMode
+	if alignMode == "" {
+		alignMode = backtest.AlignInnerJoin
+	}
+	return backtest.AlignBars(grouped, backtest.AlignmentConfig{
+		Mode:         alignMode,
+		MaxStaleBars: opts.MaxStaleBars,
+		Timeframe:    timeframe,
+		Feed:         feed,
+		Adjustment:   adjustment,
+	})
+}
+
 // CountBars returns the number of bars for symbol in [start, end].
 func (r *BarsRepository) CountBars(ctx context.Context, symbol string, start, end time.Time) (int64, error) {
 	symbol = normalizeSymbol(symbol)
-	const q = `SELECT COUNT(*) FROM bars WHERE symbol = $1 AND time >= $2 AND time <= $3`
+	const q = `SELECT COUNT(*) FROM bars WHERE symbol = $1 AND time >= $2 AND time <= $3 AND feed = 'iex' AND adjustment = 'raw' AND source = 'alpaca'`
 	var n int64
 	err := r.db.QueryRow(ctx, q, symbol, start, end).Scan(&n)
 	if err != nil {
@@ -231,6 +307,11 @@ func (r *BarsRepository) SaveBacktestRun(ctx context.Context, userID, configID i
 		"z_threshold":   req.ZThreshold,
 		"fast_period":   req.FastPeriod,
 		"slow_period":   req.SlowPeriod,
+		"feed":          req.Feed,
+		"adjustment":    req.Adjustment,
+	}
+	for key, value := range req.Parameters {
+		params[key] = value
 	}
 	paramsBytes, err := json.Marshal(params)
 	if err != nil {
@@ -272,7 +353,7 @@ func (r *BarsRepository) GetLatestBarTime(ctx context.Context, symbol, timeframe
 	const q = `
 		SELECT max(time) 
 		FROM bars 
-		WHERE symbol = $1 AND timeframe = $2`
+		WHERE symbol = $1 AND timeframe = $2 AND feed = 'iex' AND adjustment = 'raw' AND source = 'alpaca'`
 
 	var latestTime *time.Time
 	err := r.db.QueryRow(ctx, q, symbol, timeframe).Scan(&latestTime)
@@ -289,4 +370,37 @@ func (r *BarsRepository) GetLatestBarTime(ctx context.Context, symbol, timeframe
 
 func normalizeSymbol(symbol string) string {
 	return strings.ToUpper(strings.TrimSpace(symbol))
+}
+
+func normalizeSymbols(symbols []string) []string {
+	out := make([]string, 0, len(symbols))
+	seen := make(map[string]struct{}, len(symbols))
+	for _, symbol := range symbols {
+		normalized := normalizeSymbol(symbol)
+		if normalized == "" {
+			continue
+		}
+		if _, ok := seen[normalized]; ok {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		out = append(out, normalized)
+	}
+	return out
+}
+
+func normalizeDataset(feed string, adjustment string, source string) (string, string, string) {
+	feed = strings.ToLower(strings.TrimSpace(feed))
+	adjustment = strings.ToLower(strings.TrimSpace(adjustment))
+	source = strings.ToLower(strings.TrimSpace(source))
+	if feed == "" {
+		feed = "iex"
+	}
+	if adjustment == "" {
+		adjustment = "raw"
+	}
+	if source == "" {
+		source = "alpaca"
+	}
+	return feed, adjustment, source
 }
