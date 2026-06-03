@@ -114,7 +114,7 @@ func RunWorkerParityBacktest(ctx context.Context, bars []models.Bar, mode Worker
 
 		switch output.Signal {
 		case models.SignalBuy:
-			targetAllocation := account.AvailableCash() * normalizePositionSizePct(output.PositionSizePct)
+			targetAllocation := workerParityTargetAllocation(ctx, account, config.Symbol, bar.Close, output)
 			filledQty, cost, err := workerParityBuy(ctx, account, config.Symbol, bar.Close, targetAllocation)
 			if err != nil {
 				return WorkerParityResult{}, err
@@ -127,10 +127,7 @@ func RunWorkerParityBacktest(ctx context.Context, bars []models.Bar, mode Worker
 		case models.SignalSell:
 			currentQty := account.GetPosition(config.Symbol)
 			if currentQty > 0 {
-				amount := currentQty * 0.5
-				if amount < 1.0 || amount > currentQty {
-					amount = currentQty
-				}
+				amount := currentQty
 				filledQty, proceeds, err := account.Sell(ctx, config.Symbol, bar.Close, amount)
 				if err != nil {
 					return WorkerParityResult{}, fmt.Errorf("worker parity sell: %w", err)
@@ -220,7 +217,7 @@ func workerParityBuy(ctx context.Context, account *agent.PaperAccount, symbol st
 	availableCash := account.AvailableCash()
 	cashToUse := targetAllocation
 	if cashToUse <= 0 {
-		cashToUse = availableCash * 0.1
+		return 0, 0, nil
 	}
 	if cashToUse > availableCash {
 		cashToUse = availableCash
@@ -234,6 +231,25 @@ func workerParityBuy(ctx context.Context, account *agent.PaperAccount, symbol st
 		return 0, 0, fmt.Errorf("worker parity buy: %w", err)
 	}
 	return filledQty, cost, nil
+}
+
+func workerParityTargetAllocation(ctx context.Context, account *agent.PaperAccount, symbol string, price float64, output backtest.StrategyOutput) float64 {
+	if output.Signal != models.SignalBuy || price <= 0 {
+		return 0
+	}
+	targetWeight := output.TargetWeight
+	if targetWeight <= 0 {
+		targetWeight = output.PositionSizePct
+	}
+	targetWeight = normalizePositionSizePct(targetWeight)
+	equity := account.Equity(ctx, map[string]float64{symbol: price})
+	targetValue := equity * targetWeight
+	currentValue := account.GetPosition(symbol) * price
+	delta := targetValue - currentValue
+	if delta <= 0 {
+		return 0
+	}
+	return delta
 }
 
 func closeWorkerParityLots(openLots *[]workerParityLot, quantity float64, exitTime time.Time, exitPrice float64) []models.Trade {

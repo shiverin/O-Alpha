@@ -499,7 +499,7 @@ func TestEndToEndSignalGeneration(t *testing.T) {
 	}
 }
 
-func TestAgentWorkerSellIgnoresBuySizingMinimum(t *testing.T) {
+func TestAgentWorkerSellFlattensPosition(t *testing.T) {
 	worker := &AgentWorker{
 		ctx:     context.Background(),
 		account: NewPaperAccount(0),
@@ -511,8 +511,26 @@ func TestAgentWorkerSellIgnoresBuySizingMinimum(t *testing.T) {
 		t.Fatalf("sell should not be blocked by buy-side position sizing: %v", err)
 	}
 
-	if position := worker.account.GetPosition("TEST"); position != 1 {
-		t.Fatalf("expected half the position to be sold, got %.2f shares", position)
+	if position := worker.account.GetPosition("TEST"); position != 0 {
+		t.Fatalf("expected position to be flattened, got %.2f shares", position)
+	}
+}
+
+func TestAgentWorkerBuyAtTargetIsNoop(t *testing.T) {
+	worker := &AgentWorker{
+		ctx:     context.Background(),
+		account: NewPaperAccount(9000),
+		symbol:  "TEST",
+	}
+	worker.account.Positions["TEST"] = 10
+
+	allocation := worker.targetAllocationForOutput(backtest.StrategyOutput{
+		Signal:          models.SignalBuy,
+		PositionSizePct: 0.10,
+	}, 100)
+
+	if allocation != 0 {
+		t.Fatalf("expected no additional allocation when already at target, got %.2f", allocation)
 	}
 }
 

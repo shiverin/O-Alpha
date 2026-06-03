@@ -261,7 +261,7 @@ func (w *AgentWorker) processNewBar(bar models.Bar) error {
 	w.storeStrategyOutput(output)
 
 	if output.Signal != models.SignalHold {
-		targetAllocation := w.account.AvailableCash() * normalizePositionSizePct(output.PositionSizePct)
+		targetAllocation := w.targetAllocationForOutput(output, latestBar.Close)
 		if err := w.executeTrade(output.Signal, latestBar.Close, targetAllocation); err != nil {
 			return fmt.Errorf("trade routing mismatch error: %w", err)
 		}
@@ -312,7 +312,7 @@ func (w *AgentWorker) processTick() error {
 	w.storeStrategyOutput(output)
 
 	if output.Signal != models.SignalHold {
-		targetAllocation := w.account.AvailableCash() * normalizePositionSizePct(output.PositionSizePct)
+		targetAllocation := w.targetAllocationForOutput(output, latestBar.Close)
 		if err := w.executeTrade(output.Signal, latestBar.Close, targetAllocation); err != nil {
 			return fmt.Errorf("execution path mismatch error: %w", err)
 		}
@@ -402,7 +402,7 @@ func (w *AgentWorker) executePaperTrade(signal models.Signal, price float64, tar
 		availableCash := w.account.AvailableCash()
 		cashToUse := targetAllocation
 		if cashToUse <= 0 {
-			cashToUse = availableCash * 0.1
+			return nil
 		}
 		if cashToUse > availableCash {
 			cashToUse = availableCash
@@ -426,11 +426,7 @@ func (w *AgentWorker) executePaperTrade(signal models.Signal, price float64, tar
 			return nil // Safety exit catch to absorb historical trailing state variations
 		}
 
-		amount := currentPos * 0.5
-		// Fractional Resolution Patch: If asset balance falls under baseline metrics, prioritize a clean exit
-		if amount < 1.0 || amount > currentPos {
-			amount = currentPos
-		}
+		amount := currentPos
 
 		filledQty, _, err := w.account.Sell(w.ctx, w.symbol, price, amount)
 		if err != nil {
@@ -445,6 +441,25 @@ func (w *AgentWorker) executePaperTrade(signal models.Signal, price float64, tar
 	}
 
 	return nil
+}
+
+func (w *AgentWorker) targetAllocationForOutput(output backtest.StrategyOutput, price float64) float64 {
+	if output.Signal != models.SignalBuy || price <= 0 {
+		return 0
+	}
+	targetWeight := output.TargetWeight
+	if targetWeight <= 0 {
+		targetWeight = output.PositionSizePct
+	}
+	targetWeight = normalizePositionSizePct(targetWeight)
+	equity := w.account.Equity(w.ctx, map[string]float64{w.symbol: price})
+	targetValue := equity * targetWeight
+	currentValue := w.account.GetPosition(w.symbol) * price
+	delta := targetValue - currentValue
+	if delta <= 0 {
+		return 0
+	}
+	return delta
 }
 
 func (w *AgentWorker) recordPaperFill(action string, price, qty float64) error {
