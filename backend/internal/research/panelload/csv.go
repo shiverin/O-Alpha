@@ -21,7 +21,7 @@ func LoadPanelFromCSV(path string, symbols []string, timeframe string, start, en
 	if err != nil {
 		return backtest.AlignedBars{}, fmt.Errorf("open bars csv: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	reader := csv.NewReader(file)
 	reader.FieldsPerRecord = -1

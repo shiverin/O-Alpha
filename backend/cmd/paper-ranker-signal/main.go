@@ -441,26 +441,26 @@ func reportWarnings(args signalArgs) []string {
 func (r paperSignalReport) Markdown() string {
 	var b strings.Builder
 	b.WriteString("# Paper Ranker Signal\n\n")
-	b.WriteString(fmt.Sprintf("- Generated at: `%s`\n", r.GeneratedAt.Format(time.RFC3339)))
-	b.WriteString(fmt.Sprintf("- Strategy: `%s`\n", r.Strategy))
-	b.WriteString(fmt.Sprintf("- Paper only: `%t`\n", r.PaperOnly))
-	b.WriteString(fmt.Sprintf("- Orders enabled: `%t`\n", r.OrdersEnabled))
-	b.WriteString(fmt.Sprintf("- Orders submitted: `%d`\n", r.OrdersSubmitted))
-	b.WriteString(fmt.Sprintf("- Broker connected: `%t`\n", r.BrokerConnected))
-	b.WriteString(fmt.Sprintf("- Panel: `%s` to `%s` (`%d` bars)\n", r.PanelStart.Format("2006-01-02"), r.PanelEnd.Format("2006-01-02"), r.BarCount))
-	b.WriteString(fmt.Sprintf("- Latest signal time: `%s`\n", r.LatestTime.Format(time.RFC3339)))
+	fmt.Fprintf(&b, "- Generated at: `%s`\n", r.GeneratedAt.Format(time.RFC3339))
+	fmt.Fprintf(&b, "- Strategy: `%s`\n", r.Strategy)
+	fmt.Fprintf(&b, "- Paper only: `%t`\n", r.PaperOnly)
+	fmt.Fprintf(&b, "- Orders enabled: `%t`\n", r.OrdersEnabled)
+	fmt.Fprintf(&b, "- Orders submitted: `%d`\n", r.OrdersSubmitted)
+	fmt.Fprintf(&b, "- Broker connected: `%t`\n", r.BrokerConnected)
+	fmt.Fprintf(&b, "- Panel: `%s` to `%s` (`%d` bars)\n", r.PanelStart.Format("2006-01-02"), r.PanelEnd.Format("2006-01-02"), r.BarCount)
+	fmt.Fprintf(&b, "- Latest signal time: `%s`\n", r.LatestTime.Format(time.RFC3339))
 	if r.LastRebalanceTime != nil {
-		b.WriteString(fmt.Sprintf("- Last target refresh: `%s`\n", r.LastRebalanceTime.Format(time.RFC3339)))
+		fmt.Fprintf(&b, "- Last target refresh: `%s`\n", r.LastRebalanceTime.Format(time.RFC3339))
 	}
-	b.WriteString(fmt.Sprintf("- Target source: `%s`\n", r.TargetSource))
-	b.WriteString(fmt.Sprintf("- Model variant: `%s`\n", r.Args.ModelVariant))
-	b.WriteString(fmt.Sprintf("- Model root: `%s`\n", r.Args.ModelArtifactRoot))
-	b.WriteString(fmt.Sprintf("- Benchmark/core: `%s`\n\n", r.Args.Benchmark))
+	fmt.Fprintf(&b, "- Target source: `%s`\n", r.TargetSource)
+	fmt.Fprintf(&b, "- Model variant: `%s`\n", r.Args.ModelVariant)
+	fmt.Fprintf(&b, "- Model root: `%s`\n", r.Args.ModelArtifactRoot)
+	fmt.Fprintf(&b, "- Benchmark/core: `%s`\n\n", r.Args.Benchmark)
 
 	if len(r.Warnings) > 0 {
 		b.WriteString("## Warnings\n\n")
 		for _, warning := range r.Warnings {
-			b.WriteString(fmt.Sprintf("- `%s`\n", warning))
+			fmt.Fprintf(&b, "- `%s`\n", warning)
 		}
 		b.WriteString("\n")
 	}
@@ -469,7 +469,7 @@ func (r paperSignalReport) Markdown() string {
 	b.WriteString("| Symbol | Weight | Role | Rank | Model Score | Score Z | Vol 20 | Confidence | Reason |\n")
 	b.WriteString("| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- |\n")
 	for _, target := range r.Targets {
-		b.WriteString(fmt.Sprintf("| `%s` | %.6f | `%s` | %s | %s | %s | %s | %.3f | `%s` |\n",
+		fmt.Fprintf(&b, "| `%s` | %.6f | `%s` | %s | %s | %s | %s | %.3f | `%s` |\n",
 			escapeTable(target.Symbol),
 			target.TargetWeight,
 			escapeTable(target.Role),
@@ -479,7 +479,7 @@ func (r paperSignalReport) Markdown() string {
 			formatFloatPtr(target.Vol20),
 			target.Confidence,
 			escapeTable(target.Reason),
-		))
+		)
 	}
 	b.WriteString("\n## Latest Metadata\n\n")
 	writeMetadataMarkdown(&b, r.LatestMetadata)
@@ -505,7 +505,7 @@ func writeMetadataMarkdown(b *strings.Builder, metadata map[string]interface{}) 
 		if key == "selection_rows" {
 			value = compactSelectionRows(value)
 		}
-		b.WriteString(fmt.Sprintf("| `%s` | `%s` |\n", escapeTable(key), escapeTable(formatMetadataValue(value))))
+		fmt.Fprintf(b, "| `%s` | `%s` |\n", escapeTable(key), escapeTable(formatMetadataValue(value)))
 	}
 }
 
@@ -514,7 +514,7 @@ func writeTargetsCSV(path string, targets []targetRow) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
 	if err := writer.Write([]string{"symbol", "target_weight", "role", "alpha_score", "model_score", "score_z", "vol_20", "rank", "confidence", "side", "engine", "reason", "rebalance"}); err != nil {

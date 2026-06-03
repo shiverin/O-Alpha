@@ -745,7 +745,7 @@ func writeTradesCSV(path string, report researchReport) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	w := csv.NewWriter(file)
 	defer w.Flush()
@@ -780,7 +780,7 @@ func writeRegimeLedgerCSV(path string, report researchReport) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	w := csv.NewWriter(file)
 	defer w.Flush()

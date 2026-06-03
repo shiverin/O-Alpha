@@ -67,7 +67,7 @@ func (c YahooDailyClient) FetchDailyBars(ctx context.Context, symbol string, sta
 	if err != nil {
 		return nil, fmt.Errorf("fetch yahoo bars for %s: %w", symbol, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("yahoo bars for %s returned status %d", symbol, resp.StatusCode)
 	}
