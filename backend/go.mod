@@ -3,6 +3,7 @@ module github.com/oalpha
 go 1.23
 
 require (
+	github.com/dmitryikh/leaves v0.0.0-20230708180554-25d19a787328
 	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-gonic/gin v1.10.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
