@@ -1,9 +1,0 @@
-{
-  "name": "synthetic_snapshot",
-  "url": "",
-  "input": "reports/batches/2026-06-03_pit_universe_builder_smoke/snapshot_input.csv",
-  "input_sha256": "c8e95d318c06424601abd1bffc56dd2c0a24fa7d5e209c68d033e010f932b70b",
-  "format": "snapshot",
-  "command": "/Users/shizhen/Documents/O-Alpha/research/ml/.venv/bin/python research/ml/build_pit_universe.py --input reports/batches/2026-06-03_pit_universe_builder_smoke/snapshot_input.csv --format snapshot --source-name synthetic_snapshot --out reports/batches/2026-06-03_pit_universe_builder_smoke/snapshot_manifest.json",
-  "git_sha": "95297ef020ff5a266d098dfacb9bb23934b0dda5"
-}

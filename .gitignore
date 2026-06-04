@@ -37,4 +37,9 @@ repomix-output.xml
 
 *.xml
 
-reports
+reports/
+/AGENTS.md
+/plan.md
+docs/PLAN.md
+/*prompt*.md
+/*prompts*.md
