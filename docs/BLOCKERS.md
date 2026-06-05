@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Research Blockers
 
 ## Current
@@ -150,3 +151,9 @@
   and set `OALPHA_DAILY_RANKER_PIT_UNIVERSE` for `cmd/alpha-research`.
 - Also run `research/ml/audit_pit_universe_coverage.py`; if it fails, ingest or
   source the missing adjusted bars before running official performance tests.
+=======
+# Alpha Research Blockers
+
+- Need real offline CSV panel artifacts in this checkout to run the official harness end-to-end.
+- Current repo snapshot does not include the previously referenced research report artifacts.
+>>>>>>> 3ea6d428 (Alpha research)

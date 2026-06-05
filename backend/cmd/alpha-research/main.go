@@ -2,14 +2,18 @@ package main
 
 import (
 	"context"
+<<<<<<< HEAD
 	"crypto/sha1"
 	"encoding/hex"
+=======
+>>>>>>> 3ea6d428 (Alpha research)
 	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+<<<<<<< HEAD
 	"time"
 
 	"github.com/oalpha/internal/backtest"
@@ -17,10 +21,17 @@ import (
 	"github.com/oalpha/internal/db"
 	"github.com/oalpha/internal/research/alphavalidation"
 	"github.com/oalpha/internal/research/panelload"
+=======
+
+	"github.com/oalpha/internal/config"
+	"github.com/oalpha/internal/db"
+	"github.com/oalpha/internal/research/alphavalidation"
+>>>>>>> 3ea6d428 (Alpha research)
 )
 
 func main() {
 	var (
+<<<<<<< HEAD
 		symbols      = flag.String("symbols", "VOO,SPY,QQQ,IWM", "comma-separated symbols; first symbol is single-symbol target and pair Y, second is pair X")
 		strategies   = flag.String("strategies", "all", "comma-separated strategies: all,ma,kalman,xsec,pair")
 		timeframe    = flag.String("timeframe", "1Day", "bar timeframe")
@@ -59,6 +70,39 @@ func main() {
 		if err != nil {
 			fatal(err)
 		}
+=======
+		barsCSV   = flag.String("bars-csv", "", "optional CSV path for offline bars input")
+		symbols   = flag.String("symbols", "VOO", "comma-separated symbols including the benchmark")
+		strategies = flag.String("strategies", "benchmark_ranker_proxy_h63", "comma-separated strategy families")
+		timeframe = flag.String("timeframe", "1Day", "bar timeframe")
+		from      = flag.String("from", "", "inclusive start date YYYY-MM-DD")
+		to        = flag.String("to", "", "inclusive end date YYYY-MM-DD")
+		trainBars = flag.Int("train-bars", 756, "walk-forward train bars")
+		testBars  = flag.Int("test-bars", 252, "walk-forward test bars")
+		stepBars  = flag.Int("step-bars", 126, "walk-forward step bars")
+		minTrades = flag.Int("min-trades", 30, "minimum trade count for promotion")
+		initialCash = flag.Float64("initial-cash", 100000, "initial cash")
+		outputDir = flag.String("output-dir", "", "output directory for JSON and Markdown reports")
+	)
+	flag.Parse()
+
+	window, err := alphavalidation.ResolveValidationWindow(*from, *to)
+	if err != nil {
+		fatal(err)
+	}
+	parsedSymbols := parseCSV(*symbols)
+	if len(parsedSymbols) == 0 {
+		fatal(fmt.Errorf("at least one symbol is required"))
+	}
+	parsedStrategies := parseCSV(*strategies)
+	if len(parsedStrategies) == 0 {
+		fatal(fmt.Errorf("at least one strategy family is required"))
+	}
+
+	var source alphavalidation.DataSource
+	if strings.TrimSpace(*barsCSV) != "" {
+		source = alphavalidation.CSVDataSource{Path: *barsCSV}
+>>>>>>> 3ea6d428 (Alpha research)
 	} else {
 		cfg, err := config.Load()
 		if err != nil {
@@ -69,16 +113,35 @@ func main() {
 			fatal(err)
 		}
 		defer pool.Close()
+<<<<<<< HEAD
 
 		repo := db.NewBarsRepository(pool)
 		panel, err = repo.GetBarsMulti(ctx, symbolList, *timeframe, start, end, db.BarQueryOptions{
 			Feed:       *feed,
 			Adjustment: *adjustment,
 			Source:     *source,
+=======
+		source = alphavalidation.DBDataSource{Repo: db.NewBarsRepository(pool)}
+	}
+
+	ctx := context.Background()
+	for _, strategyFamily := range parsedStrategies {
+		strategyFamily = strings.ToLower(strings.TrimSpace(strategyFamily))
+		report, err := alphavalidation.RunValidation(ctx, source, strategyFamily, alphavalidation.RunnerConfig{
+			Symbols:     parsedSymbols,
+			Timeframe:   *timeframe,
+			Window:      window,
+			TrainBars:   *trainBars,
+			TestBars:    *testBars,
+			StepBars:    *stepBars,
+			MinTrades:   *minTrades,
+			InitialCash: *initialCash,
+>>>>>>> 3ea6d428 (Alpha research)
 		})
 		if err != nil {
 			fatal(err)
 		}
+<<<<<<< HEAD
 	}
 	if len(panel.Times) == 0 {
 		fatal(fmt.Errorf("no aligned bars found for %s", strings.Join(symbolList, ",")))
@@ -201,6 +264,52 @@ func writeJSON(path string, value interface{}) error {
 		return err
 	}
 	return os.WriteFile(path, append(payload, '\n'), 0o644)
+=======
+		if strings.TrimSpace(*outputDir) != "" {
+			if err := writeReportArtifacts(*outputDir, report); err != nil {
+				fatal(err)
+			}
+		}
+		payload, err := json.MarshalIndent(report, "", "  ")
+		if err != nil {
+			fatal(err)
+		}
+		fmt.Println(string(payload))
+	}
+}
+
+func writeReportArtifacts(outputDir string, report alphavalidation.ValidationReport) error {
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		return err
+	}
+	baseName := fmt.Sprintf("%s_%s_%s_alpha_validation", report.StrategyFamily, report.Window.From.Format("20060102"), report.Window.To.Format("20060102"))
+	jsonPath := filepath.Join(outputDir, baseName+".json")
+	markdownPath := filepath.Join(outputDir, baseName+".md")
+	payload, err := json.MarshalIndent(report, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(jsonPath, payload, 0o644); err != nil {
+		return err
+	}
+	markdown := alphavalidation.RenderMarkdown(report, jsonPath)
+	if err := os.WriteFile(markdownPath, []byte(markdown), 0o644); err != nil {
+		return err
+	}
+	return nil
+}
+
+func parseCSV(value string) []string {
+	parts := strings.Split(value, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.ToUpper(strings.TrimSpace(part))
+		if part != "" {
+			out = append(out, part)
+		}
+	}
+	return out
+>>>>>>> 3ea6d428 (Alpha research)
 }
 
 func fatal(err error) {

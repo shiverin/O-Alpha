@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Alpha Research Process Handoff
 
 Last updated: 2026-06-03T14:00:35Z
@@ -342,3 +343,11 @@ go test $(go list ./... | grep -v '/internal/alpaca$')
 ```
 
 `go build ./...`, Python `py_compile`, and `git diff --check` passed.
+=======
+# Alpha Research Process
+
+1. Run `cmd/alpha-research` against DB or offline CSV bars.
+2. Use report JSON/Markdown artifacts as the only promotion evidence.
+3. Require PBO to be estimated from real sibling variants.
+4. Log exact commands, report paths, blockers, and next steps after each session.
+>>>>>>> 3ea6d428 (Alpha research)

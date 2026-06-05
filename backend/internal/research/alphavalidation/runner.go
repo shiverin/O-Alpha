@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+<<<<<<< HEAD
 	"time"
 
 	"github.com/oalpha/internal/backtest"
@@ -303,10 +304,237 @@ func runWalkForward(
 			window.Error += "test: " + testResult.Error
 		}
 		out = append(out, window)
+=======
+	"sort"
+	"strings"
+	"time"
+
+	"github.com/oalpha/internal/backtest"
+	"github.com/oalpha/pkg/models"
+)
+
+type RunnerConfig struct {
+	Symbols     []string
+	Timeframe   string
+	Window      ValidationWindow
+	TrainBars   int
+	TestBars    int
+	StepBars    int
+	MinTrades   int
+	InitialCash float64
+}
+
+func (c RunnerConfig) withDefaults() RunnerConfig {
+	if c.TrainBars <= 0 {
+		c.TrainBars = 756
+	}
+	if c.TestBars <= 0 {
+		c.TestBars = 252
+	}
+	if c.StepBars <= 0 {
+		c.StepBars = 126
+	}
+	if c.MinTrades <= 0 {
+		c.MinTrades = 30
+	}
+	if c.InitialCash <= 0 {
+		c.InitialCash = 100_000
+	}
+	c.Symbols = normalizeSymbols(c.Symbols)
+	return c
+}
+
+func RunValidation(ctx context.Context, source DataSource, strategyFamily string, cfg RunnerConfig) (ValidationReport, error) {
+	cfg = cfg.withDefaults()
+	family, err := ResolveFamily(strategyFamily)
+	if err != nil {
+		return ValidationReport{}, err
+	}
+	barsBySymbol, err := source.LoadBars(ctx, cfg.Symbols, cfg.Timeframe, cfg.Window)
+	if err != nil {
+		return ValidationReport{}, err
+	}
+	benchmarkBars, ok := barsBySymbol["VOO"]
+	if !ok || len(benchmarkBars) == 0 {
+		return ValidationReport{}, fmt.Errorf("benchmark symbol VOO is required in loaded bars")
+	}
+	windows, err := BuildWalkForwardWindows(len(benchmarkBars), cfg.TrainBars, cfg.TestBars, cfg.StepBars)
+	if err != nil {
+		return ValidationReport{}, err
+	}
+	buyHold, err := backtest.RunBuyAndHold(benchmarkBars, cfg.InitialCash)
+	if err != nil {
+		return ValidationReport{}, err
+	}
+
+	candidates := make([]CandidateReport, 0, len(family.VariantFactories))
+	foldScores := make(map[string][]float64, len(family.VariantFactories))
+	input := BuildInput{BenchmarkSymbol: "VOO", Symbols: cfg.Symbols}
+	for _, factory := range family.VariantFactories {
+		variant := factory.Build(input)
+		candidate, scores, err := runVariant(ctx, variant, barsBySymbol, windows, cfg)
+		if err != nil {
+			return ValidationReport{}, fmt.Errorf("run variant %s: %w", variant.Name, err)
+		}
+		candidates = append(candidates, candidate)
+		foldScores[variant.Name] = scores
+	}
+
+	pbo := EstimatePBO(foldScores, "walk-forward candidate score")
+	for i := range candidates {
+		candidates[i].PBO = &pbo
+		candidates[i].Promotion = EvaluatePromotion(&candidates[i], buyHold, cfg.MinTrades)
+	}
+	primaryIndex := -1
+	for i := range candidates {
+		if candidates[i].Strategy == family.PrimaryVariant {
+			primaryIndex = i
+			break
+		}
+	}
+	if primaryIndex > 0 {
+		primary := candidates[primaryIndex]
+		copy(candidates[1:primaryIndex+1], candidates[0:primaryIndex])
+		candidates[0] = primary
+	}
+
+	return ValidationReport{
+		GeneratedAt:       time.Now().UTC(),
+		StrategyFamily:    family.Name,
+		RequestedStrategy: family.PrimaryVariant,
+		BenchmarkSymbol:   "VOO",
+		Symbols:           append([]string(nil), cfg.Symbols...),
+		Timeframe:         cfg.Timeframe,
+		Window:            cfg.Window,
+		TrainBars:         cfg.TrainBars,
+		TestBars:          cfg.TestBars,
+		StepBars:          cfg.StepBars,
+		MinTrades:         cfg.MinTrades,
+		InitialCash:       cfg.InitialCash,
+		BuyHold:           buyHold,
+		Candidates:        candidates,
+	}, nil
+}
+
+func runVariant(ctx context.Context, variant VariantConfig, barsBySymbol map[string][]models.Bar, windows []WalkForwardWindow, cfg RunnerConfig) (CandidateReport, []float64, error) {
+	strategy, err := NewBenchmarkRankerProxyStrategy(variant, barsBySymbol)
+	if err != nil {
+		return CandidateReport{}, nil, err
+	}
+	benchmarkBars := strategy.BenchmarkBars()
+	activeBars := strategy.ActiveBars()
+
+	foldResults := make([]FoldResult, 0, len(windows))
+	foldScores := make([]float64, 0, len(windows))
+	combinedResults := make([]*models.BacktestResult, 0, len(windows))
+	for _, window := range windows {
+		foldBenchmark := sliceBars(benchmarkBars, 0, window.TestEnd)
+		foldActive := sliceBarsMap(activeBars, 0, window.TestEnd)
+		foldStrategy, err := NewBenchmarkRankerProxyStrategy(variant, mergeBars(variant.BenchmarkSymbol, foldBenchmark, foldActive))
+		if err != nil {
+			return CandidateReport{}, nil, err
+		}
+		plans, err := foldStrategy.GeneratePlans(ctx, window.TrainEnd, window.TestEnd)
+		if err != nil {
+			return CandidateReport{}, nil, err
+		}
+		testPlans := append([]AllocationPlan(nil), plans[window.TestStart:window.TestEnd]...)
+		testBenchmark := sliceBars(benchmarkBars, window.TestStart, window.TestEnd)
+		testActive := sliceBarsMap(activeBars, window.TestStart, window.TestEnd)
+		foldResult, err := RunPortfolioBacktest(variant.BenchmarkSymbol, testBenchmark, testActive, testPlans, cfg.InitialCash, variant.TransactionCostBPS)
+		if err != nil {
+			return CandidateReport{}, nil, err
+		}
+		combinedResults = append(combinedResults, foldResult)
+		buyHold, err := backtest.RunBuyAndHold(testBenchmark, cfg.InitialCash)
+		if err != nil {
+			return CandidateReport{}, nil, err
+		}
+		score := scoreResult(foldResult, buyHold)
+		foldScores = append(foldScores, score)
+		foldResults = append(foldResults, FoldResult{
+			Fold:    window.Fold,
+			Train:   ValidationWindow{From: benchmarkBars[window.TrainStart].Time, To: benchmarkBars[window.TrainEnd-1].Time},
+			Test:    ValidationWindow{From: benchmarkBars[window.TestStart].Time, To: benchmarkBars[window.TestEnd-1].Time},
+			Score:   score,
+			Result:  foldResult,
+			BuyHold: buyHold,
+		})
+	}
+
+	result := chainBacktestResults(combinedResults, cfg.InitialCash)
+	result.Symbol = variant.BenchmarkSymbol
+	stresses := make([]CostScenarioResult, 0, 3)
+	for _, costBPS := range []float64{variant.TransactionCostBPS, variant.TransactionCostBPS * 2, variant.TransactionCostBPS * 3} {
+		stressResults := make([]*models.BacktestResult, 0, len(windows))
+		for _, window := range windows {
+			foldBenchmark := sliceBars(benchmarkBars, 0, window.TestEnd)
+			foldActive := sliceBarsMap(activeBars, 0, window.TestEnd)
+			foldStrategy, err := NewBenchmarkRankerProxyStrategy(variant, mergeBars(variant.BenchmarkSymbol, foldBenchmark, foldActive))
+			if err != nil {
+				return CandidateReport{}, nil, err
+			}
+			plans, err := foldStrategy.GeneratePlans(ctx, window.TrainEnd, window.TestEnd)
+			if err != nil {
+				return CandidateReport{}, nil, err
+			}
+			testPlans := append([]AllocationPlan(nil), plans[window.TestStart:window.TestEnd]...)
+			testBenchmark := sliceBars(benchmarkBars, window.TestStart, window.TestEnd)
+			testActive := sliceBarsMap(activeBars, window.TestStart, window.TestEnd)
+			stress, err := RunPortfolioBacktest(variant.BenchmarkSymbol, testBenchmark, testActive, testPlans, cfg.InitialCash, costBPS)
+			if err != nil {
+				return CandidateReport{}, nil, err
+			}
+			stressResults = append(stressResults, stress)
+		}
+		stressResult := chainBacktestResults(stressResults, cfg.InitialCash)
+		stresses = append(stresses, CostScenarioResult{
+			Name:               fmt.Sprintf("%.0fbps", costBPS),
+			TransactionCostBPS: costBPS,
+			FinalEquity:        stressResult.FinalEquity,
+			TotalReturn:        stressResult.TotalReturn,
+			AnnualizedReturn:   stressResult.AnnualizedReturn,
+			Sharpe:             stressResult.Sharpe,
+			Sortino:            stressResult.Sortino,
+			Calmar:             stressResult.Calmar,
+			MaxDrawdown:        stressResult.MaxDrawdown,
+			NumTrades:          stressResult.NumTrades,
+			Turnover:           stressResult.Turnover,
+			FeesPaid:           stressResult.FeesPaid,
+		})
+	}
+
+	return CandidateReport{
+		Strategy:            variant.Name,
+		Family:              variant.Family,
+		Variant:             variant.Name,
+		Description:         variant.Description,
+		BenchmarkSymbol:     variant.BenchmarkSymbol,
+		ActiveSymbols:       append([]string(nil), variant.ActiveSymbols...),
+		LookbackBars:        append([]int(nil), variant.LookbackBars...),
+		LookbackWeights:     append([]float64(nil), variant.LookbackWeights...),
+		MaxPositions:        variant.MaxPositions,
+		RebalanceBars:       variant.RebalanceBars,
+		TurnoverBufferRanks: variant.TurnoverBufferRanks,
+		ActiveSleevePct:     variant.ActiveSleevePct,
+		TransactionCostBPS:  variant.TransactionCostBPS,
+		Result:              result,
+		CostScenarios:       stresses,
+		FoldResults:         foldResults,
+	}, foldScores, nil
+}
+
+func mergeBars(benchmarkSymbol string, benchmarkBars []models.Bar, activeBars map[string][]models.Bar) map[string][]models.Bar {
+	out := make(map[string][]models.Bar, len(activeBars)+1)
+	out[benchmarkSymbol] = append([]models.Bar(nil), benchmarkBars...)
+	for symbol, bars := range activeBars {
+		out[symbol] = append([]models.Bar(nil), bars...)
+>>>>>>> 3ea6d428 (Alpha research)
 	}
 	return out
 }
 
+<<<<<<< HEAD
 func estimatePBO(
 	ctx context.Context,
 	panel backtest.AlignedBars,
@@ -617,3 +845,34 @@ func (c ValidationConfig) withDefaults() ValidationConfig {
 	}
 	return c
 }
+=======
+func scoreResult(candidate, buyHold *models.BacktestResult) float64 {
+	if candidate == nil {
+		return math.Inf(-1)
+	}
+	score := candidate.Sharpe + candidate.Sortino + candidate.Calmar - candidate.MaxDrawdown
+	if buyHold != nil {
+		score += (candidate.Sharpe - buyHold.Sharpe) + (candidate.Sortino - buyHold.Sortino) + (candidate.Calmar - buyHold.Calmar)
+		score += buyHold.MaxDrawdown - candidate.MaxDrawdown
+	}
+	return score
+}
+
+func normalizeSymbols(symbols []string) []string {
+	set := make(map[string]struct{}, len(symbols))
+	out := make([]string, 0, len(symbols))
+	for _, symbol := range symbols {
+		symbol = strings.ToUpper(strings.TrimSpace(symbol))
+		if symbol == "" {
+			continue
+		}
+		if _, ok := set[symbol]; ok {
+			continue
+		}
+		set[symbol] = struct{}{}
+		out = append(out, symbol)
+	}
+	sort.Strings(out)
+	return out
+}
+>>>>>>> 3ea6d428 (Alpha research)

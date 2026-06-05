@@ -2,6 +2,7 @@ package alphavalidation
 
 import (
 	"context"
+<<<<<<< HEAD
 	"strings"
 	"testing"
 	"time"
@@ -341,4 +342,64 @@ func containsReason(reasons []string, needle string) bool {
 		}
 	}
 	return false
+=======
+	"testing"
+	"time"
+
+	"github.com/oalpha/pkg/models"
+)
+
+type stubSource struct {
+	bars map[string][]models.Bar
+}
+
+func (s stubSource) LoadBars(_ context.Context, symbols []string, timeframe string, window ValidationWindow) (map[string][]models.Bar, error) {
+	return s.bars, nil
+}
+
+func TestRunValidationProducesCandidates(t *testing.T) {
+	bars := make(map[string][]models.Bar)
+	bars["VOO"] = syntheticBars("VOO", 900, 100, 0.0004)
+	bars["AAPL"] = syntheticBars("AAPL", 900, 50, 0.0009)
+	bars["MSFT"] = syntheticBars("MSFT", 900, 60, 0.0008)
+	bars["NVDA"] = syntheticBars("NVDA", 900, 70, 0.0011)
+	window := ValidationWindow{From: bars["VOO"][0].Time, To: bars["VOO"][len(bars["VOO"])-1].Time}
+	report, err := RunValidation(context.Background(), stubSource{bars: bars}, "benchmark_ranker_proxy_h63", RunnerConfig{
+		Symbols:   []string{"VOO", "AAPL", "MSFT", "NVDA"},
+		Timeframe: "1Day",
+		Window:    window,
+		TrainBars: 252,
+		TestBars:  126,
+		StepBars:  126,
+		MinTrades: 1,
+	})
+	if err != nil {
+		t.Fatalf("run validation: %v", err)
+	}
+	if len(report.Candidates) < 3 {
+		t.Fatalf("expected sibling candidates, got %d", len(report.Candidates))
+	}
+	if report.Candidates[0].Strategy != "benchmark_ranker_proxy_h63_checkpoint" {
+		t.Fatalf("expected primary variant first, got %s", report.Candidates[0].Strategy)
+	}
+}
+
+func syntheticBars(symbol string, count int, startPrice, dailyDrift float64) []models.Bar {
+	bars := make([]models.Bar, count)
+	price := startPrice
+	base := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
+	for i := 0; i < count; i++ {
+		price = price * (1 + dailyDrift + 0.01*float64((i%7)-3)/100)
+		bars[i] = models.Bar{
+			Time:   base.AddDate(0, 0, i),
+			Symbol: symbol,
+			Open:   price,
+			High:   price * 1.01,
+			Low:    price * 0.99,
+			Close:  price,
+			Volume: 1000,
+		}
+	}
+	return bars
+>>>>>>> 3ea6d428 (Alpha research)
 }

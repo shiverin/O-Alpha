@@ -1,6 +1,7 @@
 package alphavalidation
 
 import (
+<<<<<<< HEAD
 	"context"
 	"fmt"
 	"math"
@@ -1400,4 +1401,143 @@ func validateFactory(factory StrategyFactory) error {
 		return fmt.Errorf("strategy factory %s has no constructor", factory.Name)
 	}
 	return nil
+=======
+	"fmt"
+	"sort"
+	"strings"
+
+	"github.com/oalpha/internal/agent"
+)
+
+type VariantFactory struct {
+	Name        string
+	Description string
+	Build       func(BuildInput) VariantConfig
+}
+
+type FamilyDefinition struct {
+	Name             string
+	PrimaryVariant   string
+	VariantFactories []VariantFactory
+}
+
+type BuildInput struct {
+	BenchmarkSymbol string
+	Symbols         []string
+}
+
+type VariantConfig struct {
+	Family              string
+	Name                string
+	Description         string
+	BenchmarkSymbol     string
+	ActiveSymbols       []string
+	LookbackBars        []int
+	LookbackWeights     []float64
+	MaxPositions        int
+	RebalanceBars       int
+	TurnoverBufferRanks int
+	ActiveSleevePct     float64
+	TransactionCostBPS  float64
+	VolWindow           int
+	UseRiskOverlay      bool
+	RiskPolicy          agent.RiskOverlayPolicy
+}
+
+func RegisteredFamilies() map[string]FamilyDefinition {
+	family := benchmarkRankerProxyH63Family()
+	return map[string]FamilyDefinition{
+		family.Name: family,
+	}
+}
+
+func ResolveFamily(name string) (FamilyDefinition, error) {
+	name = strings.TrimSpace(name)
+	if family, ok := RegisteredFamilies()[name]; ok {
+		return family, nil
+	}
+	return FamilyDefinition{}, fmt.Errorf("unsupported strategy family: %s", name)
+}
+
+func benchmarkRankerProxyH63Family() FamilyDefinition {
+	return FamilyDefinition{
+		Name:           "benchmark_ranker_proxy_h63",
+		PrimaryVariant: "benchmark_ranker_proxy_h63_checkpoint",
+		VariantFactories: []VariantFactory{
+			{
+				Name:        "benchmark_ranker_proxy_h63_checkpoint",
+				Description: "Benchmark-funded h63 sleeve with a 15% active sleeve and quarterly rebalances.",
+				Build: func(input BuildInput) VariantConfig {
+					return baseRankerVariant(input, "benchmark_ranker_proxy_h63_checkpoint", "Benchmark-funded h63 sleeve with a 15% active sleeve and quarterly rebalances.", []int{63}, []float64{1.0}, 0.15, 3, 63, 1, false, agent.RiskOverlayPolicy{})
+				},
+			},
+			{
+				Name:        "benchmark_ranker_proxy_h63_risk_capped",
+				Description: "h63 sleeve with the same 15% active allocation but a realized-vol risk cap on the active sleeve.",
+				Build: func(input BuildInput) VariantConfig {
+					policy := agent.DefaultRiskOverlayPolicy()
+					policy.StateMultipliers[agent.RegimeRiskHighVol] = 0.45
+					policy.MaxRealizedAnnualVol = 0.24
+					policy.VolCapMultiplier = 0.50
+					return baseRankerVariant(input, "benchmark_ranker_proxy_h63_risk_capped", "h63 sleeve with the same 15% active allocation but a realized-vol risk cap on the active sleeve.", []int{63}, []float64{1.0}, 0.15, 3, 63, 1, true, policy)
+				},
+			},
+			{
+				Name:        "benchmark_ranker_proxy_h63_h84_blend",
+				Description: "Blend the h63 and h84 ranks into the same 15% active sleeve without increasing total active risk.",
+				Build: func(input BuildInput) VariantConfig {
+					return baseRankerVariant(input, "benchmark_ranker_proxy_h63_h84_blend", "Blend the h63 and h84 ranks into the same 15% active sleeve without increasing total active risk.", []int{63, 84}, []float64{0.60, 0.40}, 0.15, 3, 63, 1, false, agent.RiskOverlayPolicy{})
+				},
+			},
+			{
+				Name:        "benchmark_ranker_proxy_h63_drawdown_aware",
+				Description: "h63 sleeve that scales the active sleeve down during objective benchmark drawdowns while keeping the benchmark core intact.",
+				Build: func(input BuildInput) VariantConfig {
+					policy := agent.DefaultRiskOverlayPolicy()
+					policy.MaxDrawdownPct = 0.08
+					policy.DrawdownMultiplier = 0.35
+					policy.StateMultipliers[agent.RegimeRiskHighVol] = 0.55
+					return baseRankerVariant(input, "benchmark_ranker_proxy_h63_drawdown_aware", "h63 sleeve that scales the active sleeve down during objective benchmark drawdowns while keeping the benchmark core intact.", []int{63}, []float64{1.0}, 0.15, 3, 63, 1, true, policy)
+				},
+			},
+		},
+	}
+}
+
+func baseRankerVariant(input BuildInput, name, description string, lookbacks []int, weights []float64, sleevePct float64, maxPositions, rebalanceBars, buffer int, useRiskOverlay bool, policy agent.RiskOverlayPolicy) VariantConfig {
+	activeSymbols := make([]string, 0, len(input.Symbols))
+	benchmark := strings.ToUpper(strings.TrimSpace(input.BenchmarkSymbol))
+	for _, symbol := range input.Symbols {
+		symbol = strings.ToUpper(strings.TrimSpace(symbol))
+		if symbol == "" || symbol == benchmark {
+			continue
+		}
+		activeSymbols = append(activeSymbols, symbol)
+	}
+	sort.Strings(activeSymbols)
+	if len(activeSymbols) > 12 {
+		activeSymbols = activeSymbols[:12]
+	}
+	cfg := VariantConfig{
+		Family:              "benchmark_ranker_proxy_h63",
+		Name:                name,
+		Description:         description,
+		BenchmarkSymbol:     benchmark,
+		ActiveSymbols:       activeSymbols,
+		LookbackBars:        append([]int(nil), lookbacks...),
+		LookbackWeights:     append([]float64(nil), weights...),
+		MaxPositions:        maxPositions,
+		RebalanceBars:       rebalanceBars,
+		TurnoverBufferRanks: buffer,
+		ActiveSleevePct:     sleevePct,
+		TransactionCostBPS:  10,
+		VolWindow:           20,
+		UseRiskOverlay:      useRiskOverlay,
+		RiskPolicy:          policy,
+	}
+	if !useRiskOverlay {
+		cfg.RiskPolicy = agent.DefaultRiskOverlayPolicy()
+	}
+	return cfg
+>>>>>>> 3ea6d428 (Alpha research)
 }

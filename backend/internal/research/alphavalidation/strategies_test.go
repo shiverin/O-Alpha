@@ -1,5 +1,6 @@
 package alphavalidation
 
+<<<<<<< HEAD
 import "testing"
 
 func TestBenchmarkFactoriesIncludesBuyHoldForMultiSymbolPanel(t *testing.T) {
@@ -557,3 +558,32 @@ func hasFactory(factories []StrategyFactory, name string) bool {
 	}
 	return false
 }
+=======
+import (
+	"testing"
+
+	"github.com/oalpha/internal/agent"
+)
+
+func TestResolveFamilyH63HasSiblingFactories(t *testing.T) {
+	family, err := ResolveFamily("benchmark_ranker_proxy_h63")
+	if err != nil {
+		t.Fatalf("resolve family: %v", err)
+	}
+	if family.PrimaryVariant != "benchmark_ranker_proxy_h63_checkpoint" {
+		t.Fatalf("unexpected primary variant: %s", family.PrimaryVariant)
+	}
+	if len(family.VariantFactories) < 3 {
+		t.Fatalf("expected at least 3 sibling factories, got %d", len(family.VariantFactories))
+	}
+}
+
+func TestBaseRankerVariantKeepsBenchmarkOutOfActiveSymbols(t *testing.T) {
+	variant := baseRankerVariant(BuildInput{BenchmarkSymbol: "VOO", Symbols: []string{"VOO", "AAPL", "MSFT"}}, "test", "desc", []int{63}, []float64{1}, 0.15, 3, 63, 1, false, agent.RiskOverlayPolicy{})
+	for _, symbol := range variant.ActiveSymbols {
+		if symbol == "VOO" {
+			t.Fatalf("benchmark symbol should not appear in active symbols")
+		}
+	}
+}
+>>>>>>> 3ea6d428 (Alpha research)
