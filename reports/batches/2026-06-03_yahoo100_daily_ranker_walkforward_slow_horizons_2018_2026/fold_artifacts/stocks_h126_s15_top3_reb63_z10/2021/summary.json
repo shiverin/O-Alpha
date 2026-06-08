@@ -1,0 +1,96 @@
+{
+  "fold": "2021",
+  "variant": {
+    "variant": "stocks_h126_s15_top3_reb63_z10",
+    "candidate_universe": "stocks",
+    "horizon_bars": 126,
+    "sleeve_fraction": 0.15,
+    "top_k": 3,
+    "max_name_weight": 0.05,
+    "rebalance_every": 63,
+    "min_score_z": 1.0,
+    "max_candidate_vol": 0.0,
+    "max_benchmark_vol": 0.0,
+    "high_vol_scale": 1.0,
+    "max_benchmark_drawdown": 0.0,
+    "drawdown_scale": 1.0
+  },
+  "summary": {
+    "benchmark": "VOO",
+    "start_equity": 100000.0,
+    "final_equity": 131710.25028770597,
+    "total_return": 0.31710250287705977,
+    "benchmark_return": 0.3056474089753358,
+    "excess_return_vs_benchmark": 0.011455093901723945,
+    "annualized_return": 0.3185486154607726,
+    "benchmark_annualized_return": 0.30703545655569675,
+    "volatility": 0.13486962498300073,
+    "benchmark_volatility": 0.12854977242308246,
+    "sharpe": 2.361900357481703,
+    "benchmark_sharpe": 2.388455854633355,
+    "sortino": 3.4648654925531086,
+    "benchmark_sortino": 3.429227929452588,
+    "max_drawdown": 0.050027391026942314,
+    "benchmark_max_drawdown": 0.05093772757051862,
+    "total_cost": 8.954893950103255,
+    "turnover": 0.4477446975051627,
+    "num_rebalances": 3,
+    "num_orders": 16,
+    "num_alpha_symbols_traded": 6,
+    "average_active_weight": 0.06238916009067411,
+    "max_active_weight": 0.10407841822417951,
+    "execution_mode": "next_open",
+    "cost_model": {
+      "mode": "next_open",
+      "spread_bps": 2.0,
+      "slippage_bps": 1.0,
+      "commission_per_share": 0.0,
+      "min_commission": 0.0,
+      "sec_fees_bps_sell": 0.0
+    },
+    "selection_dates": 4,
+    "selection_rows": 12,
+    "mean_selected_forward_excess": -0.16715650506461302,
+    "min_score_z": 1.0,
+    "max_candidate_vol": 0.0,
+    "max_benchmark_vol": 0.0,
+    "high_vol_scale": 1.0,
+    "max_benchmark_drawdown": 0.0,
+    "drawdown_scale": 1.0,
+    "average_sleeve_scale": 1.0
+  },
+  "training": {
+    "objective": "lambdarank",
+    "train_rows": 68796,
+    "validation_rows": 26376,
+    "train_dates": 819,
+    "validation_dates": 314,
+    "purged_dates": 126,
+    "best_iteration": 2,
+    "best_score": {
+      "valid": {
+        "ndcg@1": 0.6861995753715499,
+        "ndcg@3": 0.6312118934817632,
+        "ndcg@5": 0.6008814379612589
+      }
+    },
+    "train_metrics": {
+      "mean_top_excess": 0.1548291119557792,
+      "mean_universe_excess": 0.01709616852614336,
+      "mean_top_minus_universe": 0.13773294342963585,
+      "top1_hit_rate": 0.8791208791208791,
+      "mean_rank_ic": 0.21464272868423723,
+      "dates": 819.0
+    },
+    "validation_metrics": {
+      "mean_top_excess": 0.24626717587094973,
+      "mean_universe_excess": 0.00403079465392854,
+      "mean_top_minus_universe": 0.24223638121702118,
+      "top1_hit_rate": 0.7898089171974523,
+      "mean_rank_ic": 0.16390517958443676,
+      "dates": 314.0
+    }
+  },
+  "status": "research_only_low_excess",
+  "model_file": "reports/batches/2026-06-03_yahoo100_daily_ranker_walkforward_slow_horizons_2018_2026/fold_artifacts/stocks_h126_s15_top3_reb63_z10/2021/model.txt"
+}

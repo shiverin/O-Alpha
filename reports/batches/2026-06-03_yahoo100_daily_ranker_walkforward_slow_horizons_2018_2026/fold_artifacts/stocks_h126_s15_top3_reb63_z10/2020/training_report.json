@@ -1,0 +1,32 @@
+{
+  "objective": "lambdarank",
+  "train_rows": 52836,
+  "validation_rows": 21084,
+  "train_dates": 629,
+  "validation_dates": 251,
+  "purged_dates": 126,
+  "best_iteration": 19,
+  "best_score": {
+    "valid": {
+      "ndcg@1": 0.6467463479415669,
+      "ndcg@3": 0.5770278346755576,
+      "ndcg@5": 0.5443797197329411
+    }
+  },
+  "train_metrics": {
+    "mean_top_excess": 0.27709672045765815,
+    "mean_universe_excess": 0.01868930466624114,
+    "mean_top_minus_universe": 0.258407415791417,
+    "top1_hit_rate": 0.9761526232114467,
+    "mean_rank_ic": 0.33672454911991456,
+    "dates": 629.0
+  },
+  "validation_metrics": {
+    "mean_top_excess": 0.15120964926942257,
+    "mean_universe_excess": 0.009494056096853665,
+    "mean_top_minus_universe": 0.1417155931725689,
+    "top1_hit_rate": 0.7609561752988048,
+    "mean_rank_ic": 0.06153537319962744,
+    "dates": 251.0
+  }
+}
