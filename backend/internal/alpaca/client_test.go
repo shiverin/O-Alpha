@@ -2,9 +2,11 @@ package alpaca
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/oalpha/pkg/models"
 	"github.com/stretchr/testify/assert"
@@ -73,6 +75,119 @@ func TestValidateBar(t *testing.T) {
 		Close:  105,
 		Volume: 1000,
 	}))
+}
+
+func TestRealtimeStockFeedSelectsOvernightSession(t *testing.T) {
+	c := NewClient("https://data.alpaca.markets", "test-key", "test-secret")
+
+	cases := []struct {
+		name string
+		at   string
+		want string
+	}{
+		{
+			name: "sunday overnight opens at eight pm",
+			at:   "2026-06-14T20:30:00-04:00",
+			want: "overnight",
+		},
+		{
+			name: "monday before four am is overnight",
+			at:   "2026-06-15T03:59:00-04:00",
+			want: "overnight",
+		},
+		{
+			name: "monday premarket uses regular data feed",
+			at:   "2026-06-15T04:00:00-04:00",
+			want: "iex",
+		},
+		{
+			name: "friday after four am exits overnight",
+			at:   "2026-06-12T04:00:00-04:00",
+			want: "iex",
+		},
+		{
+			name: "saturday is closed",
+			at:   "2026-06-13T21:00:00-04:00",
+			want: "iex",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			at, err := time.Parse(time.RFC3339, tc.at)
+			if err != nil {
+				t.Fatalf("parse time: %v", err)
+			}
+			assert.Equal(t, tc.want, c.RealtimeStockFeed(at))
+		})
+	}
+}
+
+func TestRealtimeStockStreamURLUsesOvernightEndpointFamily(t *testing.T) {
+	c := NewClient("https://data.alpaca.markets", "test-key", "test-secret")
+	overnight, err := time.Parse(time.RFC3339, "2026-06-15T01:00:00-04:00")
+	if err != nil {
+		t.Fatalf("parse overnight time: %v", err)
+	}
+	regular, err := time.Parse(time.RFC3339, "2026-06-15T11:00:00-04:00")
+	if err != nil {
+		t.Fatalf("parse regular time: %v", err)
+	}
+
+	assert.Equal(t, "wss://stream.data.alpaca.markets/v1beta1/overnight", c.RealtimeStockStreamURL(overnight))
+	assert.Equal(t, "wss://stream.data.alpaca.markets/v2/iex", c.RealtimeStockStreamURL(regular))
+}
+
+func TestRealtimeStockFeedHonorsEnvironmentOverrides(t *testing.T) {
+	t.Setenv("ALPACA_REALTIME_FEED", "sip")
+	t.Setenv("ALPACA_OVERNIGHT_FEED", "boats")
+	c := NewClient("https://data.alpaca.markets", "test-key", "test-secret")
+	overnight, err := time.Parse(time.RFC3339, "2026-06-15T01:00:00-04:00")
+	if err != nil {
+		t.Fatalf("parse overnight time: %v", err)
+	}
+	regular, err := time.Parse(time.RFC3339, "2026-06-15T11:00:00-04:00")
+	if err != nil {
+		t.Fatalf("parse regular time: %v", err)
+	}
+
+	assert.Equal(t, "boats", c.RealtimeStockFeed(overnight))
+	assert.Equal(t, "sip", c.RealtimeStockFeed(regular))
+	assert.Equal(t, "wss://stream.data.alpaca.markets/v1beta1/boats", c.RealtimeStockStreamURL(overnight))
+	assert.Equal(t, "wss://stream.data.alpaca.markets/v2/sip", c.RealtimeStockStreamURL(regular))
+}
+
+func TestGetLatestBarsUsesLatestEndpointAndFeed(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodGet, r.Method)
+		assert.Equal(t, "/v2/stocks/bars/latest", r.URL.Path)
+		assert.Equal(t, "AAPL,MSFT", r.URL.Query().Get("symbols"))
+		assert.Equal(t, "overnight", r.URL.Query().Get("feed"))
+		assert.Empty(t, r.URL.Query().Get("adjustment"))
+		assert.Equal(t, "test-key", r.Header.Get("APCA-API-KEY-ID"))
+		assert.Equal(t, "test-secret", r.Header.Get("APCA-API-SECRET-KEY"))
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(map[string]interface{}{
+			"bars": map[string]interface{}{
+				"AAPL": map[string]interface{}{
+					"t": "2026-06-12T07:56:00Z",
+					"o": 295.9,
+					"h": 296.3,
+					"l": 295.9,
+					"c": 296.3,
+					"v": 1047,
+				},
+			},
+		}); err != nil {
+			t.Fatalf("encode response: %v", err)
+		}
+	}))
+	defer ts.Close()
+
+	c := NewClient(ts.URL, "test-key", "test-secret")
+	bars, err := c.GetLatestBars(context.Background(), []string{"aapl", "MSFT"}, "overnight", "raw")
+	assert.NoError(t, err)
+	assert.Equal(t, 296.3, bars["AAPL"].Close)
 }
 
 func TestPlaceOrderValidation(t *testing.T) {

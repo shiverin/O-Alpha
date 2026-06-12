@@ -89,17 +89,27 @@ func (o *PortfolioOrchestrator) StartForUser(ctx context.Context, userID, agentR
 	end := time.Now().UTC()
 	start := end.Add(-warmupLookbackFor(timeframe))
 	opts := db.BarQueryOptions{AlignMode: backtest.AlignForwardFill, MaxStaleBars: 5}
-	if err := o.refreshBarsBeforeEvaluation(ctx, worker, symbols, timeframe, start, end); err != nil {
-		_ = o.mgr.StopPortfolioAgent(userKey(userID))
-		return StrategySpec{}, fmt.Errorf("market data refresh failed: %w", err)
-	}
 	if err := worker.LoadInitialBars(start, end, opts); err != nil {
-		_ = o.mgr.StopPortfolioAgent(userKey(userID))
-		return StrategySpec{}, fmt.Errorf("warmup failed (are bars ingested for the universe?): %w", err)
+		log.Printf("[PortfolioOrchestrator] initial DB warmup failed for user %d, trying Alpaca refresh: %v", userID, err)
+		if refreshErr := o.refreshBarsBeforeEvaluation(ctx, worker, symbols, timeframe, start, end); refreshErr != nil {
+			_ = o.mgr.StopPortfolioAgent(userKey(userID))
+			return StrategySpec{}, fmt.Errorf("market data refresh failed: %w", refreshErr)
+		}
+		if retryErr := worker.LoadInitialBars(start, end, opts); retryErr != nil {
+			_ = o.mgr.StopPortfolioAgent(userKey(userID))
+			return StrategySpec{}, fmt.Errorf("warmup failed (are bars ingested for the universe?): %w", retryErr)
+		}
 	}
 	if !worker.HasBars() {
 		_ = o.mgr.StopPortfolioAgent(userKey(userID))
 		return StrategySpec{}, fmt.Errorf("no bars available for the selected universe/timeframe")
+	}
+	priceCtx, cancelPrices := context.WithTimeout(ctx, 5*time.Second)
+	defer cancelPrices()
+	if prices, asOf, err := o.latestIntradayPrices(priceCtx, symbols); err != nil {
+		log.Printf("[PortfolioOrchestrator] latest price refresh skipped during startup for user %d: %v", userID, err)
+	} else {
+		worker.ApplyLatestPrices(prices, asOf)
 	}
 	if err := o.agentRepo.UpdateAgentRunRuntimeState(ctx, agentRunID, worker.RuntimeRegimeState(spec.BenchmarkSymbol)); err != nil {
 		_ = o.mgr.StopPortfolioAgent(userKey(userID))
@@ -181,6 +191,11 @@ func (o *PortfolioOrchestrator) evaluateOnce(ctx context.Context, userID, agentR
 	if err := worker.LoadInitialBars(start, end, opts); err != nil {
 		log.Printf("[PortfolioOrchestrator] reload bars failed for user %d: %v", userID, err)
 		return lastRebalance
+	}
+	if prices, asOf, err := o.latestIntradayPrices(ctx, worker.Symbols()); err != nil {
+		log.Printf("[PortfolioOrchestrator] latest price refresh failed for user %d: %v", userID, err)
+	} else {
+		worker.ApplyLatestPrices(prices, asOf)
 	}
 
 	output, err := worker.EvaluateLatest()
@@ -270,4 +285,13 @@ func (o *PortfolioOrchestrator) refreshBarsBeforeEvaluation(ctx context.Context,
 	defer cancel()
 	_, err = worker.RefreshBarsFromAlpaca(refreshCtx, start, end)
 	return err
+}
+
+func (o *PortfolioOrchestrator) latestIntradayPrices(ctx context.Context, symbols []string) (map[string]float64, time.Time, error) {
+	if o == nil || o.alpacaClient == nil || o.alpacaClient.APIKey() == "" || o.alpacaClient.APISecret() == "" {
+		return nil, time.Time{}, nil
+	}
+	refreshCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	return o.alpacaClient.GetLatestPrices(refreshCtx, symbols)
 }

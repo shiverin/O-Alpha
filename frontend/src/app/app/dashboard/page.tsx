@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import useSWR from "swr";
 import { AppShell } from "@/components/app/AppShell";
 import OnboardingOverlay from "@/components/app/OnboardingOverlay";
@@ -9,6 +9,7 @@ import {
   api,
   portfolioAgentApi,
   settingsApi,
+  streamPortfolioLive,
   strategyCatalogApi,
   type StrategyCatalogResponse,
 } from "@/lib/api";
@@ -24,8 +25,16 @@ import BalanceCard from "@/components/sections/dashboard/BalanceCard";
 import StrategyControls from "@/components/sections/dashboard/StrategyControls";
 import ExecutionLog from "@/components/sections/dashboard/ExecutionLog";
 import PortfolioAllocation from "@/components/sections/dashboard/PortfolioAllocation";
+import {
+  applyLivePriceToHistory,
+  applyLivePriceToPositions,
+  applyLivePriceToSummary,
+} from "@/lib/portfolioLiveState";
 
 const fetcher = <T,>(path: string): Promise<T> => api.get<T>(path);
+type RiskProfile = "conservative" | "moderate" | "aggressive";
+const REALTIME_REFRESH_MS = 15000;
+
 const riskBuckets = {
   conservative: "low",
   moderate: "medium",
@@ -38,33 +47,41 @@ export default function DashboardPage() {
   const [agentError, setAgentError] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
 
-  const [riskProfile, setRiskProfile] = useState<
-    "conservative" | "moderate" | "aggressive"
-  >("moderate");
+  const [riskProfile, setRiskProfile] = useState<RiskProfile>("moderate");
   const [selectedStrategyKey, setSelectedStrategyKey] = useState<string>("");
   const [initialCash, setInitialCash] = useState<number>(100000);
 
   const { user, loading, markOnboarded } = useAuth();
   const currentUserID = user?.id || 999;
+  const livePositionsRef = useRef<ServerPositionMetrics[] | undefined>();
 
-  const { data: serverSummary } = useSWR<ServerPortfolioSummary>(
-    currentUserID !== 999 ? "/api/v1/user/portfolio/summary" : null,
-    fetcher,
-  );
+  const { data: serverSummary, mutate: mutateSummary } =
+    useSWR<ServerPortfolioSummary>(
+      currentUserID !== 999 ? "/api/v1/user/portfolio/summary" : null,
+      fetcher,
+      { refreshInterval: REALTIME_REFRESH_MS },
+    );
 
   const { data: serverTrades } = useSWR<ServerTradeLog[]>(
     currentUserID !== 999 ? "/api/v1/user/portfolio/trades?limit=8" : null,
     fetcher,
+    { refreshInterval: REALTIME_REFRESH_MS },
   );
 
-  const { data: snapshotHistory } = useSWR<SnapshotPoint[]>(
+  const { data: snapshotHistory, mutate: mutateHistory } = useSWR<
+    SnapshotPoint[]
+  >(
     currentUserID !== 999 ? "/api/v1/user/portfolio/history?limit=30" : null,
     fetcher,
+    { refreshInterval: REALTIME_REFRESH_MS },
   );
 
-  const { data: serverPositions } = useSWR<ServerPositionMetrics[]>(
+  const { data: serverPositions, mutate: mutatePositions } = useSWR<
+    ServerPositionMetrics[]
+  >(
     currentUserID !== 999 ? "/api/v1/user/portfolio/positions" : null,
     fetcher,
+    { refreshInterval: REALTIME_REFRESH_MS },
   );
 
   const { data: strategyCatalog } = useSWR(
@@ -96,13 +113,64 @@ export default function DashboardPage() {
   }, [activePortfolioAgent]);
 
   useEffect(() => {
+    if (serverPositions) {
+      livePositionsRef.current = serverPositions;
+    }
+  }, [serverPositions]);
+
+  useEffect(() => {
+    if (currentUserID === 999) return;
+
+    const controller = new AbortController();
+    streamPortfolioLive((event) => {
+      if (event.type === "snapshot") {
+        if (event.summary) {
+          void mutateSummary(event.summary, false);
+        }
+        if (event.positions) {
+          livePositionsRef.current = event.positions;
+          void mutatePositions(event.positions, false);
+        }
+        if (event.history) {
+          void mutateHistory(event.history, false);
+        }
+        return;
+      }
+      if (event.type === "price") {
+        const { positions, deltaExposure } = applyLivePriceToPositions(
+          livePositionsRef.current,
+          event,
+        );
+        livePositionsRef.current = positions;
+        void mutatePositions(positions, false);
+        void mutateSummary(
+          (summary) =>
+            applyLivePriceToSummary(summary, deltaExposure, event.timestamp),
+          false,
+        );
+        void mutateHistory(
+          (history) =>
+            applyLivePriceToHistory(history, deltaExposure, event.timestamp),
+          false,
+        );
+      }
+    }, controller.signal).catch((err) => {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      console.error("Portfolio live stream failed:", err);
+    });
+
+    return () => controller.abort();
+  }, [currentUserID, mutateHistory, mutatePositions, mutateSummary]);
+
+  useEffect(() => {
     if (!strategyCatalog) return;
-    const recommended = dashboardRecommendedStrategy(
+    const nextStrategyKey = dashboardStrategyKeyForRisk(
       strategyCatalog,
       riskProfile,
+      selectedStrategyKey,
     );
-    if (!selectedStrategyKey) {
-      setSelectedStrategyKey(recommended || "");
+    if (selectedStrategyKey !== nextStrategyKey) {
+      setSelectedStrategyKey(nextStrategyKey);
     }
   }, [riskProfile, selectedStrategyKey, strategyCatalog]);
 
@@ -147,17 +215,21 @@ export default function DashboardPage() {
         ? blueprint
         : "moderate";
     setRiskProfile(normalized);
-    if (blueprint === "conservative") {
+    if (normalized === "conservative") {
       setInitialCash(50000);
-    } else if (blueprint === "moderate") {
+    } else if (normalized === "moderate") {
       setInitialCash(100000);
-    } else if (blueprint === "aggressive") {
+    } else if (normalized === "aggressive") {
       setInitialCash(150000);
     }
   };
 
-  const handleOnboardingComplete = (finalProfile: string) => {
+  const handleOnboardingComplete = (
+    finalProfile: string,
+    finalStrategyKey: string,
+  ) => {
     configureDashboardFromBlueprint(finalProfile);
+    setSelectedStrategyKey(finalStrategyKey);
     markOnboarded();
     setShowOnboarding(false);
   };
@@ -175,8 +247,18 @@ export default function DashboardPage() {
       if (isAgentActive) {
         await portfolioAgentApi.stop();
       } else {
+        const launchStrategyKey = strategyCatalog
+          ? dashboardStrategyKeyForRisk(
+              strategyCatalog,
+              riskProfile,
+              selectedStrategyKey,
+            )
+          : "";
+        if (launchStrategyKey && launchStrategyKey !== selectedStrategyKey) {
+          setSelectedStrategyKey(launchStrategyKey);
+        }
         await portfolioAgentApi.start({
-          strategy_key: selectedStrategyKey || "auto",
+          strategy_key: launchStrategyKey || "auto",
           symbols: strategyCatalog?.default_universe,
           risk_profile: riskProfile,
           timeframe: "1Day",
@@ -205,7 +287,7 @@ export default function DashboardPage() {
     ) {
       return "+$12,450.89";
     }
-    const prefix = serverSummary.change_dollar_24h >= 0 ? "+" : "";
+    const prefix = serverSummary.change_dollar_24h > 0 ? "+" : "";
     return `${prefix}$${serverSummary.change_dollar_24h.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
   }, [currentUserID, serverSummary]);
 
@@ -284,7 +366,7 @@ export default function DashboardPage() {
 
 function dashboardRecommendedStrategy(
   catalog: StrategyCatalogResponse,
-  riskProfile: "conservative" | "moderate" | "aggressive",
+  riskProfile: RiskProfile,
 ) {
   const riskBucket = riskBuckets[riskProfile];
   const recommendedKey = catalog.recommended[riskProfile];
@@ -298,4 +380,19 @@ function dashboardRecommendedStrategy(
     catalog.strategies.find((strategy) => strategy.risk_profile === riskBucket)
       ?.key || ""
   );
+}
+
+function dashboardStrategyKeyForRisk(
+  catalog: StrategyCatalogResponse,
+  riskProfile: RiskProfile,
+  currentStrategyKey: string,
+) {
+  const riskBucket = riskBuckets[riskProfile];
+  const current = catalog.strategies.find(
+    (strategy) => strategy.key === currentStrategyKey,
+  );
+  if (current?.risk_profile === riskBucket) {
+    return current.key;
+  }
+  return dashboardRecommendedStrategy(catalog, riskProfile);
 }

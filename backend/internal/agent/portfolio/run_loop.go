@@ -23,6 +23,40 @@ func (w *PortfolioAgentWorker) LatestPrices() map[string]float64 {
 	return prices
 }
 
+func (w *PortfolioAgentWorker) ApplyLatestPrices(prices map[string]float64, asOf time.Time) {
+	if w == nil || len(prices) == 0 {
+		return
+	}
+	if asOf.IsZero() {
+		asOf = time.Now().UTC()
+	}
+
+	w.barsMu.Lock()
+	defer w.barsMu.Unlock()
+
+	for symbol, price := range prices {
+		if price <= 0 {
+			continue
+		}
+		bars := w.bars.Bars[symbol]
+		if len(bars) == 0 {
+			continue
+		}
+		latest := &bars[len(bars)-1]
+		if asOf.Before(latest.Time) {
+			continue
+		}
+		if price > latest.High {
+			latest.High = price
+		}
+		if price < latest.Low {
+			latest.Low = price
+		}
+		latest.Close = price
+		w.bars.Bars[symbol] = bars
+	}
+}
+
 func (w *PortfolioAgentWorker) HasBars() bool {
 	w.barsMu.RLock()
 	defer w.barsMu.RUnlock()
@@ -57,7 +91,10 @@ func warmupLookbackFor(timeframe string) time.Duration {
 	case "1Hour":
 		return 120 * 24 * time.Hour
 	case "1Day":
-		return 5 * 365 * 24 * time.Hour
+		// Live catalog strategies need roughly 252-260 trading bars of context.
+		// Loading five years for the full default universe makes launch feel stuck
+		// against a remote DB, so keep startup to a recent live warmup window.
+		return 390 * 24 * time.Hour
 	default:
 		return 365 * 24 * time.Hour
 	}

@@ -65,6 +65,7 @@ func NewRouter(h *Handler, cfg *config.Config) *gin.Engine {
 		protected.GET("/user/portfolio/summary", h.GetPortfolioSummary)
 		protected.GET("/user/portfolio/history", h.GetPortfolioHistory)
 		protected.GET("/user/portfolio/positions", h.GetActivePositions)
+		protected.GET("/user/portfolio/live", h.StreamPortfolioLive)
 		protected.GET("/user/portfolio/trades", h.GetExecutionStream)
 		protected.GET("/user/portfolio/alerts", h.GetSystemAlerts)
 	}

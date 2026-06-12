@@ -1,11 +1,16 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/ui/Icon";
 import { useAuth } from "@/context/AuthContext";
-import { api } from "@/lib/api";
+import { api, streamPortfolioLive } from "@/lib/api";
+import {
+  applyLivePriceToHistory,
+  applyLivePriceToPositions,
+  applyLivePriceToSummary,
+} from "@/lib/portfolioLiveState";
 import {
   portfolioSummary as mockSummary,
   portfolioMetrics as mockMetrics,
@@ -44,31 +49,160 @@ interface MockPositionMetrics {
 }
 
 const PORTFOLIO_FLATLINE_Y = 70;
+const DISPLAY_CENT_EPSILON = 0.005;
 const PORTFOLIO_FLAT_SPARKLINE = {
   path: `M 0 ${PORTFOLIO_FLATLINE_Y} L 400 ${PORTFOLIO_FLATLINE_Y}`,
   lastPoint: { x: 400, y: PORTFOLIO_FLATLINE_Y },
 };
 
 const fetcher = <T,>(path: string): Promise<T> => api.get<T>(path);
+const REALTIME_REFRESH_MS = 15000;
+type PriceFlashDirection = "up" | "down";
+const priceFlashStyles: Record<
+  PriceFlashDirection,
+  { backgroundColor: string; boxShadow: string }
+> = {
+  up: {
+    backgroundColor: "rgba(16, 185, 129, 0.16)",
+    boxShadow: "inset 4px 0 0 rgba(52, 211, 153, 0.95)",
+  },
+  down: {
+    backgroundColor: "rgba(239, 68, 68, 0.16)",
+    boxShadow: "inset 4px 0 0 rgba(239, 68, 68, 0.95)",
+  },
+};
 
 export default function PortfolioPage() {
   const { user } = useAuth();
   const currentUserID = user?.id || 999;
+  const livePositionsRef = useRef<ServerPositionMetrics[] | undefined>();
+  const flashTimeoutsRef = useRef<
+    Partial<Record<string, ReturnType<typeof setTimeout>>>
+  >({});
+  const [priceFlashes, setPriceFlashes] = useState<
+    Partial<Record<string, PriceFlashDirection>>
+  >({});
 
-  const { data: serverSummary } = useSWR<ServerPortfolioSummary>(
-    currentUserID !== 999 ? "/api/v1/user/portfolio/summary" : null,
-    fetcher,
-  );
+  const { data: serverSummary, mutate: mutateSummary } =
+    useSWR<ServerPortfolioSummary>(
+      currentUserID !== 999 ? "/api/v1/user/portfolio/summary" : null,
+      fetcher,
+      { refreshInterval: REALTIME_REFRESH_MS },
+    );
 
-  const { data: serverPositions } = useSWR<ServerPositionMetrics[]>(
+  const { data: serverPositions, mutate: mutatePositions } = useSWR<
+    ServerPositionMetrics[]
+  >(
     currentUserID !== 999 ? "/api/v1/user/portfolio/positions" : null,
     fetcher,
+    { refreshInterval: REALTIME_REFRESH_MS },
   );
 
-  const { data: serverHistory } = useSWR<ServerPortfolioSummary[]>(
+  const { data: serverHistory, mutate: mutateHistory } = useSWR<
+    ServerPortfolioSummary[]
+  >(
     currentUserID !== 999 ? "/api/v1/user/portfolio/history?limit=30" : null,
     fetcher,
+    { refreshInterval: REALTIME_REFRESH_MS },
   );
+
+  useEffect(() => {
+    if (serverPositions) {
+      livePositionsRef.current = serverPositions;
+    }
+  }, [serverPositions]);
+
+  useEffect(() => {
+    const timeouts = flashTimeoutsRef.current;
+    return () => {
+      Object.values(timeouts).forEach((timeout) => {
+        if (timeout) {
+          clearTimeout(timeout);
+        }
+      });
+    };
+  }, []);
+
+  const flashPositionRow = useCallback(
+    (symbol: string, direction: PriceFlashDirection) => {
+      const key = symbol.toUpperCase();
+      const existingTimeout = flashTimeoutsRef.current[key];
+      if (existingTimeout) {
+        clearTimeout(existingTimeout);
+      }
+      setPriceFlashes((current) => ({ ...current, [key]: direction }));
+      flashTimeoutsRef.current[key] = setTimeout(() => {
+        setPriceFlashes((current) => {
+          const next = { ...current };
+          delete next[key];
+          return next;
+        });
+        delete flashTimeoutsRef.current[key];
+      }, 650);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (currentUserID === 999) return;
+
+    const controller = new AbortController();
+    streamPortfolioLive((event) => {
+      if (event.type === "snapshot") {
+        if (event.summary) {
+          void mutateSummary(event.summary, false);
+        }
+        if (event.positions) {
+          livePositionsRef.current = event.positions;
+          void mutatePositions(event.positions, false);
+        }
+        if (event.history) {
+          void mutateHistory(event.history, false);
+        }
+        return;
+      }
+      if (event.type === "price") {
+        const symbol = event.symbol.toUpperCase();
+        const previousPosition = livePositionsRef.current?.find(
+          (position) => position.symbol.toUpperCase() === symbol,
+        );
+        const priceDelta = previousPosition
+          ? event.price - previousPosition.current_price
+          : 0;
+        if (Math.abs(priceDelta) > DISPLAY_CENT_EPSILON) {
+          flashPositionRow(symbol, priceDelta > 0 ? "up" : "down");
+        }
+
+        const { positions, deltaExposure } = applyLivePriceToPositions(
+          livePositionsRef.current,
+          event,
+        );
+        livePositionsRef.current = positions;
+        void mutatePositions(positions, false);
+        void mutateSummary(
+          (summary) =>
+            applyLivePriceToSummary(summary, deltaExposure, event.timestamp),
+          false,
+        );
+        void mutateHistory(
+          (history) =>
+            applyLivePriceToHistory(history, deltaExposure, event.timestamp),
+          false,
+        );
+      }
+    }, controller.signal).catch((err) => {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      console.error("Portfolio live stream failed:", err);
+    });
+
+    return () => controller.abort();
+  }, [
+    currentUserID,
+    flashPositionRow,
+    mutateHistory,
+    mutatePositions,
+    mutateSummary,
+  ]);
 
   const totalAssetValue =
     currentUserID === 999 || !serverSummary
@@ -88,17 +222,27 @@ export default function PortfolioPage() {
       return PORTFOLIO_FLAT_SPARKLINE;
     }
 
-    const values = serverHistory.map((snapshot) => snapshot.total_asset_value);
+    const orderedHistory = [...serverHistory]
+      .filter((snapshot) => Number.isFinite(snapshot.total_asset_value))
+      .sort(
+        (a, b) =>
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+      );
+    if (orderedHistory.length < 2) {
+      return PORTFOLIO_FLAT_SPARKLINE;
+    }
+
+    const values = orderedHistory.map((snapshot) => snapshot.total_asset_value);
     const minVal = Math.min(...values);
     const maxVal = Math.max(...values);
     const valRange = maxVal - minVal;
 
-    if (valRange === 0) {
+    if (valRange <= DISPLAY_CENT_EPSILON) {
       return PORTFOLIO_FLAT_SPARKLINE;
     }
 
-    const points = serverHistory.map((snapshot, index) => {
-      const x = (index / (serverHistory.length - 1)) * 400;
+    const points = orderedHistory.map((snapshot, index) => {
+      const x = (index / (orderedHistory.length - 1)) * 400;
       const y = 85 - ((snapshot.total_asset_value - minVal) / valRange) * 70;
       return { x, y };
     });
@@ -122,6 +266,8 @@ export default function PortfolioPage() {
       ? 0
       : serverSummary.target_progress_percent;
   const progressBarWidth = Math.min(Math.max(progressPercent, 0), 100);
+  const isPositiveChange = changeDollar24h > DISPLAY_CENT_EPSILON;
+  const isNegativeChange = changeDollar24h < -DISPLAY_CENT_EPSILON;
 
   const totalPositionsExposure = useMemo(() => {
     if (!serverPositions) return 0;
@@ -283,15 +429,27 @@ export default function PortfolioPage() {
                 </h2>
 
                 <div className="flex flex-wrap items-center gap-2.5 mt-3 sm:mt-4">
-                  <span className="bg-primary-fixed-dim/10 text-primary-fixed-dim font-mono text-[11px] px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-primary-fixed-dim/20 shadow-[0_0_12px_rgba(0,240,255,0.15)]">
+                  <span
+                    className={`font-mono text-[11px] px-2.5 py-0.5 rounded-full flex items-center gap-1 border ${
+                      isPositiveChange
+                        ? "bg-primary-fixed-dim/10 text-primary-fixed-dim border-primary-fixed-dim/20 shadow-[0_0_12px_rgba(0,240,255,0.15)]"
+                        : isNegativeChange
+                          ? "bg-error/10 text-error border-error/20"
+                          : "bg-white/[0.02] text-on-surface-variant/70 border-outline-variant/20"
+                    }`}
+                  >
                     <span className="material-symbols-outlined text-[12px]">
-                      arrow_upward
+                      {isPositiveChange
+                        ? "arrow_upward"
+                        : isNegativeChange
+                          ? "arrow_downward"
+                          : "remove"}
                     </span>
-                    {changePercent24h >= 0 ? "+" : ""}
+                    {changePercent24h > 0 ? "+" : ""}
                     {changePercent24h}% (24h)
                   </span>
                   <span className="text-on-surface-variant/50 font-mono text-[11px] whitespace-nowrap">
-                    {changeDollar24h >= 0 ? "+" : ""}$
+                    {changeDollar24h > 0 ? "+" : ""}$
                     {changeDollar24h.toLocaleString()}
                   </span>
                 </div>
@@ -596,6 +754,8 @@ export default function PortfolioPage() {
                   serverPositions.map(
                     (position: ServerPositionMetrics, idx: number) => {
                       const isPositive = position.unrealized_pnl >= 0;
+                      const flashDirection =
+                        priceFlashes[position.symbol.toUpperCase()];
                       const dynamicAllocation =
                         totalAssetValue > 0
                           ? (
@@ -606,7 +766,16 @@ export default function PortfolioPage() {
                       return (
                         <tr
                           key={idx}
-                          className="hover:bg-surface-container-high/30 transition-colors duration-200 group"
+                          className={`group transition-[background-color,box-shadow] duration-500 ${
+                            flashDirection
+                              ? ""
+                              : "hover:bg-surface-container-high/30 shadow-none"
+                          }`}
+                          style={
+                            flashDirection
+                              ? priceFlashStyles[flashDirection]
+                              : undefined
+                          }
                         >
                           <td className="p-4 sm:p-6 min-w-0">
                             <div className="flex items-center gap-3.5 min-w-0">

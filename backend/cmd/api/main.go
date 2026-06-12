@@ -62,7 +62,7 @@ func main() {
 	}
 	reconcileCancel()
 
-	h := api.NewHandler(repo, agentManager, agentRepo, portfolioRepo, portfolioOrchestrator)
+	h := api.NewHandler(repo, agentManager, agentRepo, portfolioRepo, portfolioOrchestrator, alpacaClient)
 	r := api.NewRouter(h, cfg)
 
 	srv := &http.Server{

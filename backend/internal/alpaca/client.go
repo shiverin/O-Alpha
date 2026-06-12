@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -17,19 +18,23 @@ import (
 
 // Client fetches market data from Alpaca.
 type Client struct {
-	baseURL    string
-	apiKey     string
-	apiSecret  string
-	httpClient *http.Client
+	baseURL       string
+	apiKey        string
+	apiSecret     string
+	regularFeed   string
+	overnightFeed string
+	httpClient    *http.Client
 }
 
 // NewClient creates an Alpaca data API client.
 func NewClient(baseURL, apiKey, apiSecret string) *Client {
 	return &Client{
-		baseURL:    strings.TrimRight(baseURL, "/"),
-		apiKey:     apiKey,
-		apiSecret:  apiSecret,
-		httpClient: &http.Client{Timeout: 60 * time.Second},
+		baseURL:       strings.TrimRight(baseURL, "/"),
+		apiKey:        apiKey,
+		apiSecret:     apiSecret,
+		regularFeed:   normalizeStockFeed(os.Getenv("ALPACA_REALTIME_FEED"), "iex"),
+		overnightFeed: normalizeStockFeed(os.Getenv("ALPACA_OVERNIGHT_FEED"), "overnight"),
+		httpClient:    &http.Client{Timeout: 60 * time.Second},
 	}
 }
 
@@ -48,6 +53,56 @@ func (c *Client) APISecret() string {
 	return c.apiSecret
 }
 
+// RealtimeStockFeed returns the Alpaca stock feed that should be used right now.
+//
+// Alpaca's overnight feed lives on a different endpoint family than the normal
+// IEX/SIP stream. The regular feed can be overridden with ALPACA_REALTIME_FEED
+// (iex, sip, delayed_sip). The overnight feed can be overridden with
+// ALPACA_OVERNIGHT_FEED (overnight, boats) for paid BOATS access.
+func (c *Client) RealtimeStockFeed(now time.Time) string {
+	if IsUSEquityOvernightSession(now) {
+		if c != nil && c.overnightFeed != "" {
+			return c.overnightFeed
+		}
+		return "overnight"
+	}
+	if c != nil && c.regularFeed != "" {
+		return c.regularFeed
+	}
+	return "iex"
+}
+
+// RealtimeStockStreamURL returns the websocket URL for the current stock session.
+func (c *Client) RealtimeStockStreamURL(now time.Time) string {
+	feed := c.RealtimeStockFeed(now)
+	version := "v2"
+	if feed == "overnight" || feed == "boats" {
+		version = "v1beta1"
+	}
+	return fmt.Sprintf("wss://stream.data.alpaca.markets/%s/%s", version, feed)
+}
+
+// IsUSEquityOvernightSession reports whether now is inside Alpaca's overnight
+// stock session: Sunday-Friday, 8:00 PM-4:00 AM America/New_York time.
+func IsUSEquityOvernightSession(now time.Time) bool {
+	loc, err := time.LoadLocation("America/New_York")
+	if err != nil {
+		loc = time.FixedZone("America/New_York", -5*60*60)
+	}
+	ny := now.In(loc)
+	hour := ny.Hour()
+	switch ny.Weekday() {
+	case time.Sunday:
+		return hour >= 20
+	case time.Monday, time.Tuesday, time.Wednesday, time.Thursday:
+		return hour < 4 || hour >= 20
+	case time.Friday:
+		return hour < 4
+	default:
+		return false
+	}
+}
+
 type barsResponse struct {
 	Bars          []alpacaBar `json:"bars"`
 	NextPageToken string      `json:"next_page_token"`
@@ -56,6 +111,10 @@ type barsResponse struct {
 type multiBarsResponse struct {
 	Bars          map[string][]alpacaBar `json:"bars"`
 	NextPageToken string                 `json:"next_page_token"`
+}
+
+type latestBarsResponse struct {
+	Bars map[string]alpacaBar `json:"bars"`
 }
 
 type alpacaBar struct {
@@ -247,6 +306,92 @@ func (c *Client) GetBarsMulti(
 	return all, nil
 }
 
+func (c *Client) GetLatestBars(ctx context.Context, symbols []string, feed string, adjustment string) (map[string]models.Bar, error) {
+	normalizedSymbols := normalizeSymbols(symbols)
+	if len(normalizedSymbols) == 0 {
+		return nil, fmt.Errorf("at least one symbol is required")
+	}
+	feed, _ = normalizeMarketDataOptions(feed, adjustment)
+
+	u, err := url.Parse(fmt.Sprintf("%s/v2/stocks/bars/latest", c.baseURL))
+	if err != nil {
+		return nil, err
+	}
+	q := u.Query()
+	q.Set("symbols", strings.Join(normalizedSymbols, ","))
+	q.Set("feed", feed)
+	u.RawQuery = q.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("APCA-API-KEY-ID", c.apiKey)
+	req.Header.Set("APCA-API-SECRET-KEY", c.apiSecret)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("alpaca latest-bars request: %w", err)
+	}
+	body, err := io.ReadAll(resp.Body)
+	_ = resp.Body.Close()
+	if err != nil {
+		return nil, fmt.Errorf("read latest-bars body: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("alpaca latest-bars status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var payload latestBarsResponse
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return nil, fmt.Errorf("decode latest bars: %w", err)
+	}
+
+	out := make(map[string]models.Bar, len(normalizedSymbols))
+	for symbol, ab := range payload.Bars {
+		normalized := strings.ToUpper(symbol)
+		bar, err := alpacaBarToModel(normalized, ab)
+		if err != nil {
+			return nil, err
+		}
+		out[normalized] = bar
+	}
+	return out, nil
+}
+
+func (c *Client) GetLatestPrices(ctx context.Context, symbols []string) (map[string]float64, time.Time, error) {
+	if c == nil || c.apiKey == "" || c.apiSecret == "" {
+		return nil, time.Time{}, nil
+	}
+	normalizedSymbols := normalizeSymbols(symbols)
+	if len(normalizedSymbols) == 0 {
+		return nil, time.Time{}, nil
+	}
+
+	now := time.Now().UTC()
+	barsBySymbol, err := c.GetLatestBars(ctx, normalizedSymbols, c.RealtimeStockFeed(now), "raw")
+	if err != nil {
+		return nil, time.Time{}, err
+	}
+
+	prices := make(map[string]float64, len(normalizedSymbols))
+	var latestTime time.Time
+	for _, symbol := range normalizedSymbols {
+		latest, ok := barsBySymbol[symbol]
+		if !ok {
+			continue
+		}
+		if latest.Close <= 0 {
+			continue
+		}
+		prices[symbol] = latest.Close
+		if latest.Time.After(latestTime) {
+			latestTime = latest.Time
+		}
+	}
+	return prices, latestTime, nil
+}
+
 // ValidateBar checks OHLCV consistency.
 func ValidateBar(b models.Bar) error {
 	if b.Open < 0 || b.High < 0 || b.Low < 0 || b.Close < 0 {
@@ -427,7 +572,7 @@ func alpacaBarToModel(symbol string, ab alpacaBar) (models.Bar, error) {
 }
 
 func normalizeMarketDataOptions(feed string, adjustment string) (string, string) {
-	feed = strings.ToLower(strings.TrimSpace(feed))
+	feed = normalizeStockFeed(feed, "")
 	adjustment = strings.ToLower(strings.TrimSpace(adjustment))
 	if feed == "" {
 		feed = "iex"
@@ -436,6 +581,18 @@ func normalizeMarketDataOptions(feed string, adjustment string) (string, string)
 		adjustment = "raw"
 	}
 	return feed, adjustment
+}
+
+func normalizeStockFeed(feed string, fallback string) string {
+	feed = strings.ToLower(strings.TrimSpace(feed))
+	switch feed {
+	case "iex", "sip", "delayed_sip", "overnight", "boats":
+		return feed
+	case "":
+		return fallback
+	default:
+		return fallback
+	}
 }
 
 func normalizeSymbols(symbols []string) []string {
