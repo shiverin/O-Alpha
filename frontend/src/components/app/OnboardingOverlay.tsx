@@ -16,7 +16,7 @@ import {
 
 interface OnboardingOverlayProps {
   userID: number;
-  onComplete: (riskProfile: string) => void;
+  onComplete: (riskProfile: string, strategyKey: string) => void;
 }
 
 type RiskProfile = "conservative" | "moderate" | "aggressive";
@@ -49,8 +49,8 @@ const fallbackCatalog: StrategyCatalogResponse = {
   default_universe: fallbackUniverse,
   recommended: {
     conservative: "ranker_proxy_h63_low",
-    moderate: "ranker_proxy_h63_low",
-    aggressive: "ranker_proxy_h63_low",
+    moderate: "lgbm_ranker_h63_medium",
+    aggressive: "composite_momentum_high",
   },
   strategies: [
     {
@@ -64,6 +64,32 @@ const fallbackCatalog: StrategyCatalogResponse = {
       paper_only: true,
       benchmark_symbol: "VOO",
       description: "VOO core with an 8% deterministic h63 active sleeve.",
+    },
+    {
+      key: "lgbm_ranker_h63_medium",
+      display_name: "LGBM h63 active sleeve medium risk",
+      family: "benchmark_lgbm_ranker_h63",
+      risk_profile: "medium",
+      deployment_status: "promoted_research_checkpoint",
+      promoted_checkpoint: true,
+      requires_model_artifacts: true,
+      paper_only: true,
+      benchmark_symbol: "VOO",
+      description:
+        "VOO core with a 15% learned-ranker active sleeve, top 3 stocks, 63-bar rebalance.",
+    },
+    {
+      key: "composite_momentum_high",
+      display_name: "Composite momentum high risk",
+      family: "composite_momentum",
+      risk_profile: "high",
+      deployment_status: "rejected_diagnostic",
+      promoted_checkpoint: false,
+      requires_model_artifacts: false,
+      paper_only: true,
+      benchmark_symbol: "VOO",
+      description:
+        "Higher-active-weight composite momentum sleeve across ETFs and stocks.",
     },
   ],
 };
@@ -111,11 +137,13 @@ export default function OnboardingOverlay({
         const response = await strategyCatalogApi.list();
         setCatalog(response);
         setSelectedStrategyKey(
-          recommendedStrategyKeyForRisk(response, riskProfile) ||
-            fallbackCatalog.recommended.moderate,
+          recommendedStrategyKeyForRisk(response, riskProfile),
         );
       } catch {
         setCatalog(fallbackCatalog);
+        setSelectedStrategyKey(
+          recommendedStrategyKeyForRisk(fallbackCatalog, riskProfile),
+        );
       } finally {
         setIsCatalogLoading(false);
       }
@@ -141,14 +169,15 @@ export default function OnboardingOverlay({
   }, [catalog.strategies, riskProfile]);
 
   const selectedStrategy = useMemo(() => {
-    return (
-      catalog.strategies.find(
-        (strategy) => strategy.key === selectedStrategyKey,
-      ) ||
-      strategiesForRisk[0] ||
-      catalog.strategies[0]
+    const bucket = riskBuckets[riskProfile];
+    const selected = catalog.strategies.find(
+      (strategy) => strategy.key === selectedStrategyKey,
     );
-  }, [catalog.strategies, selectedStrategyKey, strategiesForRisk]);
+    if (selected?.risk_profile === bucket) {
+      return selected;
+    }
+    return strategiesForRisk[0];
+  }, [catalog.strategies, riskProfile, selectedStrategyKey, strategiesForRisk]);
 
   const metrics = useMemo(() => {
     if (!backtestResult) return null;
@@ -202,7 +231,12 @@ export default function OnboardingOverlay({
   };
 
   const handleRunBacktest = async () => {
-    if (!selectedStrategy) return;
+    if (!selectedStrategy) {
+      setBacktestError(
+        "No catalog strategy is available for this risk profile.",
+      );
+      return;
+    }
     setIsBacktesting(true);
     setBacktestError(null);
     setBacktestResult(null);
@@ -295,7 +329,7 @@ export default function OnboardingOverlay({
       localStorage.setItem("oa_demo_risk_posture", riskProfile);
       localStorage.setItem("oa_demo_onboarding_strategy", selectedStrategyKey);
       setIsSaving(false);
-      onComplete(riskProfile);
+      onComplete(riskProfile, selectedStrategyKey);
       return;
     }
 
@@ -307,7 +341,7 @@ export default function OnboardingOverlay({
         backtest_accepted: true,
       });
       setIsSaving(false);
-      onComplete(riskProfile);
+      onComplete(riskProfile, selectedStrategyKey);
     } catch {
       setIsSaving(false);
       alert("Failed to complete onboarding after backtest acceptance.");
@@ -340,7 +374,9 @@ export default function OnboardingOverlay({
                 O(Alpha)
               </span>
             </h1>
-            <p className="text-sm sm:text-base font-light text-on-surface-variant/70 leading-relaxed mb-10"></p>
+            <p className="text-sm sm:text-base font-light text-on-surface-variant/70 leading-relaxed mb-10">
+              Setup your agent
+            </p>
             <button
               onClick={() => setStep(2)}
               className="px-8 py-3.5 bg-primary-container text-void-black font-mono font-medium text-xs tracking-wider uppercase rounded-full shadow-lg hover:bg-primary-fixed transition-all duration-300"
@@ -460,37 +496,41 @@ export default function OnboardingOverlay({
                     Loading...
                   </div>
                 )}
-                {(strategiesForRisk.length > 0
-                  ? strategiesForRisk
-                  : catalog.strategies
-                ).map((strategy) => {
-                  const selected = selectedStrategyKey === strategy.key;
-                  return (
-                    <button
-                      key={strategy.key}
-                      type="button"
-                      onClick={() => handleStrategySelect(strategy)}
-                      disabled={isBacktesting || isSaving}
-                      className={`text-left rounded-2xl border p-4 transition-all duration-200 ${
-                        selected
-                          ? "border-primary-fixed-dim bg-surface-container shadow-[0_0_20px_rgba(0,240,255,0.06)]"
-                          : "border-outline-variant/20 bg-void-black/20 hover:border-outline-variant/50"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <h3 className="text-sm font-medium text-on-surface">
-                          {strategy.display_name}
-                        </h3>
-                        <span className="text-[9px] font-mono uppercase tracking-wider text-primary-fixed-dim">
-                          {strategy.risk_profile}
-                        </span>
-                      </div>
-                      <p className="mt-2 text-[11px] font-light leading-relaxed text-on-surface-variant/70">
-                        {strategy.description}
-                      </p>
-                    </button>
-                  );
-                })}
+                {(strategiesForRisk.length > 0 ? strategiesForRisk : []).map(
+                  (strategy) => {
+                    const selected = selectedStrategyKey === strategy.key;
+                    return (
+                      <button
+                        key={strategy.key}
+                        type="button"
+                        onClick={() => handleStrategySelect(strategy)}
+                        disabled={isBacktesting || isSaving}
+                        className={`text-left rounded-2xl border p-4 transition-all duration-200 ${
+                          selected
+                            ? "border-primary-fixed-dim bg-surface-container shadow-[0_0_20px_rgba(0,240,255,0.06)]"
+                            : "border-outline-variant/20 bg-void-black/20 hover:border-outline-variant/50"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <h3 className="text-sm font-medium text-on-surface">
+                            {strategy.display_name}
+                          </h3>
+                          <span className="text-[9px] font-mono uppercase tracking-wider text-primary-fixed-dim">
+                            {strategy.risk_profile}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-[11px] font-light leading-relaxed text-on-surface-variant/70">
+                          {strategy.description}
+                        </p>
+                      </button>
+                    );
+                  },
+                )}
+                {!isCatalogLoading && strategiesForRisk.length === 0 && (
+                  <div className="rounded-2xl border border-outline-variant/20 bg-void-black/20 p-4 text-xs text-on-surface-variant/60">
+                    No catalog strategy is available for this risk profile.
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col gap-4 min-w-0">
@@ -618,10 +658,7 @@ function recommendedStrategyKeyForRisk(
   if (recommended?.risk_profile === riskBuckets[profile]) {
     return recommended.key;
   }
-  return (
-    firstStrategyForRisk(catalog.strategies, profile)?.key ||
-    catalog.strategies[0]?.key
-  );
+  return firstStrategyForRisk(catalog.strategies, profile)?.key || "";
 }
 
 function settingsForRisk(profile: RiskProfile): ServerAgentSettings {

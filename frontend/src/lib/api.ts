@@ -49,6 +49,39 @@ export interface BacktestResult {
   num_trades?: number;
 }
 
+export interface PortfolioLiveSummary {
+  total_asset_value: number;
+  change_percent_24h: number;
+  change_dollar_24h: number;
+  estimated_annual_yield: number;
+  target_progress_percent: number;
+  timestamp: string;
+}
+
+export interface PortfolioLivePosition {
+  symbol: string;
+  qty: number;
+  avg_entry_price: number;
+  current_price: number;
+  unrealized_pnl: number;
+  exposure: number;
+}
+
+export type PortfolioLiveEvent =
+  | {
+      type: "snapshot";
+      timestamp: string;
+      summary?: PortfolioLiveSummary | null;
+      positions?: PortfolioLivePosition[] | null;
+      history?: PortfolioLiveSummary[] | null;
+    }
+  | {
+      type: "price";
+      timestamp: string;
+      symbol: string;
+      price: number;
+    };
+
 export interface BacktestProgress {
   index: number;
   total: number;
@@ -166,6 +199,46 @@ export async function runBacktestStream(
   return finalResult;
 }
 
+export async function streamPortfolioLive(
+  onEvent: (event: PortfolioLiveEvent) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/v1/user/portfolio/live`, {
+    headers: getAuthHeaders(),
+    signal,
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? `Live stream failed (${res.status})`);
+  }
+  if (!res.body) {
+    throw new Error("Live stream did not return a response body");
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+    buffer += decoder.decode(value, { stream: !done });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      onEvent(JSON.parse(trimmed) as PortfolioLiveEvent);
+    }
+    if (done) break;
+  }
+
+  const trimmed = buffer.trim();
+  if (trimmed) {
+    onEvent(JSON.parse(trimmed) as PortfolioLiveEvent);
+  }
+}
+
 export const api = {
   get: async <R>(endpoint: string): Promise<R> => {
     const res = await fetch(`${API_BASE}${endpoint}`, {
@@ -250,6 +323,8 @@ export const settingsApi = {
     stop_loss_pct: number;
     take_profit_pct: number;
     rebalance_freq: string;
+    strategy_key?: string;
+    backtest_accepted?: boolean;
   }): Promise<{ status: string }> => {
     return api.post<{ status: string }, typeof payload>(
       "/api/v1/user/settings",

@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/oalpha/internal/agent"
 	"github.com/oalpha/internal/agent/portfolio"
+	"github.com/oalpha/internal/alpaca"
 	"github.com/oalpha/internal/db"
 )
 
@@ -19,16 +20,18 @@ type Handler struct {
 	AgentRepo     *db.AgentRepository
 	PortfolioRepo *db.PortfolioRepository
 	Portfolio     *portfolio.PortfolioOrchestrator
+	Alpaca        *alpaca.Client
 }
 
 // NewHandler constructs an HTTP handler with its backing dependencies.
-func NewHandler(repo *db.BarsRepository, am *agent.AgentManager, ar *db.AgentRepository, pr *db.PortfolioRepository, po *portfolio.PortfolioOrchestrator) *Handler {
+func NewHandler(repo *db.BarsRepository, am *agent.AgentManager, ar *db.AgentRepository, pr *db.PortfolioRepository, po *portfolio.PortfolioOrchestrator, alpacaClient *alpaca.Client) *Handler {
 	return &Handler{
 		repo:          repo,
 		AgentManager:  am,
 		AgentRepo:     ar,
 		PortfolioRepo: pr,
 		Portfolio:     po,
+		Alpaca:        alpacaClient,
 	}
 }
 

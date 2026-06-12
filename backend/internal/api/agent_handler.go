@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/oalpha/internal/agent"
+	agentportfolio "github.com/oalpha/internal/agent/portfolio"
 	"github.com/oalpha/internal/backtest"
 	"github.com/oalpha/internal/db"
 	"github.com/oalpha/internal/ml"
@@ -342,6 +343,8 @@ func (h *Handler) SaveUserSettings(c *gin.Context) {
 		StopLossPct   float64 `json:"stop_loss_pct" binding:"required"`
 		TakeProfitPct float64 `json:"take_profit_pct" binding:"required"`
 		RebalanceFreq string  `json:"rebalance_freq" binding:"required"`
+		StrategyKey   string  `json:"strategy_key"`
+		BacktestOK    bool    `json:"backtest_accepted"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -356,6 +359,41 @@ func (h *Handler) SaveUserSettings(c *gin.Context) {
 	if !validAgentSettings(req.RiskProfile, req.Leverage, req.MaxPositions, req.StopLossPct, req.TakeProfitPct, req.RebalanceFreq) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "agent settings are outside supported bounds"})
 		return
+	}
+
+	currentSettings, err := h.AgentRepo.GetAgentSettings(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if currentSettings != nil && currentSettings.RiskProfile != req.RiskProfile {
+		activeRuns, err := h.AgentRepo.ListActiveAgentRuns(c.Request.Context(), userID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if len(activeRuns) > 0 {
+			c.JSON(http.StatusConflict, gin.H{"error": "stop the running agent before changing risk_profile"})
+			return
+		}
+		if !req.BacktestOK {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "accepted catalog backtest is required before changing risk_profile"})
+			return
+		}
+		strategyKey := strings.ToLower(strings.TrimSpace(req.StrategyKey))
+		if strategyKey == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "strategy_key is required before changing risk_profile"})
+			return
+		}
+		spec, err := agentportfolio.StrategySpecByKey(strategyKey, nil, agentportfolio.DefaultStrategyCatalogConfig())
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		if spec.RiskProfile != onboardingRiskBucket(req.RiskProfile) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "strategy_key does not match requested risk_profile"})
+			return
+		}
 	}
 
 	settings := &db.AgentSettings{

@@ -15,6 +15,7 @@ interface BalanceCardProps {
 }
 
 const FLATLINE_Y = 70;
+const DISPLAY_CENT_EPSILON = 0.005;
 const FLAT_CHART_COORDINATES = {
   pathString: `M 0 ${FLATLINE_Y} L 100 ${FLATLINE_Y}`,
   lastPoint: { x: 100, y: FLATLINE_Y },
@@ -31,18 +32,28 @@ export default function BalanceCard({
       return FLAT_CHART_COORDINATES;
     }
 
-    const values = historyData.map((d) => d.total_asset_value);
+    const orderedHistory = [...historyData]
+      .filter((snapshot) => Number.isFinite(snapshot.total_asset_value))
+      .sort(
+        (a, b) =>
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+      );
+    if (orderedHistory.length < 2) {
+      return FLAT_CHART_COORDINATES;
+    }
+
+    const values = orderedHistory.map((d) => d.total_asset_value);
     const minVal = Math.min(...values);
     const maxVal = Math.max(...values);
     const valRange = maxVal - minVal;
 
-    if (valRange === 0) {
+    if (valRange <= DISPLAY_CENT_EPSILON) {
       return FLAT_CHART_COORDINATES;
     }
 
     // Leave vertical padding so the sparkline never clips the SVG edges.
-    const points = historyData.map((snapshot, index) => {
-      const x = (index / (historyData.length - 1)) * 100;
+    const points = orderedHistory.map((snapshot, index) => {
+      const x = (index / (orderedHistory.length - 1)) * 100;
       const y = 85 - ((snapshot.total_asset_value - minVal) / valRange) * 70;
       return { x, y };
     });
