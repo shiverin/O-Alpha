@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	agentportfolio "github.com/oalpha/internal/agent/portfolio"
 	"github.com/oalpha/internal/alpha/cointegration"
 	"github.com/oalpha/internal/alpha/momentum"
 	"github.com/oalpha/internal/backtest"
@@ -333,6 +334,16 @@ func (h *Handler) runPortfolioBacktest(c *gin.Context, req models.BacktestReques
 
 func buildPortfolioStrategy(req models.BacktestRequest, symbols []string) (backtest.PortfolioStrategy, bool, error) {
 	switch req.StrategyType {
+	case "PORTFOLIO_CATALOG":
+		strategyKey := strings.TrimSpace(stringParam(req.Parameters, "strategy_key", ""))
+		if strategyKey == "" {
+			return nil, false, fmt.Errorf("PORTFOLIO_CATALOG requires parameters.strategy_key")
+		}
+		strategy, _, err := agentportfolio.NewStrategyFromCatalog(strategyKey, symbols, agentportfolio.DefaultStrategyCatalogConfig())
+		if err != nil {
+			return nil, false, err
+		}
+		return strategy, false, nil
 	case "XSEC_MOMENTUM":
 		cfg := momentum.DefaultCrossSectionalMomentumConfig()
 		cfg.FormationDays = intParam(req.Parameters, "formation_days", cfg.FormationDays)
@@ -378,7 +389,7 @@ func buildPortfolioStrategy(req models.BacktestRequest, symbols []string) (backt
 
 func isPortfolioBacktestStrategy(strategyType string) bool {
 	switch strings.ToUpper(strings.TrimSpace(strategyType)) {
-	case "XSEC_MOMENTUM", "KALMAN_COINTEGRATION":
+	case "PORTFOLIO_CATALOG", "XSEC_MOMENTUM", "KALMAN_COINTEGRATION":
 		return true
 	default:
 		return false

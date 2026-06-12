@@ -51,6 +51,10 @@ func NewRouter(h *Handler, cfg *config.Config) *gin.Engine {
 
 		protected.POST("/agent/start", h.LaunchLiveAgent)
 		protected.POST("/agent/stop", h.TerminateLiveAgent)
+		protected.POST("/agent/portfolio/start", h.LaunchPortfolioAgent)
+		protected.POST("/agent/portfolio/stop", h.StopPortfolioAgent)
+		protected.GET("/agent/list", h.ListAgents)
+		protected.GET("/strategies/catalog", h.GetStrategyCatalog)
 
 		protected.GET("/user/settings", h.GetUserSettings)
 		protected.POST("/user/settings", h.SaveUserSettings)

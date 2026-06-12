@@ -3,6 +3,7 @@ package api
 import (
 	"testing"
 
+	agentportfolio "github.com/oalpha/internal/agent/portfolio"
 	"github.com/oalpha/internal/alpha/cointegration"
 	"github.com/oalpha/internal/alpha/momentum"
 	"github.com/oalpha/pkg/models"
@@ -15,11 +16,39 @@ func TestIsPortfolioBacktestStrategy(t *testing.T) {
 	if !isPortfolioBacktestStrategy("KALMAN_COINTEGRATION") {
 		t.Fatalf("KALMAN_COINTEGRATION should route as portfolio strategy")
 	}
+	if !isPortfolioBacktestStrategy("PORTFOLIO_CATALOG") {
+		t.Fatalf("PORTFOLIO_CATALOG should route as portfolio strategy")
+	}
 	if isPortfolioBacktestStrategy("MA_CROSSOVER") {
 		t.Fatalf("MA_CROSSOVER should remain single-symbol")
 	}
 	if isPortfolioBacktestStrategy("ML_META_LABEL") {
 		t.Fatalf("ML_META_LABEL should remain single-symbol wrapper")
+	}
+}
+
+func TestBuildPortfolioStrategyCatalog(t *testing.T) {
+	strategy, allowShorts, err := buildPortfolioStrategy(models.BacktestRequest{
+		StrategyType: "PORTFOLIO_CATALOG",
+		Parameters: map[string]interface{}{
+			"strategy_key": "ranker_proxy_h63_low",
+		},
+	}, []string{"VOO", "AAPL", "MSFT", "NVDA", "QQQ", "SPY"})
+	if err != nil {
+		t.Fatalf("buildPortfolioStrategy: %v", err)
+	}
+	if allowShorts {
+		t.Fatalf("catalog strategy should be long-only")
+	}
+	if strategy == nil {
+		t.Fatalf("expected catalog strategy")
+	}
+	spec, err := agentportfolio.StrategySpecByKey("ranker_proxy_h63_low", []string{"VOO", "AAPL", "MSFT"}, agentportfolio.StrategyCatalogConfig{})
+	if err != nil {
+		t.Fatalf("StrategySpecByKey: %v", err)
+	}
+	if strategy.Name() != spec.Key {
+		t.Fatalf("strategy name=%s, want %s", strategy.Name(), spec.Key)
 	}
 }
 
