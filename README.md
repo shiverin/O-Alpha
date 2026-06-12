@@ -135,6 +135,10 @@ Important variables:
 | Variable | Purpose |
 | --- | --- |
 | `DATABASE_URL` | PostgreSQL/Supabase connection string |
+| `DB_MAX_CONNS` | Max PostgreSQL pool connections per process, default `3` for Supabase pooler safety |
+| `DB_MIN_CONNS` | Min idle PostgreSQL pool connections per process, default `0` |
+| `DB_MAX_CONN_IDLE_TIME` | Idle connection close delay, default `1m` |
+| `DB_MAX_CONN_LIFETIME` | Max connection lifetime, default `30m` |
 | `REDIS_URL` | Redis connection string |
 | `MIGRATIONS_PATH` | Migration path, usually `file://../migrations` locally |
 | `HTTP_ADDR` | API bind address, usually `:8080` |
