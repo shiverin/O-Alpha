@@ -4,9 +4,17 @@ import { useMemo, useState, useEffect } from "react";
 import useSWR from "swr";
 import { AppShell } from "@/components/app/AppShell";
 import OnboardingOverlay from "@/components/app/OnboardingOverlay";
-import { agentApi, api, settingsApi } from "@/lib/api";
+import {
+  agentStatusApi,
+  api,
+  portfolioAgentApi,
+  settingsApi,
+  strategyCatalogApi,
+  type StrategyCatalogResponse,
+} from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import {
+  ServerPositionMetrics,
   ServerPortfolioSummary,
   ServerTradeLog,
   SnapshotPoint,
@@ -18,16 +26,23 @@ import ExecutionLog from "@/components/sections/dashboard/ExecutionLog";
 import PortfolioAllocation from "@/components/sections/dashboard/PortfolioAllocation";
 
 const fetcher = <T,>(path: string): Promise<T> => api.get<T>(path);
+const riskBuckets = {
+  conservative: "low",
+  moderate: "medium",
+  aggressive: "high",
+} as const;
 
 export default function DashboardPage() {
-  const [isAgentActive, setIsAgentActive] = useState<boolean>(false);
+  const [isDemoAgentActive, setIsDemoAgentActive] = useState<boolean>(false);
   const [agentActionPending, setAgentActionPending] = useState<boolean>(false);
   const [agentError, setAgentError] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
 
-  const [riskTolerance, setRiskTolerance] = useState<number>(80);
-  const [volatilityCap, setVolatilityCap] = useState<number>(30);
-  const [leverageMultiplier, setLeverageMultiplier] = useState<number>(50);
+  const [riskProfile, setRiskProfile] = useState<
+    "conservative" | "moderate" | "aggressive"
+  >("moderate");
+  const [selectedStrategyKey, setSelectedStrategyKey] = useState<string>("");
+  const [initialCash, setInitialCash] = useState<number>(100000);
 
   const { user, loading, markOnboarded } = useAuth();
   const currentUserID = user?.id || 999;
@@ -46,6 +61,50 @@ export default function DashboardPage() {
     currentUserID !== 999 ? "/api/v1/user/portfolio/history?limit=30" : null,
     fetcher,
   );
+
+  const { data: serverPositions } = useSWR<ServerPositionMetrics[]>(
+    currentUserID !== 999 ? "/api/v1/user/portfolio/positions" : null,
+    fetcher,
+  );
+
+  const { data: strategyCatalog } = useSWR(
+    currentUserID !== 999 ? "/api/v1/strategies/catalog" : null,
+    () => strategyCatalogApi.list(),
+  );
+
+  const { data: agentList, mutate: refreshAgents } = useSWR(
+    currentUserID !== 999 ? "/api/v1/agent/list" : null,
+    () => agentStatusApi.list(),
+    { refreshInterval: 15000 },
+  );
+
+  const activePortfolioAgent = useMemo(() => {
+    return agentList?.agents?.find(
+      (agent) => agent.strategy_type === "PORTFOLIO_CATALOG",
+    );
+  }, [agentList]);
+
+  const isAgentActive =
+    currentUserID === 999 ? isDemoAgentActive : Boolean(activePortfolioAgent);
+
+  const regimeLabel = useMemo(() => {
+    const label = activePortfolioAgent?.runtime_state?.regime_label;
+    if (!label || typeof label !== "string") {
+      return "SYNCING";
+    }
+    return label.toUpperCase();
+  }, [activePortfolioAgent]);
+
+  useEffect(() => {
+    if (!strategyCatalog) return;
+    const recommended = dashboardRecommendedStrategy(
+      strategyCatalog,
+      riskProfile,
+    );
+    if (!selectedStrategyKey) {
+      setSelectedStrategyKey(recommended || "");
+    }
+  }, [riskProfile, selectedStrategyKey, strategyCatalog]);
 
   useEffect(() => {
     if (loading) return;
@@ -83,18 +142,17 @@ export default function DashboardPage() {
   }, [currentUserID, loading, user]);
 
   const configureDashboardFromBlueprint = (blueprint: string) => {
+    const normalized =
+      blueprint === "conservative" || blueprint === "aggressive"
+        ? blueprint
+        : "moderate";
+    setRiskProfile(normalized);
     if (blueprint === "conservative") {
-      setRiskTolerance(25);
-      setVolatilityCap(15);
-      setLeverageMultiplier(0);
+      setInitialCash(50000);
     } else if (blueprint === "moderate") {
-      setRiskTolerance(60);
-      setVolatilityCap(30);
-      setLeverageMultiplier(25);
+      setInitialCash(100000);
     } else if (blueprint === "aggressive") {
-      setRiskTolerance(95);
-      setVolatilityCap(45);
-      setLeverageMultiplier(75);
+      setInitialCash(150000);
     }
   };
 
@@ -108,30 +166,28 @@ export default function DashboardPage() {
     setAgentError(null);
 
     if (currentUserID === 999) {
-      setIsAgentActive((active) => !active);
+      setIsDemoAgentActive((active) => !active);
       return;
     }
 
     setAgentActionPending(true);
     try {
       if (isAgentActive) {
-        await agentApi.stop("AAPL");
-        setIsAgentActive(false);
+        await portfolioAgentApi.stop();
       } else {
-        await agentApi.start({
-          symbol: "AAPL",
-          strategy_type: "HMM_ENSEMBLE",
-          timeframe: "1Hour",
-          initial_cash: serverSummary?.total_asset_value ?? 50000,
-          q_noise: 0.001,
-          r_noise: 0.01,
-          z_threshold: 2,
-          fast_period: 20,
-          slow_period: 50,
-          risk_profile: agentRiskProfile,
+        await portfolioAgentApi.start({
+          strategy_key: selectedStrategyKey || "auto",
+          symbols: strategyCatalog?.default_universe,
+          risk_profile: riskProfile,
+          timeframe: "1Day",
+          initial_cash:
+            serverSummary?.total_asset_value &&
+            serverSummary.total_asset_value > 0
+              ? serverSummary.total_asset_value
+              : initialCash,
         });
-        setIsAgentActive(true);
       }
+      await refreshAgents();
     } catch (err) {
       setAgentError(
         err instanceof Error ? err.message : "Agent control request failed.",
@@ -140,16 +196,6 @@ export default function DashboardPage() {
       setAgentActionPending(false);
     }
   };
-
-  const calculatedLeverageText = useMemo(() => {
-    return `${(1.0 + (leverageMultiplier / 100) * 4).toFixed(1)}x`;
-  }, [leverageMultiplier]);
-
-  const agentRiskProfile = useMemo(() => {
-    if (riskTolerance <= 40) return "conservative";
-    if (riskTolerance >= 80) return "aggressive";
-    return "moderate";
-  }, [riskTolerance]);
 
   const displayPnL = useMemo(() => {
     if (
@@ -212,16 +258,12 @@ export default function DashboardPage() {
             isAgentActive={isAgentActive}
             displayPnL={displayPnL}
             historyData={snapshotHistory}
+            regimeLabel={regimeLabel}
           />
 
           <StrategyControls
-            riskTolerance={riskTolerance}
-            setRiskTolerance={setRiskTolerance}
-            volatilityCap={volatilityCap}
-            setVolatilityCap={setVolatilityCap}
-            leverageMultiplier={leverageMultiplier}
-            setLeverageMultiplier={setLeverageMultiplier}
-            calculatedLeverageText={calculatedLeverageText}
+            riskProfile={riskProfile}
+            universeSize={strategyCatalog?.default_universe.length ?? 0}
           />
 
           <ExecutionLog
@@ -232,9 +274,28 @@ export default function DashboardPage() {
           <PortfolioAllocation
             currentUserID={currentUserID}
             serverSummary={serverSummary}
+            serverPositions={serverPositions}
           />
         </div>
       </div>
     </AppShell>
+  );
+}
+
+function dashboardRecommendedStrategy(
+  catalog: StrategyCatalogResponse,
+  riskProfile: "conservative" | "moderate" | "aggressive",
+) {
+  const riskBucket = riskBuckets[riskProfile];
+  const recommendedKey = catalog.recommended[riskProfile];
+  const recommended = catalog.strategies.find(
+    (strategy) => strategy.key === recommendedKey,
+  );
+  if (recommended?.risk_profile === riskBucket) {
+    return recommended.key;
+  }
+  return (
+    catalog.strategies.find((strategy) => strategy.risk_profile === riskBucket)
+      ?.key || ""
   );
 }

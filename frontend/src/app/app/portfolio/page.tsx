@@ -117,14 +117,11 @@ export default function PortfolioPage() {
     };
   }, [serverHistory]);
 
-  const estimatedYield =
-    currentUserID === 999 || !serverSummary
-      ? 0
-      : serverSummary.estimated_annual_yield;
   const progressPercent =
     currentUserID === 999 || !serverSummary
       ? 0
       : serverSummary.target_progress_percent;
+  const progressBarWidth = Math.min(Math.max(progressPercent, 0), 100);
 
   const totalPositionsExposure = useMemo(() => {
     if (!serverPositions) return 0;
@@ -171,12 +168,6 @@ export default function PortfolioPage() {
       ];
     }
 
-    const segments: {
-      label: string;
-      percentage: number;
-      color: string;
-      glowClass: string;
-    }[] = [];
     const colors = ["#00dbe9", "#ffd34d", "#6fe6ff", "#b9f1ff"];
     const glowClasses = [
       "bg-primary-fixed-dim shadow-[0_0_8px_rgba(0,219,233,0.5)]",
@@ -185,41 +176,48 @@ export default function PortfolioPage() {
       "bg-secondary-fixed shadow-[0_0_8px_rgba(255,211,77,0.4)]",
     ];
 
-    if (serverPositions && serverPositions.length > 0) {
-      serverPositions.forEach((pos, idx) => {
-        const exposure = pos.qty * pos.current_price;
-        const pct =
-          totalAssetValue > 0
-            ? Math.round((exposure / totalAssetValue) * 100)
-            : 0;
-        if (pct > 0) {
-          segments.push({
-            label: pos.symbol,
-            percentage: pct,
-            color: colors[idx % colors.length],
-            glowClass: glowClasses[idx % glowClasses.length],
-          });
-        }
+    const rankedPositions = (serverPositions ?? [])
+      .map((pos) => ({
+        label: pos.symbol,
+        exposure: pos.qty * pos.current_price,
+      }))
+      .filter((pos) => pos.exposure > 0)
+      .sort((a, b) => b.exposure - a.exposure);
+    const visiblePositions = rankedPositions.slice(0, 4);
+    const otherExposure = rankedPositions
+      .slice(4)
+      .reduce((sum, position) => sum + position.exposure, 0);
+
+    const segments = visiblePositions.map((position, idx) => ({
+      label: position.label,
+      exposure: position.exposure,
+      color: colors[idx % colors.length],
+      glowClass: glowClasses[idx % glowClasses.length],
+    }));
+
+    if (otherExposure > 0) {
+      segments.push({
+        label: "Other",
+        exposure: otherExposure,
+        color: "#94a3b8",
+        glowClass: "bg-slate-400",
       });
     }
 
-    const cashPct =
-      totalAssetValue > 0
-        ? Math.round((cashBalance / totalAssetValue) * 100)
-        : 100;
-    if (cashPct > 0 || segments.length === 0) {
+    if (cashBalance > 0 || segments.length === 0) {
       segments.push({
         label: "Cash & Equiv",
-        percentage: cashPct || 100,
+        exposure: segments.length === 0 ? totalAssetValue : cashBalance,
         color: "#849495",
         glowClass: "bg-outline",
       });
     }
 
-    segments.sort((a, b) => b.percentage - a.percentage);
-
+    const normalizedSegments = normalizeCompositionPercentages(segments).sort(
+      (a, b) => b.percentage - a.percentage,
+    );
     let currentRotation = 0;
-    return segments.map((seg) => {
+    return normalizedSegments.map((seg) => {
       const dashOffset = 628 - (628 * seg.percentage) / 100;
       const rotation = currentRotation;
       currentRotation += seg.percentage * 3.6;
@@ -477,13 +475,13 @@ export default function PortfolioPage() {
             <div className="w-full min-w-0 sm:col-span-2 bg-surface-container-low border border-outline-variant/30 rounded-[32px] p-5 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-surface-container transition-colors duration-300">
               <div className="min-w-0">
                 <p className="font-mono text-[10px] tracking-wider text-on-surface-variant/50 uppercase mb-1">
-                  Estimated Annual Yield
+                  Annual Yield
                 </p>
                 <p className="text-2xl sm:text-3xl font-light text-on-surface truncate">
-                  ${estimatedYield.toLocaleString()}
-                  <span className="text-on-surface-variant/30 text-lg">
-                    .00
-                  </span>
+                  Pending
+                </p>
+                <p className="font-mono text-[10px] text-on-surface-variant/40 mt-1">
+                  Requires computed trailing return history
                 </p>
               </div>
               <div className="w-full sm:w-auto text-left sm:text-right shrink-0">
@@ -493,7 +491,7 @@ export default function PortfolioPage() {
                 <div className="w-full sm:w-36 h-[3px] bg-surface-container-highest rounded-full overflow-hidden">
                   <div
                     className="h-full bg-primary-fixed-dim shadow-[0_0_10px_rgba(0,219,233,0.8)] rounded-full"
-                    style={{ width: `${progressPercent}%` }}
+                    style={{ width: `${progressBarWidth}%` }}
                   />
                 </div>
               </div>
@@ -669,4 +667,56 @@ export default function PortfolioPage() {
       </div>
     </AppShell>
   );
+}
+
+function normalizeCompositionPercentages<
+  T extends {
+    exposure: number;
+    label: string;
+    color: string;
+    glowClass: string;
+  },
+>(segments: T[]) {
+  const positiveSegments = segments.filter((segment) => segment.exposure > 0);
+  const displayedExposure = positiveSegments.reduce(
+    (sum, segment) => sum + segment.exposure,
+    0,
+  );
+  if (positiveSegments.length === 0 || displayedExposure <= 0) {
+    return [
+      {
+        label: "Cash & Equiv",
+        exposure: 1,
+        percentage: 100,
+        color: "#849495",
+        glowClass: "bg-outline",
+      },
+    ];
+  }
+
+  const exact = positiveSegments.map((segment) => ({
+    ...segment,
+    exactPercentage: (segment.exposure / displayedExposure) * 100,
+  }));
+  const rounded = exact.map((segment) => ({
+    ...segment,
+    percentage: Math.floor(segment.exactPercentage),
+  }));
+  let remaining =
+    100 - rounded.reduce((sum, segment) => sum + segment.percentage, 0);
+
+  rounded
+    .sort(
+      (a, b) =>
+        b.exactPercentage -
+        Math.floor(b.exactPercentage) -
+        (a.exactPercentage - Math.floor(a.exactPercentage)),
+    )
+    .forEach((segment) => {
+      if (remaining <= 0) return;
+      segment.percentage += 1;
+      remaining -= 1;
+    });
+
+  return rounded.filter((segment) => segment.percentage > 0);
 }

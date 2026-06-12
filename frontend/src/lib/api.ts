@@ -5,10 +5,11 @@ const API_BASE =
   "http://localhost:8080";
 
 export interface BacktestRequest {
-  symbol: string;
+  symbol?: string;
+  symbols?: string[];
   start: string;
   end: string;
-  strategy_type?: string; // "MA_CROSSOVER" or "KALMAN"
+  strategy_type: string; // "MA_CROSSOVER", "KALMAN", or portfolio strategy types
   timeframe?: string; // e.g., "1Day"
   // Kalman-specific parameters
   q_noise?: number;
@@ -18,6 +19,7 @@ export interface BacktestRequest {
   fast_period?: number;
   slow_period?: number;
   initial_cash?: number;
+  parameters?: Record<string, unknown>;
 }
 
 export interface EquityPoint {
@@ -26,15 +28,25 @@ export interface EquityPoint {
 }
 
 export interface BacktestResult {
-  symbol: string;
+  symbol?: string;
+  symbols?: string[];
   equity_curve: EquityPoint[];
-  final_equity: number;
-  sharpe: number;
-  sortino: number;
-  max_drawdown: number;
-  total_return: number;
+  metrics?: {
+    total_return: number;
+    annual_return: number;
+    sharpe: number;
+    sortino: number;
+    max_drawdown: number;
+    num_trades: number;
+    turnover: number;
+  };
+  final_equity?: number;
+  sharpe?: number;
+  sortino?: number;
+  max_drawdown?: number;
+  total_return?: number;
   annual_return?: number;
-  num_trades: number;
+  num_trades?: number;
 }
 
 const getAuthHeaders = (): HeadersInit => {
@@ -160,11 +172,19 @@ export const settingsApi = {
 };
 
 export const userApi = {
-  completeOnboarding: async (): Promise<{ status: string }> => {
-    return api.post<{ status: string }, Record<string, never>>(
-      "/api/v1/user/onboarding/complete",
-      {},
-    );
+  completeOnboarding: async (payload: {
+    risk_profile: string;
+    strategy_key: string;
+    backtest_accepted: boolean;
+  }): Promise<{
+    status: string;
+    risk_profile: string;
+    strategy_key: string;
+  }> => {
+    return api.post<
+      { status: string; risk_profile: string; strategy_key: string },
+      typeof payload
+    >("/api/v1/user/onboarding/complete", payload);
   },
 };
 
@@ -196,5 +216,107 @@ export const agentApi = {
       "/api/v1/agent/stop",
       { symbol },
     );
+  },
+};
+
+export interface StrategySpec {
+  key: string;
+  display_name: string;
+  family: string;
+  risk_profile: "low" | "medium" | "high";
+  deployment_status: string;
+  promoted_checkpoint: boolean;
+  requires_model_artifacts: boolean;
+  paper_only: boolean;
+  benchmark_symbol: string;
+  description: string;
+  evidence_paths?: string[];
+  notes?: string[];
+}
+
+export interface StrategyCatalogResponse {
+  strategies: StrategySpec[];
+  recommended: {
+    conservative: string;
+    moderate: string;
+    aggressive: string;
+  };
+  default_universe: string[];
+}
+
+export interface PortfolioAgentStartPayload {
+  strategy_key?: string;
+  risk_profile?: "conservative" | "moderate" | "aggressive";
+  symbols?: string[];
+  timeframe?: string;
+  initial_cash?: number;
+}
+
+export interface PortfolioAgentStartResult {
+  status: string;
+  run_id: number;
+  strategy_key: string;
+  display_name: string;
+  deployment_status: string;
+  paper_only: boolean;
+  symbols: string[];
+}
+
+export interface AgentRunSummary {
+  id: number;
+  symbol: string;
+  strategy_type: string;
+  strategy_key?: string;
+  timeframe: string;
+  mode: string;
+  status: string;
+  initial_cash: number;
+  parameters?: Record<string, unknown>;
+  runtime_state?: {
+    source?: string;
+    benchmark_symbol?: string;
+    model_healthy?: boolean;
+    regime_label?: string;
+    confidence?: number;
+    probability_low?: number;
+    probability_medium?: number;
+    probability_high?: number;
+    overlay_role?: string;
+    overlay_multiplier?: number;
+    overlay_confidence?: number;
+    overlay_vetoed?: boolean;
+    bar_time?: string;
+    updated_at?: string;
+  };
+  started_at: string;
+  last_heartbeat_at?: string;
+}
+
+export const strategyCatalogApi = {
+  list: async (): Promise<StrategyCatalogResponse> => {
+    return api.get<StrategyCatalogResponse>("/api/v1/strategies/catalog");
+  },
+};
+
+export const portfolioAgentApi = {
+  start: async (
+    payload: PortfolioAgentStartPayload,
+  ): Promise<PortfolioAgentStartResult> => {
+    return api.post<PortfolioAgentStartResult, PortfolioAgentStartPayload>(
+      "/api/v1/agent/portfolio/start",
+      payload,
+    );
+  },
+  stop: async (): Promise<{ status: string }> => {
+    return api.post<{ status: string }, Record<string, never>>(
+      "/api/v1/agent/portfolio/stop",
+      {},
+    );
+  },
+};
+
+export const agentStatusApi = {
+  list: async (): Promise<{ agents: AgentRunSummary[] }> => {
+    return api.get<{ agents: AgentRunSummary[] }>("/api/v1/agent/list");
   },
 };

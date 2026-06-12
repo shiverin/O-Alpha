@@ -19,7 +19,7 @@ export default function ExecutionLog({
   return (
     <div className="md:col-span-12 group relative flex flex-col h-[380px] bg-surface-container-low border border-outline-variant/30 rounded-[32px] p-5 sm:p-8 overflow-hidden hover:bg-surface-container transition-all duration-700 hover:shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
       <h3 className="text-[10px] font-medium tracking-[0.2em] text-on-surface uppercase mb-5 flex items-center gap-2">
-        <span className="material-symbols-outlined text-[16px] text-on-surface-variant animate-pulse">
+        <span className="material-symbols-outlined text-[16px] text-on-surface-variant">
           terminal
         </span>
         Live Execution Log

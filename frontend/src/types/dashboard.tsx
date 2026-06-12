@@ -31,3 +31,12 @@ export interface SnapshotPoint {
   total_asset_value: number;
   timestamp: string;
 }
+
+export interface ServerPositionMetrics {
+  symbol: string;
+  qty: number;
+  avg_entry_price: number;
+  current_price: number;
+  unrealized_pnl: number;
+  exposure: number;
+}
