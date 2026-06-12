@@ -39,7 +39,7 @@ func Load() (*Config, error) {
 		MigrationsPath:      envOr("MIGRATIONS_PATH", "file://migrations"),
 		HTTPAddr:            envOr("HTTP_ADDR", ":8080"),
 		JWTSecret:           envOr("JWT_SECRET", "dev-change-me"),
-		CORSAllowedOrigins:  splitCSV(envOr("CORS_ALLOWED_ORIGINS", "http://localhost:3000")),
+		CORSAllowedOrigins:  splitCSV(envOr("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://[::1]:3000,https://o-alpha-tan.vercel.app")),
 		AlpacaAPIKey:        os.Getenv("ALPACA_API_KEY"),
 		AlpacaAPISecret:     os.Getenv("ALPACA_API_SECRET"),
 		AlpacaDataURL:       envOr("ALPACA_DATA_URL", "https://data.alpaca.markets"),

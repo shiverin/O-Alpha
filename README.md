@@ -138,6 +138,7 @@ Important variables:
 | `REDIS_URL` | Redis connection string |
 | `MIGRATIONS_PATH` | Migration path, usually `file://../migrations` locally |
 | `HTTP_ADDR` | API bind address, usually `:8080` |
+| `CORS_ALLOWED_ORIGINS` | Comma-separated frontend origins; defaults include `localhost`, `127.0.0.1`, `[::1]`, and the Vercel app |
 | `NEXT_PUBLIC_API_URL` | Frontend API base URL |
 | `INGEST_SYMBOLS` | Comma-separated market-data universe |
 | `INGEST_INTERVAL` | Ingest interval, usually `1Day` for portfolio strategies |
