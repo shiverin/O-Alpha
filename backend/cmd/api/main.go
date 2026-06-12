@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/oalpha/internal/agent"
+	"github.com/oalpha/internal/agent/portfolio"
 	"github.com/oalpha/internal/alpaca"
 	"github.com/oalpha/internal/api"
 	"github.com/oalpha/internal/config"
@@ -43,8 +44,25 @@ func main() {
 	alpacaClient := alpaca.NewClient(cfg.AlpacaDataURL, cfg.AlpacaAPIKey, cfg.AlpacaAPISecret)
 
 	agentManager := agent.NewAgentManager(alpacaClient, repo, agentRepo, portfolioRepo)
+	portfolioManager := portfolio.NewPortfolioAgentManager(repo, alpacaClient)
+	portfolioOrchestrator := portfolio.NewPortfolioOrchestrator(
+		portfolioManager,
+		repo,
+		agentRepo,
+		portfolioRepo,
+		alpacaClient,
+		portfolio.DefaultStrategyCatalogConfig(),
+	)
 
-	h := api.NewHandler(repo, agentManager, agentRepo, portfolioRepo)
+	reconcileCtx, reconcileCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	if reclaimed, err := agentRepo.MarkOrphanedAgentRunsFailed(reconcileCtx, 0); err != nil {
+		log.Error().Err(err).Msg("orphaned agent run reconciliation failed")
+	} else if reclaimed > 0 {
+		log.Info().Int64("reclaimed", reclaimed).Msg("reclaimed orphaned agent runs")
+	}
+	reconcileCancel()
+
+	h := api.NewHandler(repo, agentManager, agentRepo, portfolioRepo, portfolioOrchestrator)
 	r := api.NewRouter(h, cfg)
 
 	srv := &http.Server{

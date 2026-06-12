@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -67,103 +66,7 @@ func NewPortfolioRepository(db *pgxpool.Pool) *PortfolioRepository {
 
 // RecordLongFill stores a filled long-side order and updates cash, positions, and ledger entries atomically.
 func (r *PortfolioRepository) RecordLongFill(ctx context.Context, userID, agentRunID int64, action, symbol string, price, qty, slippage float64) error {
-	symbol = normalizeSymbol(symbol)
-	action = strings.ToUpper(strings.TrimSpace(action))
-	if symbol == "" {
-		return fmt.Errorf("fill symbol is required")
-	}
-	if price <= 0 {
-		return fmt.Errorf("fill price must be positive")
-	}
-	if qty <= 0 {
-		return fmt.Errorf("fill quantity must be positive")
-	}
-
-	side, err := longActionSide(action)
-	if err != nil {
-		return err
-	}
-
-	tx, err := r.db.BeginTx(ctx, pgx.TxOptions{})
-	if err != nil {
-		return fmt.Errorf("begin portfolio fill transaction: %w", err)
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-
-	if err := ensureAssetTx(ctx, tx, symbol); err != nil {
-		return err
-	}
-
-	account, err := ensureDefaultPaperAccountTx(ctx, tx, userID, defaultPaperInitialCash)
-	if err != nil {
-		return err
-	}
-
-	var agentRunIDArg *int64
-	if agentRunID > 0 {
-		agentRunIDArg = &agentRunID
-	}
-
-	var orderID int64
-	const orderQ = `
-		INSERT INTO orders (
-			user_id, account_id, agent_run_id, symbol, side, position_side,
-			order_type, time_in_force, qty, status, submitted_at, filled_at
-		)
-		VALUES ($1, $2, $3, $4, $5, 'long', 'market', 'day', $6, 'filled', NOW(), NOW())
-		RETURNING id`
-	if err := tx.QueryRow(ctx, orderQ, userID, account.ID, agentRunIDArg, symbol, side, qty).Scan(&orderID); err != nil {
-		return fmt.Errorf("insert filled order: %w", err)
-	}
-
-	var fillID int64
-	const fillQ = `
-		INSERT INTO fills (
-			order_id, user_id, account_id, symbol, side, position_side,
-			price, qty, slippage
-		)
-		VALUES ($1, $2, $3, $4, $5, 'long', $6, $7, $8)
-		RETURNING id`
-	if err := tx.QueryRow(ctx, fillQ, orderID, userID, account.ID, symbol, side, price, qty, slippage).Scan(&fillID); err != nil {
-		return fmt.Errorf("insert fill: %w", err)
-	}
-
-	gross := price * qty
-	switch action {
-	case "BUY_LONG":
-		if account.Cash < gross {
-			return fmt.Errorf("insufficient cash for %s buy: need %.2f, have %.2f", symbol, gross, account.Cash)
-		}
-		newCash := account.Cash - gross
-		if err := updateAccountCashTx(ctx, tx, userID, account.ID, newCash, 0); err != nil {
-			return err
-		}
-		if err := insertCashLedgerTx(ctx, tx, userID, account.ID, "trade_buy", -gross, newCash, orderID, fillID, fmt.Sprintf("Bought %.8f %s", qty, symbol)); err != nil {
-			return err
-		}
-		if err := upsertBoughtPositionTx(ctx, tx, userID, account.ID, symbol, price, qty); err != nil {
-			return err
-		}
-	case "SELL_LONG":
-		realizedPnL, err := reduceSoldPositionTx(ctx, tx, account.ID, symbol, price, qty)
-		if err != nil {
-			return err
-		}
-		newCash := account.Cash + gross
-		if err := updateAccountCashTx(ctx, tx, userID, account.ID, newCash, realizedPnL); err != nil {
-			return err
-		}
-		if err := insertCashLedgerTx(ctx, tx, userID, account.ID, "trade_sell", gross, newCash, orderID, fillID, fmt.Sprintf("Sold %.8f %s", qty, symbol)); err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("unsupported trade action %s", action)
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("commit portfolio fill transaction: %w", err)
-	}
-	return nil
+	return r.RecordLongFillKeyed(ctx, userID, agentRunID, "", action, symbol, price, qty, slippage)
 }
 
 // MarkPositionPrice updates the current price used for unrealized P&L on open positions.

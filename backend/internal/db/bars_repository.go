@@ -280,6 +280,14 @@ func (r *BarsRepository) SaveBacktestRun(ctx context.Context, userID, configID i
 	if strategyType == "" {
 		strategyType = "MA_CROSSOVER"
 	}
+	timeframe := strings.TrimSpace(req.Timeframe)
+	if timeframe == "" {
+		timeframe = "1Day"
+	}
+	initialCash := req.InitialCash
+	if initialCash <= 0 {
+		initialCash = defaultPaperInitialCash
+	}
 
 	endDate := time.Now().UTC()
 	startDate := endDate.Add(-365 * 24 * time.Hour)
@@ -333,12 +341,12 @@ func (r *BarsRepository) SaveBacktestRun(ctx context.Context, userID, configID i
             final_equity, total_return_pct, annual_return_pct, sharpe_ratio, sortino_ratio, max_drawdown_pct, num_trades,
             parameters, equity_curve, created_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 0, $11, $12, $13, $14, $15, $16, NOW())`
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW())`
 
 	_, err = r.db.Exec(ctx, q,
-		userID, configIDArg, strategyType, symbol, req.Timeframe,
-		startDate, endDate, req.InitialCash,
-		result.FinalEquity, result.TotalReturn*100, result.Sharpe, result.Sortino, result.MaxDrawdown*100, result.NumTrades,
+		userID, configIDArg, strategyType, symbol, timeframe,
+		startDate, endDate, initialCash,
+		result.FinalEquity, result.TotalReturn*100, result.AnnualizedReturn*100, result.Sharpe, result.Sortino, result.MaxDrawdown*100, result.NumTrades,
 		paramsBytes, equityCurveBytes,
 	)
 	if err != nil {
@@ -366,6 +374,41 @@ func (r *BarsRepository) GetLatestBarTime(ctx context.Context, symbol, timeframe
 	}
 
 	return *latestTime, true, nil
+}
+
+// GetLatestBarTimes returns the latest stored raw Alpaca timestamp per symbol.
+func (r *BarsRepository) GetLatestBarTimes(ctx context.Context, symbols []string, timeframe string) (map[string]time.Time, error) {
+	normalizedSymbols := normalizeSymbols(symbols)
+	out := make(map[string]time.Time, len(normalizedSymbols))
+	if len(normalizedSymbols) == 0 {
+		return out, nil
+	}
+
+	const q = `
+		SELECT symbol, max(time)
+		FROM bars
+		WHERE symbol = ANY($1) AND timeframe = $2
+			AND feed = 'iex' AND adjustment = 'raw' AND source = 'alpaca'
+		GROUP BY symbol`
+
+	rows, err := r.db.Query(ctx, q, normalizedSymbols, timeframe)
+	if err != nil {
+		return nil, fmt.Errorf("query latest bar times: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var symbol string
+		var latest time.Time
+		if err := rows.Scan(&symbol, &latest); err != nil {
+			return nil, fmt.Errorf("scan latest bar time: %w", err)
+		}
+		out[normalizeSymbol(symbol)] = latest
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func normalizeSymbol(symbol string) string {
