@@ -90,9 +90,9 @@ export default function DashboardPage() {
   const regimeLabel = useMemo(() => {
     const label = activePortfolioAgent?.runtime_state?.regime_label;
     if (!label || typeof label !== "string") {
-      return "SYNCING";
+      return "Syncing";
     }
-    return label.toUpperCase();
+    return label;
   }, [activePortfolioAgent]);
 
   useEffect(() => {

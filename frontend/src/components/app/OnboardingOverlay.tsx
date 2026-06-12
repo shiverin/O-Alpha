@@ -3,11 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { EquityCurveChart } from "@/components/EquityCurveChart";
 import {
-  runBacktest,
+  runBacktestStream,
   settingsApi,
   strategyCatalogApi,
   userApi,
   type BacktestResult,
+  type EquityPoint,
   type ServerAgentSettings,
   type StrategyCatalogResponse,
   type StrategySpec,
@@ -20,6 +21,8 @@ interface OnboardingOverlayProps {
 
 type RiskProfile = "conservative" | "moderate" | "aggressive";
 type RiskBucket = "low" | "medium" | "high";
+
+const BACKTEST_INITIAL_CASH = 100000;
 
 const riskBuckets: Record<RiskProfile, RiskBucket> = {
   conservative: "low",
@@ -46,8 +49,8 @@ const fallbackCatalog: StrategyCatalogResponse = {
   default_universe: fallbackUniverse,
   recommended: {
     conservative: "ranker_proxy_h63_low",
-    moderate: "lgbm_ranker_h63_medium",
-    aggressive: "composite_momentum_high",
+    moderate: "ranker_proxy_h63_low",
+    aggressive: "ranker_proxy_h63_low",
   },
   strategies: [
     {
@@ -61,30 +64,6 @@ const fallbackCatalog: StrategyCatalogResponse = {
       paper_only: true,
       benchmark_symbol: "VOO",
       description: "VOO core with an 8% deterministic h63 active sleeve.",
-    },
-    {
-      key: "lgbm_ranker_h63_medium",
-      display_name: "LGBM h63 active sleeve medium risk",
-      family: "benchmark_lgbm_ranker_h63",
-      risk_profile: "medium",
-      deployment_status: "promoted_research_checkpoint",
-      promoted_checkpoint: true,
-      requires_model_artifacts: true,
-      paper_only: true,
-      benchmark_symbol: "VOO",
-      description: "VOO core with a 15% learned-ranker active sleeve.",
-    },
-    {
-      key: "composite_momentum_high",
-      display_name: "Composite momentum high risk",
-      family: "composite_momentum",
-      risk_profile: "high",
-      deployment_status: "rejected_diagnostic",
-      promoted_checkpoint: false,
-      requires_model_artifacts: false,
-      paper_only: true,
-      benchmark_symbol: "VOO",
-      description: "Higher-active-weight composite momentum sleeve.",
     },
   ],
 };
@@ -104,6 +83,11 @@ export default function OnboardingOverlay({
   const [backtestResult, setBacktestResult] = useState<BacktestResult | null>(
     null,
   );
+  const [streamingEquityCurve, setStreamingEquityCurve] = useState<
+    EquityPoint[]
+  >([]);
+  const [backtestProgress, setBacktestProgress] = useState(0);
+  const [backtestStatus, setBacktestStatus] = useState<string | null>(null);
   const [backtestError, setBacktestError] = useState<string | null>(null);
   const [isCatalogLoading, setIsCatalogLoading] = useState(false);
   const [isBacktesting, setIsBacktesting] = useState(false);
@@ -185,6 +169,8 @@ export default function OnboardingOverlay({
     };
   }, [backtestResult]);
 
+  const chartData = backtestResult?.equity_curve ?? streamingEquityCurve;
+
   const toggleCardFlip = (profile: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setFlippedCards((prev) => ({ ...prev, [profile]: !prev[profile] }));
@@ -196,13 +182,22 @@ export default function OnboardingOverlay({
       recommendedStrategyKeyForRisk(catalog, profile) || selectedStrategyKey;
     setSelectedStrategyKey(nextKey);
     setBacktestResult(null);
+    setStreamingEquityCurve([]);
+    setBacktestProgress(0);
+    setBacktestStatus(null);
     setBacktestError(null);
+  };
+
+  const handleProfileNext = () => {
     setStep(3);
   };
 
   const handleStrategySelect = (strategy: StrategySpec) => {
     setSelectedStrategyKey(strategy.key);
     setBacktestResult(null);
+    setStreamingEquityCurve([]);
+    setBacktestProgress(0);
+    setBacktestStatus(null);
     setBacktestError(null);
   };
 
@@ -211,30 +206,74 @@ export default function OnboardingOverlay({
     setIsBacktesting(true);
     setBacktestError(null);
     setBacktestResult(null);
+    setStreamingEquityCurve([]);
+    setBacktestProgress(0);
+    setBacktestStatus("Preparing historical data...");
 
     const end = new Date();
     const start = new Date(end);
     start.setFullYear(end.getFullYear() - 5);
     const settings = settingsForRisk(riskProfile);
+    setStreamingEquityCurve([
+      { time: start.toISOString(), equity: BACKTEST_INITIAL_CASH },
+    ]);
+
+    let receivedProgress = false;
+    let streamedPointCount = 1;
 
     try {
-      const result = await runBacktest({
-        symbol:
-          selectedStrategy.benchmark_symbol || catalog.default_universe[0],
-        symbols: catalog.default_universe,
-        start: start.toISOString(),
-        end: end.toISOString(),
-        strategy_type: "PORTFOLIO_CATALOG",
-        timeframe: "1Day",
-        initial_cash: 100000,
-        parameters: {
-          strategy_key: selectedStrategy.key,
-          max_gross_exposure: settings.leverage,
-          max_net_exposure: settings.leverage,
-          max_symbol_weight: 1,
+      const result = await runBacktestStream(
+        {
+          symbol:
+            selectedStrategy.benchmark_symbol || catalog.default_universe[0],
+          symbols: catalog.default_universe,
+          start: start.toISOString(),
+          end: end.toISOString(),
+          strategy_type: "PORTFOLIO_CATALOG",
+          timeframe: "1Day",
+          initial_cash: BACKTEST_INITIAL_CASH,
+          parameters: {
+            strategy_key: selectedStrategy.key,
+            max_gross_exposure: settings.leverage,
+            max_net_exposure: settings.leverage,
+            max_symbol_weight: 1,
+          },
         },
-      });
+        (event) => {
+          if (event.type === "started") {
+            setBacktestStatus("Loading aligned daily bars...");
+            setBacktestProgress(0);
+            return;
+          }
+          if (event.type === "progress") {
+            setBacktestStatus("Running simulation...");
+            if (!receivedProgress) {
+              receivedProgress = true;
+              streamedPointCount = 1;
+              setStreamingEquityCurve([event.progress.point]);
+            } else {
+              streamedPointCount += 1;
+              setStreamingEquityCurve((points) => [
+                ...points,
+                event.progress.point,
+              ]);
+            }
+            setBacktestProgress(event.progress.percent);
+          }
+        },
+      );
       setBacktestResult(result);
+      if (streamedPointCount < result.equity_curve.length) {
+        setBacktestStatus("Rendering equity curve...");
+        await revealEquityCurve(result.equity_curve, streamedPointCount, {
+          setCurve: setStreamingEquityCurve,
+          setProgress: setBacktestProgress,
+        });
+      } else {
+        setStreamingEquityCurve(result.equity_curve);
+      }
+      setBacktestStatus("Backtest complete.");
+      setBacktestProgress(1);
     } catch (err) {
       setBacktestError(
         err instanceof Error
@@ -301,10 +340,7 @@ export default function OnboardingOverlay({
                 O(Alpha)
               </span>
             </h1>
-            <p className="text-sm sm:text-base font-light text-on-surface-variant/70 leading-relaxed mb-10">
-              Choose a risk profile, backtest a matching catalog strategy, then
-              accept the result to activate your paper agent workspace.
-            </p>
+            <p className="text-sm sm:text-base font-light text-on-surface-variant/70 leading-relaxed mb-10"></p>
             <button
               onClick={() => setStep(2)}
               className="px-8 py-3.5 bg-primary-container text-void-black font-mono font-medium text-xs tracking-wider uppercase rounded-full shadow-lg hover:bg-primary-fixed transition-all duration-300"
@@ -378,6 +414,16 @@ export default function OnboardingOverlay({
                 },
               )}
             </div>
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleProfileNext}
+                className="inline-flex items-center gap-2 px-7 py-3 rounded-full border border-outline-variant/35 bg-void-black/35 text-on-surface font-mono font-medium text-xs tracking-wider uppercase shadow-[0_12px_28px_rgba(0,0,0,0.28)] transition-all duration-300 hover:border-primary-fixed-dim/70 hover:bg-surface-container-high hover:text-primary-fixed-dim"
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
 
@@ -392,8 +438,7 @@ export default function OnboardingOverlay({
                   Backtest Your Chosen Strategy
                 </h2>
                 <p className="text-xs sm:text-sm font-light text-on-surface-variant/70 mt-2 max-w-2xl">
-                  Pick a catalog strategy from your {riskProfile} profile and
-                  run a 5-year paper backtest before onboarding is finalized.
+                  Run a 5-year backtest.
                 </p>
               </div>
               <button
@@ -401,18 +446,18 @@ export default function OnboardingOverlay({
                 disabled={isBacktesting || isSaving}
                 className="px-5 py-2.5 border border-outline-variant/30 text-on-surface-variant font-mono text-xs tracking-wider uppercase rounded-full hover:text-on-surface transition-colors"
               >
-                Change Profile
+                Back
               </button>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-6">
               <div className="flex flex-col gap-3">
                 <span className="text-[10px] font-mono tracking-[0.2em] text-on-surface-variant/50 uppercase">
-                  Catalog Strategies
+                  Strategies
                 </span>
                 {isCatalogLoading && (
                   <div className="rounded-2xl border border-outline-variant/20 bg-void-black/20 p-4 text-xs text-on-surface-variant/60">
-                    Loading catalog...
+                    Loading...
                   </div>
                 )}
                 {(strategiesForRisk.length > 0
@@ -477,8 +522,27 @@ export default function OnboardingOverlay({
                 </div>
 
                 <div className="min-h-[340px]">
-                  {backtestResult ? (
-                    <EquityCurveChart data={backtestResult.equity_curve} />
+                  {chartData.length > 0 ? (
+                    <div className="flex flex-col gap-2">
+                      <EquityCurveChart data={chartData} />
+                      {isBacktesting && (
+                        <div className="space-y-2">
+                          <div className="h-1.5 overflow-hidden rounded-full bg-void-black/40">
+                            <div
+                              className="h-full rounded-full bg-primary-fixed-dim transition-all duration-150"
+                              style={{
+                                width: `${Math.max(2, Math.round(backtestProgress * 100))}%`,
+                              }}
+                            />
+                          </div>
+                          {backtestStatus && (
+                            <p className="text-[10px] font-mono tracking-[0.18em] uppercase text-on-surface-variant/45">
+                              {backtestStatus}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   ) : (
                     <div className="h-80 w-full rounded-lg border border-outline-variant/20 bg-void-black/20 flex items-center justify-center text-center px-6">
                       <p className="text-xs font-mono tracking-[0.18em] uppercase text-on-surface-variant/45">
@@ -597,4 +661,25 @@ function equityReturn(result: BacktestResult) {
   const first = result.equity_curve[0].equity;
   const last = result.equity_curve[result.equity_curve.length - 1].equity;
   return first <= 0 ? 0 : (last - first) / first;
+}
+
+async function revealEquityCurve(
+  curve: EquityPoint[],
+  alreadyVisible: number,
+  setters: {
+    setCurve: (points: EquityPoint[]) => void;
+    setProgress: (progress: number) => void;
+  },
+) {
+  const total = curve.length;
+  if (total === 0) return;
+  const start = Math.max(1, Math.min(alreadyVisible, total));
+  const batchSize = Math.max(4, Math.ceil(total / 40));
+
+  for (let end = start; end < total; end = Math.min(total, end + batchSize)) {
+    const nextEnd = Math.min(total, end + batchSize);
+    setters.setCurve(curve.slice(0, nextEnd));
+    setters.setProgress(nextEnd / total);
+    await new Promise((resolve) => window.setTimeout(resolve, 24));
+  }
 }

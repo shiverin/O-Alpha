@@ -106,15 +106,15 @@ export function FeatureGrid() {
   }, []);
 
   return (
-    <section className="px-6 md:px-12 max-w-[1200px] mx-auto w-full py-24">
-      <div className="text-center mb-20 flex flex-col items-center">
+    <section className="px-6 md:px-12 max-w-[1200px] mx-auto w-full py-12 md:py-16">
+      <div className="text-center mb-10 md:mb-12 flex flex-col items-center">
         <span className="text-[10px] uppercase tracking-[0.3em] text-on-surface-variant font-medium mb-4 block">
           The Product
         </span>
         <h2 className="text-3xl md:text-5xl font-light tracking-tight text-on-background mb-6 max-w-2xl">
           Human intuition, <br className="hidden md:block" />
           <span className="text-on-surface-variant/60">
-            optmized to perfection.
+            optimized to perfection.
           </span>
         </h2>
       </div>

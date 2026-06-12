@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -330,6 +331,108 @@ func (h *Handler) runPortfolioBacktest(c *gin.Context, req models.BacktestReques
 		return
 	}
 	c.JSON(http.StatusOK, result)
+}
+
+type backtestStreamEvent struct {
+	Type     string                              `json:"type"`
+	Progress *backtest.PortfolioBacktestProgress `json:"progress,omitempty"`
+	Result   *backtest.PortfolioBacktestResult   `json:"result,omitempty"`
+	Error    string                              `json:"error,omitempty"`
+}
+
+// RunBacktestStream executes a portfolio backtest and streams equity points as NDJSON.
+func (h *Handler) RunBacktestStream(c *gin.Context) {
+	var req models.BacktestRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	req.StrategyType = strings.ToUpper(strings.TrimSpace(req.StrategyType))
+	if !isPortfolioBacktestStrategy(req.StrategyType) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "streaming backtests currently support portfolio strategies only"})
+		return
+	}
+
+	end := time.Now().UTC()
+	start := end.Add(-365 * 24 * time.Hour)
+	if req.Start != nil {
+		start = req.Start.UTC()
+	}
+	if req.End != nil {
+		end = req.End.UTC()
+	}
+	if req.Timeframe == "" {
+		req.Timeframe = "1Day"
+	}
+	initialCash := req.InitialCash
+	if initialCash <= 0 {
+		initialCash = 100000
+	}
+
+	symbols := normalizeRequestSymbols(req)
+	if len(symbols) < 2 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "portfolio backtests require at least two symbols"})
+		return
+	}
+	panel, err := h.repo.GetBarsMulti(c.Request.Context(), symbols, req.Timeframe, start, end, db.BarQueryOptions{
+		Feed:       req.Feed,
+		Adjustment: req.Adjustment,
+		AlignMode:  backtest.AlignInnerJoin,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if len(panel.Times) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "no aligned bars found for symbols"})
+		return
+	}
+	strategy, allowShorts, err := buildPortfolioStrategy(req, panel.Symbols)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Header("Content-Type", "application/x-ndjson")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("X-Accel-Buffering", "no")
+	c.Status(http.StatusOK)
+	encoder := json.NewEncoder(c.Writer)
+	writeEvent := func(event backtestStreamEvent) error {
+		if err := encoder.Encode(event); err != nil {
+			return err
+		}
+		if flusher, ok := c.Writer.(http.Flusher); ok {
+			flusher.Flush()
+		}
+		return nil
+	}
+	if err := writeEvent(backtestStreamEvent{Type: "started"}); err != nil {
+		return
+	}
+
+	cfg := backtest.PortfolioBacktestConfig{
+		InitialCash:      initialCash,
+		AllowShorts:      allowShorts,
+		MaxGrossExposure: floatParam(req.Parameters, "max_gross_exposure", 1),
+		MaxNetExposure:   floatParam(req.Parameters, "max_net_exposure", 1),
+		MaxSymbolWeight:  floatParam(req.Parameters, "max_symbol_weight", 1),
+		CostModel: backtest.CostModel{
+			DefaultSpreadBps:   floatParam(req.Parameters, "default_spread_bps", backtest.DefaultCostModel().DefaultSpreadBps),
+			SlippageBps:        floatParam(req.Parameters, "slippage_bps", backtest.DefaultCostModel().SlippageBps),
+			BorrowFeeBpsAnnual: floatParam(req.Parameters, "borrow_fee_bps_annual", backtest.DefaultCostModel().BorrowFeeBpsAnnual),
+			SECFeesBpsSell:     floatParam(req.Parameters, "sec_fees_bps_sell", backtest.DefaultCostModel().SECFeesBpsSell),
+		},
+		ProgressCallback: func(progress backtest.PortfolioBacktestProgress) error {
+			return writeEvent(backtestStreamEvent{Type: "progress", Progress: &progress})
+		},
+	}
+	result, err := backtest.RunPortfolioBacktest(c.Request.Context(), panel, strategy, cfg)
+	if err != nil {
+		_ = writeEvent(backtestStreamEvent{Type: "error", Error: err.Error()})
+		return
+	}
+	_ = writeEvent(backtestStreamEvent{Type: "completed", Result: result})
 }
 
 func buildPortfolioStrategy(req models.BacktestRequest, symbols []string) (backtest.PortfolioStrategy, bool, error) {
