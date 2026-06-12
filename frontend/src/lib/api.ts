@@ -49,6 +49,28 @@ export interface BacktestResult {
   num_trades?: number;
 }
 
+export interface BacktestProgress {
+  index: number;
+  total: number;
+  point: EquityPoint;
+  percent: number;
+}
+
+export type BacktestStreamEvent =
+  | { type: "started" }
+  | { type: "progress"; progress: BacktestProgress }
+  | { type: "completed"; result: BacktestResult }
+  | { type: "error"; error: string };
+
+const nextAnimationFrame = () =>
+  new Promise<void>((resolve) => {
+    if (typeof window !== "undefined" && window.requestAnimationFrame) {
+      window.requestAnimationFrame(() => resolve());
+      return;
+    }
+    setTimeout(resolve, 0);
+  });
+
 const getAuthHeaders = (): HeadersInit => {
   const token = typeof window !== "undefined" ? getToken() : null;
   const headers: HeadersInit = {
@@ -77,6 +99,71 @@ export async function runBacktest(
   }
 
   return res.json();
+}
+
+export async function runBacktestStream(
+  payload: BacktestRequest,
+  onEvent: (event: BacktestStreamEvent) => void,
+): Promise<BacktestResult> {
+  const res = await fetch(`${API_BASE}/api/v1/backtest/stream`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    if (res.status === 404 || res.status === 405) {
+      return runBacktest(payload);
+    }
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? `Backtest failed (${res.status})`);
+  }
+  if (!res.body) {
+    throw new Error("Backtest stream did not return a response body");
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let finalResult: BacktestResult | null = null;
+  let progressEventsSincePaint = 0;
+
+  const processLine = async (line: string) => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+    const event = JSON.parse(trimmed) as BacktestStreamEvent;
+    onEvent(event);
+    if (event.type === "completed") {
+      finalResult = event.result;
+    }
+    if (event.type === "error") {
+      throw new Error(event.error || "Backtest stream failed");
+    }
+    if (event.type === "progress") {
+      progressEventsSincePaint += 1;
+      if (progressEventsSincePaint >= 8) {
+        progressEventsSincePaint = 0;
+        await nextAnimationFrame();
+      }
+    }
+  };
+
+  while (true) {
+    const { value, done } = await reader.read();
+    buffer += decoder.decode(value, { stream: !done });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      await processLine(line);
+    }
+    if (done) break;
+  }
+  await processLine(buffer);
+
+  if (!finalResult) {
+    throw new Error("Backtest stream ended before returning a final result");
+  }
+  return finalResult;
 }
 
 export const api = {

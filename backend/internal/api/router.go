@@ -45,6 +45,7 @@ func NewRouter(h *Handler, cfg *config.Config) *gin.Engine {
 	v1 := r.Group("/api/v1")
 	{
 		v1.POST("/backtest", h.RunBacktest)
+		v1.POST("/backtest/stream", h.RunBacktestStream)
 
 		protected := v1.Group("")
 		protected.Use(authenticatedV1)

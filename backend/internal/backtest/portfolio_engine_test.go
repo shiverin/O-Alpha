@@ -90,6 +90,50 @@ func TestRunPortfolioBacktestExecutesTargetOnlyOnce(t *testing.T) {
 	}
 }
 
+func TestRunPortfolioBacktestEmitsProgress(t *testing.T) {
+	t0 := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	panel := oneSymbolPanel("TEST", []models.Bar{
+		{Time: t0, Symbol: "TEST", Open: 100, High: 100, Low: 100, Close: 100},
+		{Time: t0.Add(24 * time.Hour), Symbol: "TEST", Open: 100, High: 110, Low: 100, Close: 110},
+		{Time: t0.Add(48 * time.Hour), Symbol: "TEST", Open: 110, High: 120, Low: 110, Close: 120},
+	})
+	strategy := &scriptedPortfolioStrategy{
+		symbols: []string{"TEST"},
+		outputsByLength: map[int]PortfolioOutput{
+			1: targetOutput(t0, "TEST", 0.10),
+		},
+	}
+
+	var progress []PortfolioBacktestProgress
+	result, err := RunPortfolioBacktest(context.Background(), panel, strategy, PortfolioBacktestConfig{
+		InitialCash: 10000,
+		ProgressCallback: func(update PortfolioBacktestProgress) error {
+			progress = append(progress, update)
+			return nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("portfolio backtest: %v", err)
+	}
+	if len(progress) != len(result.EquityCurve) {
+		t.Fatalf("progress updates=%d, equity points=%d", len(progress), len(result.EquityCurve))
+	}
+	for i, update := range progress {
+		if update.Index != i {
+			t.Fatalf("progress[%d].Index=%d", i, update.Index)
+		}
+		if update.Total != len(panel.Times) {
+			t.Fatalf("progress[%d].Total=%d", i, update.Total)
+		}
+		if update.Point != result.EquityCurve[i] {
+			t.Fatalf("progress[%d].Point=%+v, want %+v", i, update.Point, result.EquityCurve[i])
+		}
+	}
+	if got := progress[len(progress)-1].Percent; got != 1 {
+		t.Fatalf("final progress percent=%v, want 1", got)
+	}
+}
+
 type scriptedPortfolioStrategy struct {
 	symbols         []string
 	outputsByLength map[int]PortfolioOutput

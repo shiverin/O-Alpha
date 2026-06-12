@@ -23,6 +23,7 @@ type PortfolioBacktestConfig struct {
 	MaxSymbolWeight  float64
 	CostModel        CostModel
 	RebalanceMode    RebalanceMode
+	ProgressCallback PortfolioBacktestProgressFunc
 }
 
 type PortfolioBacktestResult struct {
@@ -32,6 +33,17 @@ type PortfolioBacktestResult struct {
 	PositionCurve  []PortfolioSnapshot    `json:"position_curve"`
 	Metrics        PortfolioMetrics       `json:"metrics"`
 	EngineMetadata map[string]interface{} `json:"engine_metadata,omitempty"`
+}
+
+type PortfolioBacktestProgressFunc func(PortfolioBacktestProgress) error
+
+type PortfolioBacktestProgress struct {
+	Index    int                `json:"index"`
+	Total    int                `json:"total"`
+	Point    models.EquityPoint `json:"point"`
+	Snapshot PortfolioSnapshot  `json:"snapshot"`
+	Trades   []SimulatedTrade   `json:"trades,omitempty"`
+	Percent  float64            `json:"percent"`
 }
 
 type SimulatedTrade struct {
@@ -101,9 +113,9 @@ func RunPortfolioBacktest(
 	var turnoverValue float64
 
 	for i := range panel.Times {
+		var fills []SimulatedTrade
 		if i > 0 && len(pendingTargets) > 0 {
 			openPrices := pricesAt(panel, i, true)
-			var fills []SimulatedTrade
 			var pnls []float64
 			cash, positions, fills, pnls = executePortfolioRebalance(panel.Times[i], cash, positions, openPrices, pendingTargets, cfg)
 			trades = append(trades, fills...)
@@ -116,10 +128,24 @@ func RunPortfolioBacktest(
 
 		closePrices := pricesAt(panel, i, false)
 		snapshot := buildPortfolioSnapshot(panel.Times[i], cash, positions, closePrices)
-		equityCurve = append(equityCurve, models.EquityPoint{Time: panel.Times[i], Equity: snapshot.Equity})
+		point := models.EquityPoint{Time: panel.Times[i], Equity: snapshot.Equity}
+		equityCurve = append(equityCurve, point)
 		positionCurve = append(positionCurve, snapshot)
 		grossExposures = append(grossExposures, snapshot.GrossExposure)
 		netExposures = append(netExposures, snapshot.NetExposure)
+		if cfg.ProgressCallback != nil {
+			progress := PortfolioBacktestProgress{
+				Index:    i,
+				Total:    len(panel.Times),
+				Point:    point,
+				Snapshot: snapshot,
+				Trades:   append([]SimulatedTrade(nil), fills...),
+				Percent:  float64(i+1) / float64(len(panel.Times)),
+			}
+			if err := cfg.ProgressCallback(progress); err != nil {
+				return nil, err
+			}
+		}
 
 		if i < len(panel.Times)-1 {
 			prefix := panelPrefix(panel, i+1)
