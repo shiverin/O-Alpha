@@ -103,6 +103,8 @@ export default function DashboardPage() {
 
   const isAgentActive =
     currentUserID === 999 ? isDemoAgentActive : Boolean(activePortfolioAgent);
+  const liveStreamEnabled =
+    currentUserID !== 999 && Boolean(activePortfolioAgent);
 
   const regimeLabel = useMemo(() => {
     const label = activePortfolioAgent?.runtime_state?.regime_label;
@@ -119,7 +121,7 @@ export default function DashboardPage() {
   }, [serverPositions]);
 
   useEffect(() => {
-    if (currentUserID === 999) return;
+    if (!liveStreamEnabled) return;
 
     const controller = new AbortController();
     streamPortfolioLive((event) => {
@@ -160,7 +162,7 @@ export default function DashboardPage() {
     });
 
     return () => controller.abort();
-  }, [currentUserID, mutateHistory, mutatePositions, mutateSummary]);
+  }, [liveStreamEnabled, mutateHistory, mutatePositions, mutateSummary]);
 
   useEffect(() => {
     if (!strategyCatalog) return;

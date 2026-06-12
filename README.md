@@ -135,13 +135,14 @@ Important variables:
 | Variable | Purpose |
 | --- | --- |
 | `DATABASE_URL` | PostgreSQL/Supabase connection string |
-| `DB_MAX_CONNS` | Max PostgreSQL pool connections per process, default `3` for Supabase pooler safety |
+| `DB_MAX_CONNS` | Max PostgreSQL pool connections per process, default `2` for Supabase pooler safety |
 | `DB_MIN_CONNS` | Min idle PostgreSQL pool connections per process, default `0` |
 | `DB_MAX_CONN_IDLE_TIME` | Idle connection close delay, default `1m` |
 | `DB_MAX_CONN_LIFETIME` | Max connection lifetime, default `30m` |
 | `REDIS_URL` | Redis connection string |
 | `MIGRATIONS_PATH` | Migration path, usually `file://../migrations` locally |
 | `HTTP_ADDR` | API bind address, usually `:8080` |
+| `CORS_ALLOWED_ORIGINS` | Comma-separated frontend origins, default includes `localhost`, `127.0.0.1`, and `[::1]` on port `3000` |
 | `NEXT_PUBLIC_API_URL` | Frontend API base URL |
 | `INGEST_SYMBOLS` | Comma-separated market-data universe |
 | `INGEST_INTERVAL` | Ingest interval, usually `1Day` for portfolio strategies |

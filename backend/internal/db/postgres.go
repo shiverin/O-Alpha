@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	defaultMaxDBConns = 3
+	defaultMaxDBConns = 2
 	defaultMinDBConns = 0
 )
 

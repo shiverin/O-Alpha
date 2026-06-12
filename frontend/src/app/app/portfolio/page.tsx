@@ -105,6 +105,8 @@ export default function PortfolioPage() {
     fetcher,
     { refreshInterval: REALTIME_REFRESH_MS },
   );
+  const liveStreamEnabled =
+    currentUserID !== 999 && Boolean(serverPositions?.length);
 
   useEffect(() => {
     if (serverPositions) {
@@ -144,7 +146,7 @@ export default function PortfolioPage() {
   );
 
   useEffect(() => {
-    if (currentUserID === 999) return;
+    if (!liveStreamEnabled) return;
 
     const controller = new AbortController();
     streamPortfolioLive((event) => {
@@ -197,8 +199,8 @@ export default function PortfolioPage() {
 
     return () => controller.abort();
   }, [
-    currentUserID,
     flashPositionRow,
+    liveStreamEnabled,
     mutateHistory,
     mutatePositions,
     mutateSummary,
