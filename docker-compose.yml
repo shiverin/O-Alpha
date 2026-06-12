@@ -62,9 +62,10 @@ services:
     environment:
       DATABASE_URL: postgres://oalpha:dev@timescale:5432/oalpha?sslmode=disable
       MIGRATIONS_PATH: file:///migrations
-      INGEST_SYMBOLS: AAPL
-      INGEST_INTERVAL: 1h
-      INGEST_LOOKBACK: 17520h
+      INGEST_SYMBOLS: ${INGEST_SYMBOLS}
+      INGEST_INTERVAL: ${INGEST_INTERVAL:-1Day}
+      INGEST_LOOKBACK: ${INGEST_LOOKBACK:-100000h}
+      INGEST_RUN_ONCE: ${INGEST_RUN_ONCE:-false}
     volumes:
       - ./migrations:/migrations:ro
     depends_on:
