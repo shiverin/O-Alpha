@@ -9,6 +9,7 @@ import Link from "next/link";
 import { BrandMark } from "../BrandMark";
 import { LoginModal } from "../auth/LoginModal";
 import { PillButton } from "../PillButton";
+import { isAuthenticated } from "@/lib/auth";
 
 type NavLink = {
   label: string;
@@ -42,6 +43,14 @@ export function SiteHeader({
   const setLoginOpen = onLoginModalOpenChange || setInternalLoginOpen;
 
   const router = useRouter();
+
+  const handleLaunchApp = () => {
+    if (isAuthenticated()) {
+      router.push("/app/dashboard");
+      return;
+    }
+    setLoginOpen(true);
+  };
 
   const links = navLinks.map((link) => ({
     ...link,
@@ -103,7 +112,7 @@ export function SiteHeader({
           <PillButton
             className="scale-95 active:scale-90"
             size="sm"
-            onClick={() => router.push("/app/dashboard")}
+            onClick={handleLaunchApp}
           >
             Launch App
           </PillButton>
@@ -156,7 +165,7 @@ export function SiteHeader({
               size="sm"
               onClick={() => {
                 setMenuOpen(false);
-                router.push("/app/dashboard");
+                handleLaunchApp();
               }}
             >
               Launch App
