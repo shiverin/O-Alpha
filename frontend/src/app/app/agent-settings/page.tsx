@@ -160,11 +160,11 @@ export default function AgentSettingsPage() {
 
   const profileDescriptions = {
     conservative:
-      "Prioritizes structural capital preservation. Minimizes drawdown lengths using tight trailing stops and allocation focuses strictly on low-beta asset pairings.",
+      "Prioritizes capital preservation with lower exposure, fewer active positions, and slower rebalance cadence.",
     moderate:
-      "Engineered for optimal risk-adjusted discovery. Deploys dynamic position scaling rules and active momentum tracking filters to navigate regime transitions.",
+      "Balances active sleeve discovery with moderate exposure, daily cadence, and standard exit controls.",
     aggressive:
-      "Optimized for high-volatility statistical arbitrage workflows. Executes maximum leverage thresholds alongside complex options configurations to yield convex returns.",
+      "Allows wider paper-risk limits for comparison runs while keeping catalog strategy recipes unchanged.",
   };
 
   return (
@@ -273,7 +273,7 @@ export default function AgentSettingsPage() {
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between text-[11px] font-mono tracking-wider text-on-surface-variant">
                   <span className="uppercase tracking-widest">
-                    Maximum Leverage
+                    Max Gross Exposure
                   </span>
                   <span className="text-primary-container font-semibold">
                     {leverage}x
@@ -292,10 +292,10 @@ export default function AgentSettingsPage() {
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between text-[11px] font-mono tracking-wider text-on-surface-variant">
                   <span className="uppercase tracking-widest">
-                    Max Concurrent Boundaries
+                    Max Active Positions
                   </span>
                   <span className="text-primary-container font-semibold">
-                    {maxPositions} Units
+                    {maxPositions} Positions
                   </span>
                 </div>
                 <input
@@ -310,7 +310,7 @@ export default function AgentSettingsPage() {
 
               <div className="flex flex-col gap-3 border-t border-outline-variant/10 pt-4 mt-2">
                 <span className="text-[10px] font-mono tracking-[0.2em] text-on-surface-variant/50 uppercase">
-                  Execution Frequency
+                  Rebalance Cadence
                 </span>
                 <div className="grid grid-cols-3 gap-2 bg-void-black/20 p-1 rounded-xl border border-outline-variant/10">
                   {(["hourly", "daily", "weekly"] as const).map((freq) => {
@@ -338,7 +338,7 @@ export default function AgentSettingsPage() {
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between text-[11px] font-mono tracking-wider text-on-surface-variant">
                   <span className="uppercase tracking-widest">
-                    Stop Loss Boundary
+                    Stop-Loss Exit
                   </span>
                   <span className="text-error font-medium">-{stopLoss}%</span>
                 </div>
@@ -356,7 +356,7 @@ export default function AgentSettingsPage() {
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between text-[11px] font-mono tracking-wider text-on-surface-variant">
                   <span className="uppercase tracking-widest">
-                    Take Profit Target
+                    Take-Profit Exit
                   </span>
                   <span className="text-primary-fixed-dim font-medium">
                     +{takeProfit}%
@@ -374,9 +374,8 @@ export default function AgentSettingsPage() {
               </div>
 
               <div className="bg-white/[0.01] border border-outline-variant/10 rounded-xl p-3.5 text-[11px] font-light text-on-surface-variant/50 leading-relaxed mt-1">
-                System triggers are updated dynamically across active execution
-                loops. Hard targets decouple from standard client frames to
-                prevent slippage anomalies.
+                Saved controls are applied to catalog paper agents on their next
+                evaluation tick. Strategy recipes stay unchanged.
               </div>
             </div>
           </div>

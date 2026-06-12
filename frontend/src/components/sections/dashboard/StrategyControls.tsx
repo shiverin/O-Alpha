@@ -1,88 +1,52 @@
+type RiskProfile = "conservative" | "moderate" | "aggressive";
+
 interface StrategyControlsProps {
-  riskTolerance: number;
-  setRiskTolerance: (value: number) => void;
-  volatilityCap: number;
-  setVolatilityCap: (value: number) => void;
-  leverageMultiplier: number;
-  setLeverageMultiplier: (value: number) => void;
-  calculatedLeverageText: string;
+  riskProfile: RiskProfile;
+  universeSize: number;
 }
 
 export default function StrategyControls({
-  riskTolerance,
-  setRiskTolerance,
-  volatilityCap,
-  setVolatilityCap,
-  leverageMultiplier,
-  setLeverageMultiplier,
-  calculatedLeverageText,
+  riskProfile,
+  universeSize,
 }: StrategyControlsProps) {
   return (
     <div className="md:col-span-12 xl:col-span-4 group relative flex flex-col h-auto xl:h-[460px] bg-surface-container-low border border-outline-variant/30 rounded-[32px] p-5 sm:p-8 overflow-hidden hover:bg-surface-container transition-all duration-700 hover:shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
-      <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-secondary-fixed-dim/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-
       <div className="mb-6 xl:mb-8 border-b border-outline-variant/20 pb-4 flex items-center justify-between">
         <h3 className="text-[10px] font-medium tracking-[0.2em] text-on-surface uppercase">
-          Strategy Controls
+          Strategy Profile
         </h3>
         <span className="text-[9px] text-primary-container uppercase tracking-wider">
-          Sync Active
+          Paper
         </span>
       </div>
 
-      <div className="flex flex-col gap-6 flex-grow justify-center py-4 xl:py-0">
-        <div className="flex flex-col gap-2">
-          <div className="flex justify-between text-[10px] font-medium tracking-wider text-on-surface-variant">
-            <span>Risk Tolerance</span>
-            <span className="text-primary-container">
-              {riskTolerance > 75
-                ? "High"
-                : riskTolerance > 40
-                  ? "Balanced"
-                  : "Conservative"}
+      <div className="flex flex-col justify-center flex-grow gap-4 py-4 xl:py-0">
+        <div className="rounded-2xl border border-outline-variant/15 bg-void-black/15 px-4 py-4">
+          <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-on-surface-variant/50">
+            Risk Profile
+          </p>
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <span className="text-lg font-light capitalize tracking-wide text-on-surface">
+              {riskProfile}
             </span>
           </div>
-          <input
-            type="range"
-            min="1"
-            max="100"
-            value={riskTolerance}
-            onChange={(e) => setRiskTolerance(parseInt(e.target.value))}
-            className="w-full h-[2px] appearance-none bg-outline-variant/30 rounded-full outline-none accent-primary-container cursor-pointer"
-          />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <div className="flex justify-between text-[10px] font-medium tracking-wider text-on-surface-variant">
-            <span>Volatility Cap</span>
-            <span className="text-primary-container">{volatilityCap}%</span>
-          </div>
-          <input
-            type="range"
-            min="5"
-            max="50"
-            value={volatilityCap}
-            onChange={(e) => setVolatilityCap(parseInt(e.target.value))}
-            className="w-full h-[2px] appearance-none bg-outline-variant/30 rounded-full outline-none accent-primary-container cursor-pointer"
-          />
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <div className="flex justify-between text-[10px] font-medium tracking-wider text-on-surface-variant">
-            <span>Leverage Multiplier</span>
-            <span className="text-secondary-fixed">
-              {calculatedLeverageText}
+        <div className="rounded-2xl border border-outline-variant/15 bg-void-black/15 px-4 py-4">
+          <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-on-surface-variant/50">
+            Asset Universe
+          </p>
+          <div className="mt-2 flex items-baseline justify-between gap-3">
+            <span className="font-mono text-lg tracking-wide text-on-surface">
+              {universeSize || 0}
+            </span>
+            <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-on-surface-variant/60">
+              Symbols
             </span>
           </div>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={leverageMultiplier}
-            onChange={(e) => setLeverageMultiplier(parseInt(e.target.value))}
-            className="w-full h-[2px] appearance-none bg-outline-variant/30 rounded-full outline-none accent-secondary-fixed-dim cursor-pointer"
-          />
         </div>
+
+        <div className="h-px bg-outline-variant/20" />
       </div>
     </div>
   );

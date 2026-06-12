@@ -66,8 +66,8 @@ export function PerformancePage() {
       const result = await runBacktest(payload);
       setData(result.equity_curve);
       setBacktestMetrics({
-        sharpeRatio: result.sharpe,
-        maxDrawdown: result.max_drawdown,
+        sharpeRatio: result.sharpe ?? null,
+        maxDrawdown: result.max_drawdown ?? null,
       });
     } catch (err) {
       setData(DEFAULT_EQUITY_CURVE);

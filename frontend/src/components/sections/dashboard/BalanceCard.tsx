@@ -11,6 +11,7 @@ interface BalanceCardProps {
   isAgentActive: boolean;
   displayPnL: string;
   historyData?: SnapshotPoint[];
+  regimeLabel?: string;
 }
 
 const FLATLINE_Y = 70;
@@ -23,6 +24,7 @@ export default function BalanceCard({
   isAgentActive,
   displayPnL,
   historyData,
+  regimeLabel,
 }: BalanceCardProps) {
   const chartCoordinates = useMemo(() => {
     if (!historyData || historyData.length < 2) {
@@ -66,11 +68,11 @@ export default function BalanceCard({
             className={`w-2.5 h-2.5 rounded-full shadow-[0_0_10px_rgba(0,240,255,0.4)] ${isAgentActive ? "bg-primary-fixed-dim animate-pulse" : "bg-on-surface-variant/40"}`}
           />
           <span className="text-[10px] font-medium tracking-[0.2em] text-on-surface uppercase">
-            Agent Status: {isAgentActive ? "Optimising" : "Idle"}
+            Agent Status: {isAgentActive ? "Running" : "Inactive"}
           </span>
         </div>
         <span className="px-2.5 py-0.5 bg-white/[0.02] border border-outline-variant/30 rounded-full text-[9px] font-medium tracking-widest text-secondary-fixed">
-          REGIME: VOLATILE
+          REGIME: {isAgentActive ? regimeLabel || "Calculating" : "Inactive"}
         </span>
       </div>
 
