@@ -1,273 +1,289 @@
 # O(Alpha)
 
-Quantitative research and paper-trading platform featuring a Go backend and a Next.js frontend.
+O(Alpha) is a quantitative research and paper-trading platform for validating portfolio strategies before they ever touch real execution.
 
----
+It combines a Go research and trading backend, a Next.js dashboard, PostgreSQL/TimescaleDB market-data storage, and a strict validation workflow. The project is intentionally paper-only: strategy candidates are researched, stress-tested, promoted into a catalog, and then run through persisted paper fills, positions, snapshots, and alerts.
 
-# Architecture & Tech Stack
+## Highlights
 
-| Layer         | Technology                             |
-| ------------- | -------------------------------------- |
-| Frontend      | Next.js (React / TypeScript)           |
-| Backend       | Go 1.23 (Gin, zerolog, golang-migrate) |
-| Database      | PostgreSQL + TimescaleDB               |
-| Cache / Queue | Redis                                  |
-| Orchestration | Docker Compose                         |
+- Validated alpha workflow: research reports are written to `reports/batches/` and promotion decisions come from the harness, not hand-entered metrics.
+- Portfolio-agent paper trading: one active agent per user, one chosen catalog strategy, daily-bar evaluation, deterministic fill idempotency, and DB-backed account state.
+- Real dashboard state: portfolio summary, positions, allocation, execution log, alerts, and regime labels are read from backend state.
+- Curated default universe: Yahoo100-style equity/ETF universe with `VOO` included as the portfolio benchmark anchor.
+- Artifact-aware ranker strategies: LGBM rankers read local model artifacts and fail closed when required artifacts are missing.
+- Local or containerized development: run against Supabase locally, or bring up TimescaleDB, Redis, API, ingest, and frontend with Docker Compose.
 
----
+## What It Does
 
-# Database & Deployment Scenarios
+O(Alpha) has two main loops:
 
-Choose the setup scenario that matches your development workflow.
+1. Research loop: run strategy candidates through the Go validation harness, including walk-forward folds, costs, PBO/DSR checks, benchmark comparisons, and promotion gates.
+2. Paper-trading loop: start a catalog strategy from the dashboard/API, evaluate on daily bars, reconcile target weights into paper fills, and persist the resulting state for the dashboard.
 
-| Scenario             | Database                    | Configuration Template | Run Command                    |
-| -------------------- | --------------------------- | ---------------------- | ------------------------------ |
-| 1. Local Development | Cloud (Supabase)            | `.env.local`           | `make run-api` + `npm run dev` |
-| 2. Docker Full Stack | Local Container (Timescale) | `.env.docker`          | `make up`                      |
-| 3. Docker + Cloud DB | Cloud (Supabase)            | Custom `.env`          | `docker compose up -d --build` |
+The current production-facing paper flow is the portfolio catalog path:
 
----
+- `GET /api/v1/strategies/catalog`
+- `POST /api/v1/agent/portfolio/start`
+- `POST /api/v1/agent/portfolio/stop`
+- `GET /api/v1/agent/list`
+- `GET /api/v1/user/portfolio/summary`
+- `GET /api/v1/user/portfolio/positions`
+- `GET /api/v1/user/portfolio/trades`
+- `GET /api/v1/user/portfolio/alerts`
 
-# Getting Started: Step-by-Step
+## Tech Stack
 
-## Option 1: Local Development (Go + Next.js with Supabase)
+| Layer | Technology |
+| --- | --- |
+| Frontend | Next.js, React, TypeScript, Tailwind |
+| Backend | Go, Gin, zerolog, golang-migrate |
+| Database | PostgreSQL with TimescaleDB-compatible schema |
+| Cache / queue | Redis |
+| Market data | Alpaca and Yahoo daily ingestion paths |
+| Orchestration | Docker Compose |
 
-Best for rapid code changes, debugging, and utilizing the VS Code debugger.
+## Repository Map
 
-### 1. Initialize the configuration file
+```text
+backend/                 Go API, research CLIs, portfolio agent, DB repositories
+frontend/                Next.js dashboard
+migrations/              SQL migrations
+reports/batches/         Committed validation and parity artifacts
+docs/                    Research log, plan, and blockers
+scripts/                 Utility scripts
+docker-compose.yml       Local full-stack orchestration
+```
+
+## Quick Start
+
+### Option 1: Local API + Frontend With Supabase
+
+Use this when you want fast backend/frontend iteration while storing data in Supabase.
 
 ```bash
 make setup-local
 ```
 
-This copies `.env.local` to `.env`.
-
-### 2. Configure your Supabase URL
-
-Open the newly generated `.env` file and update the `DATABASE_URL` with your Supabase connection string:
+Edit `.env` and set at least:
 
 ```env
 DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@db.YOUR_PROJECT_REF.supabase.co:5432/postgres?sslmode=require
+REDIS_URL=redis://localhost:6379
+ALPACA_API_KEY=YOUR_ALPACA_KEY
+ALPACA_API_SECRET=YOUR_ALPACA_SECRET
 ```
 
-### 3. Run database migrations
+Run migrations and start the services:
 
 ```bash
 make migrate
-```
-
-Executes migrations against your cloud database.
-
-### 4. Start the services
-
-#### Terminal 1 — Backend API
-
-```bash
 make run-api
 ```
 
-#### Terminal 2 — Frontend UI
+In another terminal:
 
 ```bash
-cd frontend && npm run dev
+cd frontend
+npm install
+npm run dev
 ```
 
----
+Open `http://localhost:3000`.
 
-## Option 2: Docker Deployment (Full Local Stack)
+### Option 2: Full Docker Stack
 
-Best for evaluating the environment cleanly without needing local database installations.
-
-### 1. Initialize the configuration file
+Use this when you want a clean local stack with containerized TimescaleDB, Redis, API, ingest, and frontend.
 
 ```bash
 make setup-docker
 ```
 
-This copies `.env.docker` to `.env`.
-
-### 2. Add your Alpaca Paper Trading Credentials
-
-Open `.env` and fill out:
+Edit `.env` and add Alpaca credentials if you want live data ingestion:
 
 ```env
-ALPACA_API_KEY=YOUR_KEY
-ALPACA_API_SECRET=YOUR_SECRET
+ALPACA_API_KEY=YOUR_ALPACA_KEY
+ALPACA_API_SECRET=YOUR_ALPACA_SECRET
 ```
 
-### 3. Spin up the entire stack
+Start everything:
 
 ```bash
 make up
 ```
 
-Launches isolated containers for:
-
-- TimescaleDB
-- Redis
-- API
-- Ingest
-- Frontend
-
----
-
-## Option 3: Docker Orchestration with Supabase
-
-Best for reproducing staging environments locally while pointing to persistent cloud storage.
-
-### 1. Initialize the template
+Useful follow-ups:
 
 ```bash
-make setup-local
+make logs
+make db-shell
+make down
 ```
 
-### 2. Modify your `.env` variables for container cross-communication
+## Environment
 
-Update `DATABASE_URL` to point to your Supabase connection string.
+`.env` is the active runtime file and should not be committed.
 
-### 3. Critical Redis configuration change
+| File | Purpose |
+| --- | --- |
+| `.env.example` | Safe reference template |
+| `.env.local` | Local development template, typically Supabase |
+| `.env.docker` | Docker Compose template |
+| `.env` | Active runtime config |
 
-⚠️ **IMPORTANT:** Change `REDIS_URL` from `localhost` to the Docker network service name:
+Important variables:
+
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | PostgreSQL/Supabase connection string |
+| `REDIS_URL` | Redis connection string |
+| `MIGRATIONS_PATH` | Migration path, usually `file://../migrations` locally |
+| `HTTP_ADDR` | API bind address, usually `:8080` |
+| `NEXT_PUBLIC_API_URL` | Frontend API base URL |
+| `INGEST_SYMBOLS` | Comma-separated market-data universe |
+| `INGEST_INTERVAL` | Ingest interval, usually `1Day` for portfolio strategies |
+| `INGEST_LOOKBACK` | Backfill lookback duration |
+| `INGEST_RUN_ONCE` | Whether ingest exits after one pass |
+| `OALPHA_DAILY_RANKER_ARTIFACT_ROOT` | Local root for LGBM ranker model artifacts |
+| `OALPHA_DAILY_RANKER_PIT_UNIVERSE` | Optional point-in-time universe file |
+
+For local ranker artifacts, mount or point:
 
 ```env
-REDIS_URL=redis://redis:6379
+OALPHA_DAILY_RANKER_ARTIFACT_ROOT=/var/lib/oalpha/models/fold_artifacts
 ```
 
-If left as `localhost`, the containerized API will search for Redis internally within its own loopback interface instead of routing to the Redis container.
+Do not store large model blobs in Postgres. Use local mounts for development and object storage plus `ml_model_artifacts.artifact_uri` as the deployment registry path.
 
-### 4. Spin up the containers
+## Market Data
 
-```bash
-docker compose up -d --build
-```
+The portfolio agent expects daily bars for the curated universe. Ingest is controlled by `INGEST_SYMBOLS`, `INGEST_INTERVAL`, and `INGEST_LOOKBACK`.
 
----
-
-# Environment File & Variables Guide
-
-## File Precedence Rules
-
-```text
-.env
-  ↓
-.env.local
-.env.docker
-```
-
-### Explanation
-
-| File          | Purpose                                             |
-| ------------- | --------------------------------------------------- |
-| `.env`        | Active runtime file — never commit to Git           |
-| `.env.local`  | Template for Local Development / Supabase           |
-| `.env.docker` | Template for Local Docker Containerized Development |
-
----
-
-# Connection Reference Table
-
-| Variable              | Local Dev Setup (Option 1)                   | Docker Container Setup (Option 2 & 3)                         |
-| --------------------- | -------------------------------------------- | ------------------------------------------------------------- |
-| `DATABASE_URL`        | Cloud URL or `postgres://localhost:5432/...` | `postgres://oalpha:dev@timescale:5432/oalpha?sslmode=disable` |
-| `REDIS_URL`           | `redis://localhost:6379`                     | `redis://redis:6379`                                          |
-| `MIGRATIONS_PATH`     | `file://migrations`                          | `file:///migrations`                                          |
-| `HTTP_ADDR`           | `:8080`                                      | `:8080`                                                       |
-| `NEXT_PUBLIC_API_URL` | `http://localhost:8080`                      | `http://localhost:8080`                                       |
-
----
-
-# Smart Variable Substitutions
-
-Your `docker-compose.yml` includes flexible variable defaults.
-
-If `DATABASE_URL` or `REDIS_URL` are not explicitly defined inside the active `.env` file, Docker automatically falls back to the internal local service architecture.
-
----
-
-# Data Ingestion & Verification
-
-Database migrations are designed to run safely during container or service initialization.
-
-## Triggering the Data Ingestion Routine
-
-Financial market ingestion behavior is controlled through:
-
-- `INGEST_SYMBOLS`
-- `INGEST_INTERVAL`
-- `INGEST_LOOKBACK`
-
-inside the `.env` file.
-
-### Local Execution
+Run one local ingest worker:
 
 ```bash
 make run-ingest
 ```
 
-### Docker Execution
+Run the Docker ingest service:
 
 ```bash
 docker compose run ingest
 ```
 
----
-
-# Verifying Active Table Content
-
-To inspect your local Timescale database container directly:
+Verify local container data:
 
 ```bash
 make db-shell
 ```
 
----
+For Supabase or another remote database, connect with your normal SQL client and inspect the bars, positions, fills, snapshots, and alerts tables.
 
-# Troubleshooting Checklist
+## Research Workflow
 
-## "Can't connect to database / Connection Refused"
+Research results are only real when they trace to committed artifacts under `reports/batches/`.
 
-### Supabase
-
-Ensure `sslmode=require` is appended to the end of your database connection string.
-
-### Local Engine
-
-Verify that:
-
-- Your local Redis daemon is running:
+Primary validation loop:
 
 ```bash
-redis-server
+cd backend
+go run ./cmd/alpha-research \
+  -symbols "AAPL,MSFT,..." \
+  -strategies "all" \
+  -timeframe 1Day \
+  -from 2015-01-01 \
+  -to 2025-12-31 \
+  -train-bars 756 \
+  -test-bars 126 \
+  -step-bars 126 \
+  -min-trades 30
 ```
 
-- Or confirm containers are healthy:
+Useful research commands:
 
 ```bash
-make logs
+cd backend
+go run ./cmd/backtest -help
+go run ./cmd/ml-meta-research -help
+go run ./cmd/hmm-exit-research -help
+go run ./cmd/paper-ranker-signal -help
 ```
 
----
+Promotion is fail-closed. A candidate is not considered promotable unless the validation gate passes with PBO estimated, sufficient out-of-sample trades, benchmark-aware risk improvement, cost stress, and data-quality checks. See `AGENTS.md`, `docs/RESEARCH_LOG.md`, and `reports/batches/` for the operating rules and evidence trail.
 
-## "Wrong Host / Port Configurations"
+## Paper Trading Flow
 
-### VS Code (Local Engine)
+1. Ingest or sync daily bars for the curated universe.
+2. Start the API and frontend.
+3. Open the dashboard and complete onboarding by selecting a risk profile and approved catalog strategy.
+4. Start the portfolio agent.
+5. The agent warms up on daily bars, evaluates immediately, writes target-weight paper fills, updates positions/snapshots, and records alerts.
+6. The dashboard reads state from the database-backed API endpoints.
 
-Use explicit `localhost` endpoints instead of strict loopback aliases like `127.0.0.1`.
+The v1 execution router is long-only. It sells reductions before buys, uses deterministic `client_order_id` keys for idempotency, and writes a portfolio snapshot on every evaluation.
 
-### Docker
+## Testing
 
-Ensure services communicate using internal Docker service names:
+Backend:
 
-- `timescale`
-- `redis`
+```bash
+cd backend
+go test ./...
+```
 
-instead of `localhost`.
+Frontend:
 
----
+```bash
+cd frontend
+npm run lint -- --no-cache
+npm run typecheck
+```
 
-# Maintainers
+Full-stack smoke checklist:
 
-Project maintained by:
+```text
+1. Run migrations.
+2. Ingest daily bars for the configured universe.
+3. Start API and frontend.
+4. Confirm /api/v1/strategies/catalog returns the expected catalog and universe.
+5. Start a low-risk catalog strategy.
+6. Confirm /api/v1/agent/list shows an active run.
+7. Confirm positions, fills, portfolio summary, allocation, and alerts update.
+8. Restart the API and confirm stale active runs are reconciled.
+```
+
+## Troubleshooting
+
+### Database connection refused
+
+- Supabase URLs usually need `sslmode=require`.
+- Local Docker services should use internal hostnames such as `timescale` and `redis`.
+- Local non-Docker services usually use `localhost`.
+
+### Redis connection fails in Docker
+
+Use:
+
+```env
+REDIS_URL=redis://redis:6379
+```
+
+not `localhost`, because `localhost` inside a container points at that container.
+
+### LGBM ranker will not start
+
+Check that `OALPHA_DAILY_RANKER_ARTIFACT_ROOT` points to the mounted artifact directory and that the required model files exist. The API intentionally fails closed rather than silently falling back to the proxy strategy.
+
+### Dashboard stays idle
+
+Check:
+
+- the user is authenticated,
+- onboarding is complete,
+- a strategy was accepted after backtest,
+- `/api/v1/agent/list` returns an active run,
+- daily bars exist for the configured universe.
+
+## Maintainers
 
 - Tan Jia Jun
 - Zhao Shi Zhen
