@@ -31,18 +31,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
         return;
       }
+      if (token.endsWith(".offline-demo-signature")) {
+        removeToken();
+        setLoading(false);
+        return;
+      }
 
       const decoded = decodeToken(token);
       if (decoded) {
         // Optimistically hydrate user state from token while backend validation runs.
         setUser(decoded);
-      }
-
-      const isLocalDemoToken =
-        token.endsWith(".offline-demo-signature") && decoded?.id === 999;
-      if (decoded && isLocalDemoToken) {
-        setLoading(false);
-        return;
       }
 
       try {
@@ -56,19 +54,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           username: response.username,
           is_onboarded: response.is_onboarded,
         });
-      } catch (err) {
-        const isNetworkError =
-          err instanceof TypeError ||
-          (err instanceof Error &&
-            /Failed to fetch|NetworkError/i.test(err.message));
-
-        if (decoded && decoded.id === 999 && isNetworkError) {
-          // Keep token-backed session for local/demo mode when backend is down.
-          setUser(decoded);
-        } else {
-          removeToken();
-          setUser(null);
-        }
+      } catch {
+        removeToken();
+        setUser(null);
       } finally {
         setLoading(false);
       }

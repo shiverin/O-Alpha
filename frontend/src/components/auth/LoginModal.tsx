@@ -5,7 +5,6 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Panel } from "@/components/ui/Panel";
 import { Icon } from "@/components/ui/Icon";
-import { setToken } from "@/lib/auth";
 import { useAuth } from "@/context/AuthContext";
 
 type LoginModalProps = {
@@ -52,25 +51,6 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
 
   if (!isOpen || !mounted) return null;
 
-  const createLocalDemoToken = (): string => {
-    const encode = (value: object) =>
-      btoa(JSON.stringify(value))
-        .replace(/\+/g, "-")
-        .replace(/\//g, "_")
-        .replace(/=+$/g, "");
-
-    const now = Math.floor(Date.now() / 1000);
-    const header = encode({ alg: "HS256", typ: "JWT" });
-    const payload = encode({
-      user_id: 999,
-      username: "demouser",
-      exp: now + 60 * 60 * 24,
-      iat: now,
-    });
-
-    return `${header}.${payload}.offline-demo-signature`;
-  };
-
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!canSubmit) return;
@@ -88,27 +68,6 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
         setError(err.message);
       } else {
         setError("Login failed. Please check your credentials.");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleBypass = async () => {
-    setLoading(true);
-    setError(null);
-
-    const demoTarget = "/app/dashboard";
-
-    try {
-      setToken(createLocalDemoToken());
-      router.push(demoTarget);
-      onClose();
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Demo Onboarding failed.");
       }
     } finally {
       setLoading(false);
@@ -210,22 +169,6 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
               disabled={loading}
             >
               {loading ? "Logging in..." : "Start"}
-            </button>
-
-            <div className="flex items-center gap-4 text-data-sm text-on-surface-variant">
-              <div className="h-px flex-1 bg-outline-variant/50" />
-              <span>OR</span>
-              <div className="h-px flex-1 bg-outline-variant/50" />
-            </div>
-
-            <button
-              className={`flex w-full items-center justify-center gap-2 rounded-full border border-outline-variant/60 px-8 py-3 text-base font-medium text-on-background transition-colors hover:bg-surface-container-high ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
-              type="button"
-              onClick={handleBypass}
-              disabled={loading}
-            >
-              <Icon name="login" size="small" color="text-primary-container" />
-              {loading ? "Logging in..." : "Demo Onboarding"}
             </button>
           </form>
         </div>
