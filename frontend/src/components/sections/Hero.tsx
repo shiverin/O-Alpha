@@ -129,8 +129,10 @@ export function Hero() {
           </h1>
           <p className="font-body-md text-body-md text-on-surface-variant text-lg max-w-2xl">
             O(Alpha) translates your strategic intent into autonomous execution.
-            High-frequency capability meets institutional-grade intelligence,
-            now in your control.
+            <br />
+            High-frequency capability meets institutional-grade intelligence:
+            <br />
+            Now within your fingertips.
           </p>
         </div>
       </Container>

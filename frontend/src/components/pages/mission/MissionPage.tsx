@@ -17,17 +17,15 @@ const teamMembers = [
     name: "Shizhen",
     role: "Software Engineer",
     roleTone: "text-secondary-container",
-    icon: "terminal",
     accent: "border-l-primary-container",
     summary:
       "Focusing on statistical arbitrage models, regime detection algorithms, and translating complex market dynamics into executable, risk-managed logic streams.",
-    tags: ["Python", "Data Science"],
+    tags: ["Machine Learning", "Python"],
   },
   {
     name: "Jia Jun",
     role: "Software Engineer",
     roleTone: "text-primary-container",
-    icon: "dns",
     accent: "border-l-secondary-container",
     summary:
       "Architecting the low-latency execution environment, ensuring robust API integrations, and building the seamless interface that connects user intent to market action.",
@@ -49,9 +47,10 @@ export function MissionPage() {
                 <span className="text-primary-container">from Execution.</span>
               </h1>
               <p className="font-body-md text-body-md text-on-surface-variant max-w-xl mt-4">
-                O(Alpha) was born from a simple thesis: human emotion is the
-                primary drag on retail trading performance. We are building a
-                future where sophisticated, quant-level systematic trading is
+                O(Alpha) was born from a simple thesis, that human emotion is the
+                primary drag on retail trading performance. 
+                <br />
+                We are building a future where sophisticated, quant-level systematic trading is
                 accessible to anyone capable of defining their preferences.
               </p>
             </div>
@@ -65,8 +64,11 @@ export function MissionPage() {
             </h2>
             <p className="font-body-md text-body-md text-on-surface-variant max-w-2xl mt-4">
               A seamless translation layer between human intent and algorithmic
-              precision. No trading experience required. Just preferences -
-              converted into alpha-seeking execution.
+              precision. 
+              <br />
+              No trading experience required. 
+              <br />
+              Just preferences, converted into alpha-seeking execution.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-0 relative">
