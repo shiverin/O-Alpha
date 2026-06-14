@@ -132,9 +132,6 @@ export function MissionPage() {
                       {member.role}
                     </div>
                   </div>
-                  <span className="material-symbols-outlined text-outline-variant">
-                    {member.icon}
-                  </span>
                 </div>
                 <p className="font-body-md text-body-md text-on-surface-variant">
                   {member.summary}
