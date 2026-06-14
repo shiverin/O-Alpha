@@ -112,7 +112,7 @@ export function PricingPage() {
             Deploy the exact level of quantitative rigor your strategy requires.
             <br />
             From fundamental risk controls to institutional-grade convex
-            optimization & 
+            optimization &
             <br />
             regime detection.
           </p>

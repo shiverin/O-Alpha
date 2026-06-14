@@ -47,11 +47,12 @@ export function MissionPage() {
                 <span className="text-primary-container">from Execution.</span>
               </h1>
               <p className="font-body-md text-body-md text-on-surface-variant max-w-xl mt-4">
-                O(Alpha) was born from a simple thesis, that human emotion is the
-                primary drag on retail trading performance. 
+                O(Alpha) was born from a simple thesis, that human emotion is
+                the primary drag on retail trading performance.
                 <br />
-                We are building a future where sophisticated, quant-level systematic trading is
-                accessible to anyone capable of defining their preferences.
+                We are building a future where sophisticated, quant-level
+                systematic trading is accessible to anyone capable of defining
+                their preferences.
               </p>
             </div>
           </div>
@@ -64,9 +65,9 @@ export function MissionPage() {
             </h2>
             <p className="font-body-md text-body-md text-on-surface-variant max-w-2xl mt-4">
               A seamless translation layer between human intent and algorithmic
-              precision. 
+              precision.
               <br />
-              No trading experience required. 
+              No trading experience required.
               <br />
               Just preferences, converted into alpha-seeking execution.
             </p>
