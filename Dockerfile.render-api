@@ -1,0 +1,21 @@
+# syntax=docker/dockerfile:1
+
+FROM golang:1.23-alpine AS builder
+WORKDIR /src
+
+RUN apk add --no-cache ca-certificates git
+
+COPY backend/go.mod backend/go.sum ./
+RUN go mod download
+
+COPY backend/ ./
+RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/oalpha-api ./cmd/api
+
+FROM alpine:3.20
+RUN apk add --no-cache ca-certificates
+
+COPY --from=builder /bin/oalpha-api /usr/local/bin/oalpha-api
+COPY migrations /migrations
+
+EXPOSE 10000
+ENTRYPOINT ["/usr/local/bin/oalpha-api"]
