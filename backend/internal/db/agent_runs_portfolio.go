@@ -98,7 +98,7 @@ func (r *AgentRepository) UpdateAgentRunRuntimeState(ctx context.Context, runID 
 	return nil
 }
 
-func (r *AgentRepository) MarkActivePortfolioRunStopped(ctx context.Context, userID int64, reason string) error {
+func (r *AgentRepository) MarkActivePortfolioRunStopped(ctx context.Context, userID int64, reason string) (int64, error) {
 	const q = `
 		WITH latest AS (
 			SELECT id
@@ -114,10 +114,11 @@ func (r *AgentRepository) MarkActivePortfolioRunStopped(ctx context.Context, use
 			stopped_at = NOW(),
 			stop_reason = $2
 		WHERE id = (SELECT id FROM latest)`
-	if _, err := r.db.Exec(ctx, q, userID, reason); err != nil {
-		return fmt.Errorf("mark active portfolio run stopped: %w", err)
+	tag, err := r.db.Exec(ctx, q, userID, reason)
+	if err != nil {
+		return 0, fmt.Errorf("mark active portfolio run stopped: %w", err)
 	}
-	return nil
+	return tag.RowsAffected(), nil
 }
 
 func (r *AgentRepository) MarkOrphanedAgentRunsFailed(ctx context.Context, staleAfter time.Duration) (int64, error) {

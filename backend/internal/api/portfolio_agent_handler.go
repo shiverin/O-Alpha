@@ -36,11 +36,11 @@ func riskProfileDefaultStrategy(profile string) string {
 	case "conservative":
 		return "ranker_proxy_h63_low"
 	case "moderate":
-		return "lgbm_ranker_h63_medium"
+		return "ranker_proxy_h63_medium"
 	case "aggressive":
 		return "composite_momentum_high"
 	default:
-		return "lgbm_ranker_h63_low"
+		return "ranker_proxy_h63_low"
 	}
 }
 
@@ -154,12 +154,14 @@ func (h *Handler) StopPortfolioAgent(c *gin.Context) {
 		return
 	}
 
-	if err := h.Portfolio.StopForUser(userID); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+	stopErr := h.Portfolio.StopForUser(userID)
+	rowsAffected, err := h.AgentRepo.MarkActivePortfolioRunStopped(c.Request.Context(), userID, "user_requested")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if err := h.AgentRepo.MarkActivePortfolioRunStopped(c.Request.Context(), userID, "user_requested"); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if stopErr != nil && rowsAffected == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": stopErr.Error()})
 		return
 	}
 	_ = h.PortfolioRepo.InsertSystemAlert(c.Request.Context(), userID, "INFO", "Agent stopped", "Your portfolio agent was stopped.", "portfolio_agent", nil)

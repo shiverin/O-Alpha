@@ -45,7 +45,7 @@ const fallbackCatalog: StrategyCatalogResponse = {
   default_universe: fallbackUniverse,
   recommended: {
     conservative: "ranker_proxy_h63_low",
-    moderate: "lgbm_ranker_h63_medium",
+    moderate: "ranker_proxy_h63_medium",
     aggressive: "composite_momentum_high",
   },
   strategies: [
@@ -62,17 +62,16 @@ const fallbackCatalog: StrategyCatalogResponse = {
       description: "VOO core with an 8% deterministic h63 active sleeve.",
     },
     {
-      key: "lgbm_ranker_h63_medium",
-      display_name: "LGBM h63 active sleeve medium risk",
-      family: "benchmark_lgbm_ranker_h63",
+      key: "ranker_proxy_h63_medium",
+      display_name: "Deterministic h63 proxy medium risk",
+      family: "benchmark_ranker_proxy_h63",
       risk_profile: "medium",
       deployment_status: "promoted_research_checkpoint",
       promoted_checkpoint: true,
-      requires_model_artifacts: true,
+      requires_model_artifacts: false,
       paper_only: true,
       benchmark_symbol: "VOO",
-      description:
-        "VOO core with a 15% learned-ranker active sleeve, top 3 stocks, 63-bar rebalance.",
+      description: "VOO core with the deterministic h63 active sleeve.",
     },
     {
       key: "composite_momentum_high",

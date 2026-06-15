@@ -1,4 +1,4 @@
-import { getToken } from "@/lib/auth";
+import { getToken, removeToken } from "@/lib/auth";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ??
@@ -117,6 +117,21 @@ const getAuthHeaders = (): HeadersInit => {
   return headers;
 };
 
+const responseError = async (res: Response, fallback: string) => {
+  const body = await res.json().catch(() => ({}));
+  const message =
+    typeof body?.error === "string" ? body.error : undefined;
+
+  if (res.status === 401 || message === "Authorization header required") {
+    if (typeof window !== "undefined") {
+      removeToken();
+    }
+    return new Error("Session expired. Please sign in again.");
+  }
+
+  return new Error(message ?? fallback);
+};
+
 export async function runBacktest(
   payload: BacktestRequest,
 ): Promise<BacktestResult> {
@@ -127,8 +142,7 @@ export async function runBacktest(
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error ?? `Backtest failed (${res.status})`);
+    throw await responseError(res, `Backtest failed (${res.status})`);
   }
 
   return res.json();
@@ -148,8 +162,7 @@ export async function runBacktestStream(
     if (res.status === 404 || res.status === 405) {
       return runBacktest(payload);
     }
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error ?? `Backtest failed (${res.status})`);
+    throw await responseError(res, `Backtest failed (${res.status})`);
   }
   if (!res.body) {
     throw new Error("Backtest stream did not return a response body");
@@ -209,8 +222,7 @@ export async function streamPortfolioLive(
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error ?? `Live stream failed (${res.status})`);
+    throw await responseError(res, `Live stream failed (${res.status})`);
   }
   if (!res.body) {
     throw new Error("Live stream did not return a response body");
@@ -246,8 +258,7 @@ export const api = {
     });
 
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error ?? `Request failed (${res.status})`);
+      throw await responseError(res, `Request failed (${res.status})`);
     }
 
     return res.json();
@@ -261,8 +272,7 @@ export const api = {
     });
 
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error ?? `Request failed (${res.status})`);
+      throw await responseError(res, `Request failed (${res.status})`);
     }
 
     return res.json();
@@ -276,8 +286,7 @@ export const api = {
     });
 
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error ?? `Request failed (${res.status})`);
+      throw await responseError(res, `Request failed (${res.status})`);
     }
 
     return res.json();
@@ -290,8 +299,7 @@ export const api = {
     });
 
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error ?? `Request failed (${res.status})`);
+      throw await responseError(res, `Request failed (${res.status})`);
     }
 
     return res.json();
