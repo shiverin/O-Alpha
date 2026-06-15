@@ -34,6 +34,7 @@ export interface BacktestResult {
   metrics?: {
     total_return: number;
     annual_return: number;
+    annualized_return?: number;
     sharpe: number;
     sortino: number;
     max_drawdown: number;
@@ -46,6 +47,7 @@ export interface BacktestResult {
   max_drawdown?: number;
   total_return?: number;
   annual_return?: number;
+  annualized_return?: number;
   num_trades?: number;
 }
 
@@ -119,8 +121,7 @@ const getAuthHeaders = (): HeadersInit => {
 
 const responseError = async (res: Response, fallback: string) => {
   const body = await res.json().catch(() => ({}));
-  const message =
-    typeof body?.error === "string" ? body.error : undefined;
+  const message = typeof body?.error === "string" ? body.error : undefined;
 
   if (res.status === 401 || message === "Authorization header required") {
     if (typeof window !== "undefined") {
