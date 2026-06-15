@@ -66,6 +66,31 @@ const fallbackCatalog: StrategyCatalogResponse = {
       description: "VOO core with an 8% deterministic h63 active sleeve.",
     },
     {
+      key: "lgbm_ranker_h63_low",
+      display_name: "LGBM h63 active sleeve low risk",
+      family: "benchmark_lgbm_ranker_h63",
+      risk_profile: "low",
+      deployment_status: "conservative_variant",
+      promoted_checkpoint: false,
+      requires_model_artifacts: true,
+      paper_only: true,
+      benchmark_symbol: "VOO",
+      description:
+        "VOO core with a 5% learned-ranker active sleeve and stricter score threshold.",
+    },
+    {
+      key: "lowvol_sleeve_low",
+      display_name: "Low-volatility sleeve low risk",
+      family: "benchmark_lowvol",
+      risk_profile: "low",
+      deployment_status: "rejected_diagnostic",
+      promoted_checkpoint: false,
+      requires_model_artifacts: false,
+      paper_only: true,
+      benchmark_symbol: "VOO",
+      description: "VOO core with a small low-volatility stock sleeve.",
+    },
+    {
       key: "ranker_proxy_h63_medium",
       display_name: "Deterministic h63 proxy medium risk",
       family: "benchmark_ranker_proxy_h63",
@@ -76,6 +101,31 @@ const fallbackCatalog: StrategyCatalogResponse = {
       paper_only: true,
       benchmark_symbol: "VOO",
       description: "VOO core with the deterministic h63 active sleeve.",
+    },
+    {
+      key: "lgbm_ranker_h63_medium",
+      display_name: "LGBM h63 active sleeve medium risk",
+      family: "benchmark_lgbm_ranker_h63",
+      risk_profile: "medium",
+      deployment_status: "promoted_research_checkpoint",
+      promoted_checkpoint: true,
+      requires_model_artifacts: true,
+      paper_only: true,
+      benchmark_symbol: "VOO",
+      description:
+        "VOO core with a 15% learned-ranker active sleeve, top 3 stocks, 63-bar rebalance.",
+    },
+    {
+      key: "ranked_sleeve_medium",
+      display_name: "Risk-budgeted ranked sleeve medium risk",
+      family: "benchmark_ranked_sleeve",
+      risk_profile: "medium",
+      deployment_status: "rejected_diagnostic",
+      promoted_checkpoint: false,
+      requires_model_artifacts: false,
+      paper_only: true,
+      benchmark_symbol: "VOO",
+      description: "VOO core with a broader risk-budgeted momentum sleeve.",
     },
     {
       key: "composite_momentum_high",
@@ -89,6 +139,32 @@ const fallbackCatalog: StrategyCatalogResponse = {
       benchmark_symbol: "VOO",
       description:
         "Higher-active-weight composite momentum sleeve across ETFs and stocks.",
+    },
+    {
+      key: "benchmark_tsmom_high",
+      display_name: "Benchmark-funded TSMOM high risk",
+      family: "benchmark_tsmom",
+      risk_profile: "high",
+      deployment_status: "rejected_diagnostic",
+      promoted_checkpoint: false,
+      requires_model_artifacts: false,
+      paper_only: true,
+      benchmark_symbol: "VOO",
+      description:
+        "VOO core with larger ETF and broad-universe time-series momentum sleeves.",
+    },
+    {
+      key: "lgbm_ranker_h63_high",
+      display_name: "LGBM h63 active sleeve high risk",
+      family: "benchmark_lgbm_ranker_h63",
+      risk_profile: "high",
+      deployment_status: "experimental_variant",
+      promoted_checkpoint: false,
+      requires_model_artifacts: true,
+      paper_only: true,
+      benchmark_symbol: "VOO",
+      description:
+        "VOO core with a 25% learned-ranker active sleeve, wider top-k, and lower score threshold.",
     },
   ],
 };
@@ -130,26 +206,44 @@ export default function OnboardingOverlay({
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
     const loadCatalog = async () => {
       setIsCatalogLoading(true);
       try {
         const response = await strategyCatalogApi.list();
+        if (cancelled) return;
         setCatalog(response);
-        setSelectedStrategyKey(
-          recommendedStrategyKeyForRisk(response, riskProfile),
-        );
       } catch {
-        setCatalog(fallbackCatalog);
-        setSelectedStrategyKey(
-          recommendedStrategyKeyForRisk(fallbackCatalog, riskProfile),
+        if (cancelled) return;
+        setCatalog((current) =>
+          current.strategies.length > 0 ? current : fallbackCatalog,
         );
       } finally {
-        setIsCatalogLoading(false);
+        if (!cancelled) {
+          setIsCatalogLoading(false);
+        }
       }
     };
 
     loadCatalog();
-  }, [riskProfile]);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const bucket = riskBuckets[riskProfile];
+    const current = catalog.strategies.find(
+      (strategy) => strategy.key === selectedStrategyKey,
+    );
+    if (current?.risk_profile === bucket) return;
+
+    const nextKey = recommendedStrategyKeyForRisk(catalog, riskProfile);
+    if (nextKey) {
+      setSelectedStrategyKey(nextKey);
+    }
+  }, [catalog, riskProfile, selectedStrategyKey]);
 
   const profileDescriptions: Record<RiskProfile, string> = {
     conservative:
