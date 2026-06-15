@@ -97,8 +97,12 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
         <div className="relative z-10 flex flex-col items-center p-6 sm:p-8">
           <div className="mb-6 flex flex-col items-center text-center">
             <h1 className="mb-1 text-2xl font-bold text-on-background">
-              Log In
+              Log In or Create Account
             </h1>
+            <p className="max-w-[18rem] text-xs leading-relaxed text-on-surface-variant">
+              Use an existing username to sign in, or enter a new one to create
+              your O(Alpha) account.
+            </p>
           </div>
 
           <form className="w-full space-y-5" onSubmit={handleSubmit}>
