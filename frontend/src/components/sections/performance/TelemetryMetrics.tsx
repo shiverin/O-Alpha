@@ -13,6 +13,7 @@ interface TelemetryMetricsProps {
   currentReturnPct?: number;
   sharpeRatio?: number | null;
   maxDrawdown?: number | null;
+  annualizedReturn?: number | null;
 }
 
 export default function TelemetryMetrics({
@@ -20,6 +21,7 @@ export default function TelemetryMetrics({
   loading,
   sharpeRatio,
   maxDrawdown,
+  annualizedReturn,
 }: TelemetryMetricsProps) {
   const [activeTab, setActiveTab] = useState<TimeframeTab>("YTD");
 
@@ -64,6 +66,10 @@ export default function TelemetryMetrics({
     normalizedMaxDrawdown === null
       ? null
       : Math.abs(normalizedMaxDrawdown) * 100;
+  const normalizedAnnualizedReturn =
+    typeof annualizedReturn === "number" && Number.isFinite(annualizedReturn)
+      ? annualizedReturn
+      : null;
   const drawdownWidth = maxDrawdownPct
     ? `${Math.min(maxDrawdownPct, 100)}%`
     : "0%";
@@ -171,6 +177,21 @@ export default function TelemetryMetrics({
                 className="absolute left-0 top-0 h-full bg-secondary-fixed rounded-full"
                 style={{ width: drawdownWidth }}
               />
+            </div>
+          </div>
+
+          <div className="group relative flex flex-col justify-center bg-surface-container-low border border-outline-variant/30 rounded-[32px] p-6 lg:p-8 overflow-hidden hover:bg-surface-container transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)]">
+            <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-primary-container/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+
+            <span className="text-[10px] font-medium tracking-[0.2em] text-on-surface-variant uppercase mb-4">
+              Annualized Return
+            </span>
+            <div className="flex items-baseline gap-3">
+              <span className="text-4xl font-light tracking-tight text-on-surface">
+                {normalizedAnnualizedReturn === null
+                  ? "--"
+                  : `+${normalizedAnnualizedReturn.toFixed(1)}%`}
+              </span>
             </div>
           </div>
         </div>

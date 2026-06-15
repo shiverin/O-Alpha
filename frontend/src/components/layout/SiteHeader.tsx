@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, Dispatch, SetStateAction } from "react";
-import { useRouter } from "next/navigation";
 
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/solid";
 
@@ -9,7 +8,6 @@ import Link from "next/link";
 import { BrandMark } from "../BrandMark";
 import { LoginModal } from "../auth/LoginModal";
 import { PillButton } from "../PillButton";
-import { isAuthenticated } from "@/lib/auth";
 
 type NavLink = {
   label: string;
@@ -41,16 +39,6 @@ export function SiteHeader({
   const loginOpen =
     externalLoginOpen !== undefined ? externalLoginOpen : internalLoginOpen;
   const setLoginOpen = onLoginModalOpenChange || setInternalLoginOpen;
-
-  const router = useRouter();
-
-  const handleLaunchApp = () => {
-    if (isAuthenticated()) {
-      router.push("/app/dashboard");
-      return;
-    }
-    setLoginOpen(true);
-  };
 
   const links = navLinks.map((link) => ({
     ...link,
@@ -101,20 +89,13 @@ export function SiteHeader({
             />
           )}
         </button>
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden md:flex items-center">
           <PillButton
-            variant="outline"
+            className="scale-95 active:scale-90"
             size="sm"
             onClick={() => setLoginOpen(true)}
           >
             Login
-          </PillButton>
-          <PillButton
-            className="scale-95 active:scale-90"
-            size="sm"
-            onClick={handleLaunchApp}
-          >
-            Launch App
           </PillButton>
         </div>
       </div>
@@ -150,9 +131,9 @@ export function SiteHeader({
               {link.label}
             </Link>
           ))}
-          <div className="pt-2 border-t border-outline-variant/30 flex flex-col gap-3">
+          <div className="pt-2 border-t border-outline-variant/30">
             <PillButton
-              variant="outline"
+              className="w-full scale-95 active:scale-90"
               size="sm"
               onClick={() => {
                 setMenuOpen(false);
@@ -160,15 +141,6 @@ export function SiteHeader({
               }}
             >
               Login
-            </PillButton>
-            <PillButton
-              size="sm"
-              onClick={() => {
-                setMenuOpen(false);
-                handleLaunchApp();
-              }}
-            >
-              Launch App
             </PillButton>
           </div>
         </div>

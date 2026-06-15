@@ -110,8 +110,11 @@ export function PricingPage() {
           </h1>
           <p className="font-body-md text-body-md text-on-surface-variant max-w-2xl mx-auto">
             Deploy the exact level of quantitative rigor your strategy requires.
+            <br />
             From fundamental risk controls to institutional-grade convex
-            optimization and regime detection.
+            optimization &
+            <br />
+            regime detection.
           </p>
         </section>
 

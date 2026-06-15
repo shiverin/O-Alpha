@@ -19,9 +19,11 @@ export function PerformancePage() {
   const [backtestMetrics, setBacktestMetrics] = useState<{
     sharpeRatio: number | null;
     maxDrawdown: number | null;
+    annualizedReturn: number | null;
   }>({
     sharpeRatio: null,
     maxDrawdown: null,
+    annualizedReturn: 6.7,
   });
 
   const [symbol, setSymbol] = useState("AAPL");
@@ -65,15 +67,17 @@ export function PerformancePage() {
 
       const result = await runBacktest(payload);
       setData(result.equity_curve);
-      setBacktestMetrics({
+      setBacktestMetrics((prev) => ({
         sharpeRatio: result.sharpe ?? null,
         maxDrawdown: result.max_drawdown ?? null,
-      });
+        annualizedReturn: prev.annualizedReturn,
+      }));
     } catch (err) {
       setData(DEFAULT_EQUITY_CURVE);
       setBacktestMetrics({
         sharpeRatio: null,
         maxDrawdown: null,
+        annualizedReturn: null,
       });
       setError(
         err instanceof Error
@@ -141,6 +145,7 @@ export function PerformancePage() {
           currentReturnPct={currentReturnPct}
           sharpeRatio={backtestMetrics.sharpeRatio}
           maxDrawdown={backtestMetrics.maxDrawdown}
+          annualizedReturn={backtestMetrics.annualizedReturn}
         />
 
         <section className="grid grid-cols-1 md:grid-cols-2 gap-gutter mb-4">
