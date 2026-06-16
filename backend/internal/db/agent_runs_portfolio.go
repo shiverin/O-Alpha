@@ -23,6 +23,8 @@ type AgentRunSummary struct {
 	LastHeartbeatAt *time.Time             `json:"last_heartbeat_at,omitempty"`
 }
 
+const portfolioWorkerAdvisoryLockKey int64 = 602214110042
+
 func (r *AgentRepository) ListActiveAgentRuns(ctx context.Context, userID int64) ([]AgentRunSummary, error) {
 	const q = `
 		SELECT id, user_id, symbol, strategy_type, timeframe, mode, status, initial_cash, parameters, started_at, last_heartbeat_at
@@ -55,16 +57,8 @@ func (r *AgentRepository) ListActiveAgentRuns(ctx context.Context, userID int64)
 		); err != nil {
 			return nil, err
 		}
-		if len(paramsBytes) > 0 {
-			if err := json.Unmarshal(paramsBytes, &s.Parameters); err != nil {
-				return nil, fmt.Errorf("unmarshal agent run parameters: %w", err)
-			}
-			if key, ok := s.Parameters["strategy_key"].(string); ok {
-				s.StrategyKey = key
-			}
-			if state, ok := s.Parameters["runtime_state"].(map[string]interface{}); ok {
-				s.RuntimeState = state
-			}
+		if err := decodeAgentRunParameters(paramsBytes, &s); err != nil {
+			return nil, err
 		}
 		summaries = append(summaries, s)
 	}
@@ -84,7 +78,36 @@ func (r *AgentRepository) ListResumablePortfolioRuns(ctx context.Context) ([]Age
 		return nil, fmt.Errorf("list resumable portfolio agent runs: %w", err)
 	}
 	defer rows.Close()
+	return scanAgentRunSummaries(rows)
+}
 
+func (r *AgentRepository) ListActivePortfolioAgentRuns(ctx context.Context, limit int) ([]AgentRunSummary, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+	const q = `
+		SELECT id, user_id, symbol, strategy_type, timeframe, mode, status, initial_cash, parameters, started_at, last_heartbeat_at
+		FROM agent_runs
+		WHERE strategy_type = 'PORTFOLIO_CATALOG'
+			AND status = 'running'
+		ORDER BY last_heartbeat_at NULLS FIRST, started_at ASC
+		LIMIT $1`
+
+	rows, err := r.db.Query(ctx, q, limit)
+	if err != nil {
+		return nil, fmt.Errorf("list active portfolio agent runs: %w", err)
+	}
+	defer rows.Close()
+	return scanAgentRunSummaries(rows)
+}
+
+type agentRunRows interface {
+	Next() bool
+	Scan(dest ...interface{}) error
+	Err() error
+}
+
+func scanAgentRunSummaries(rows agentRunRows) ([]AgentRunSummary, error) {
 	summaries := make([]AgentRunSummary, 0)
 	for rows.Next() {
 		var s AgentRunSummary
@@ -104,20 +127,52 @@ func (r *AgentRepository) ListResumablePortfolioRuns(ctx context.Context) ([]Age
 		); err != nil {
 			return nil, err
 		}
-		if len(paramsBytes) > 0 {
-			if err := json.Unmarshal(paramsBytes, &s.Parameters); err != nil {
-				return nil, fmt.Errorf("unmarshal portfolio run parameters: %w", err)
-			}
-			if key, ok := s.Parameters["strategy_key"].(string); ok {
-				s.StrategyKey = key
-			}
-			if state, ok := s.Parameters["runtime_state"].(map[string]interface{}); ok {
-				s.RuntimeState = state
-			}
+		if err := decodeAgentRunParameters(paramsBytes, &s); err != nil {
+			return nil, err
 		}
 		summaries = append(summaries, s)
 	}
 	return summaries, rows.Err()
+}
+
+func decodeAgentRunParameters(paramsBytes []byte, summary *AgentRunSummary) error {
+	if len(paramsBytes) == 0 || summary == nil {
+		return nil
+	}
+	if err := json.Unmarshal(paramsBytes, &summary.Parameters); err != nil {
+		return fmt.Errorf("unmarshal agent run parameters: %w", err)
+	}
+	if key, ok := summary.Parameters["strategy_key"].(string); ok {
+		summary.StrategyKey = key
+	}
+	if state, ok := summary.Parameters["runtime_state"].(map[string]interface{}); ok {
+		summary.RuntimeState = state
+	}
+	return nil
+}
+
+func (r *AgentRepository) TryPortfolioWorkerLock(ctx context.Context) (func(context.Context), bool, error) {
+	conn, err := r.db.Acquire(ctx)
+	if err != nil {
+		return nil, false, fmt.Errorf("acquire portfolio worker lock connection: %w", err)
+	}
+
+	var locked bool
+	if err := conn.QueryRow(ctx, `SELECT pg_try_advisory_lock($1)`, portfolioWorkerAdvisoryLockKey).Scan(&locked); err != nil {
+		conn.Release()
+		return nil, false, fmt.Errorf("try portfolio worker advisory lock: %w", err)
+	}
+	if !locked {
+		conn.Release()
+		return nil, false, nil
+	}
+
+	unlock := func(unlockCtx context.Context) {
+		defer conn.Release()
+		var released bool
+		_ = conn.QueryRow(unlockCtx, `SELECT pg_advisory_unlock($1)`, portfolioWorkerAdvisoryLockKey).Scan(&released)
+	}
+	return unlock, true, nil
 }
 
 func (r *AgentRepository) UpdateAgentRunHeartbeat(ctx context.Context, runID int64) error {
