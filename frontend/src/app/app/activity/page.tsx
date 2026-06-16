@@ -6,6 +6,7 @@ import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/ui/Icon";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
+import { downloadCsv } from "@/lib/csv";
 import { mockExecutionStream, mockSystemAlerts } from "@/lib/mockAppData";
 
 interface TradeLogItem {
@@ -36,8 +37,36 @@ interface SystemAlertItem {
 
 const fetcher = <T,>(path: string): Promise<T> => api.get<T>(path);
 
+function formatUtcTimestamp(timestamp: string) {
+  if (!timestamp || !timestamp.includes("T")) {
+    return { date: "", time: timestamp || "--" };
+  }
+
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return { date: "", time: timestamp };
+  }
+
+  return {
+    date: date.toISOString().slice(0, 10),
+    time: date.toISOString().slice(11, 19),
+  };
+}
+
+function formatSize(value: number | string | undefined) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value.toFixed(2);
+  }
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed.toFixed(2) : value;
+  }
+  return "--";
+}
+
 export default function ActivityPage() {
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
+  const [assetFilter, setAssetFilter] = useState<string>("ALL");
   const [tradeLimit, setTradeLimit] = useState<number>(15);
 
   const { user } = useAuth();
@@ -59,14 +88,45 @@ export default function ActivityPage() {
     currentUserID === 999 ? mockExecutionStream : serverTrades || [];
   const rawAlerts: SystemAlertItem[] =
     currentUserID === 999 ? mockSystemAlerts : serverAlerts || [];
+  const assetOptions = Array.from(
+    new Set(rawTrades.map((item) => item.symbol || item.asset || "PORTFOLIO")),
+  ).sort();
 
   const filteredTrades = rawTrades.filter((item: TradeLogItem) => {
-    if (activeFilter === "ALL") return true;
-    if (activeFilter === "FILLS") return item.status === "FILLED";
-    if (activeFilter === "ERRORS")
-      return item.status === "REJECTED" || item.status === "ERROR";
-    return true;
+    const asset = item.symbol || item.asset || "PORTFOLIO";
+    const matchesAction =
+      activeFilter === "ALL" ||
+      (activeFilter === "FILLS" && item.status === "FILLED") ||
+      (activeFilter === "ERRORS" &&
+        (item.status === "REJECTED" || item.status === "ERROR"));
+    return matchesAction && (assetFilter === "ALL" || asset === assetFilter);
   });
+
+  const handleExportCsv = () => {
+    downloadCsv(
+      "oalpha-activity-log.csv",
+      [
+        "timestamp_utc",
+        "action",
+        "asset",
+        "price",
+        "size",
+        "slippage",
+        "status",
+      ],
+      filteredTrades.map((item) => [
+        item.timestamp,
+        item.action,
+        item.symbol || item.asset || "PORTFOLIO",
+        item.price,
+        formatSize(item.qty || item.size),
+        typeof item.slippage === "number"
+          ? `${(item.slippage * 100).toFixed(2)}%`
+          : item.slippage,
+        item.status,
+      ]),
+    );
+  };
 
   return (
     <AppShell title="Activity Console">
@@ -82,7 +142,12 @@ export default function ActivityPage() {
           </div>
 
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <button className="w-full sm:w-auto justify-center px-5 py-2 rounded-full border border-outline-variant/30 text-xs font-mono font-medium tracking-wide text-on-surface hover:bg-surface-container transition-all duration-300">
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              disabled={filteredTrades.length === 0}
+              className="w-full sm:w-auto justify-center px-5 py-2 rounded-full border border-outline-variant/30 text-xs font-mono font-medium tracking-wide text-on-surface hover:bg-surface-container transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-45"
+            >
               Export CSV
             </button>
           </div>
@@ -110,12 +175,24 @@ export default function ActivityPage() {
                   </button>
                 ))}
               </div>
-              <div className="flex items-center gap-2 font-mono text-[11px] tracking-wide text-on-surface-variant/60 select-none">
+              <label className="flex items-center gap-2 font-mono text-[11px] tracking-wide text-on-surface-variant/60">
                 <span className="material-symbols-outlined text-[16px]">
                   filter_list
                 </span>
-                <span>Filter by Asset</span>
-              </div>
+                <span className="sr-only">Filter by Asset</span>
+                <select
+                  value={assetFilter}
+                  onChange={(event) => setAssetFilter(event.target.value)}
+                  className="max-w-[160px] cursor-pointer bg-transparent text-on-surface-variant/70 outline-none transition-colors hover:text-on-surface"
+                >
+                  <option value="ALL">All Assets</option>
+                  {assetOptions.map((asset) => (
+                    <option key={asset} value={asset}>
+                      {asset}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
 
             <div className="group relative rounded-[24px] bg-surface-container-low border border-outline-variant/30 overflow-hidden hover:shadow-[0_20px_40px_rgba(0,0,0,0.2)] transition-all duration-700">
@@ -130,7 +207,16 @@ export default function ActivityPage() {
               />
 
               <div className="overflow-x-auto w-full">
-                <table className="w-full text-left border-collapse min-w-[750px]">
+                <table className="w-full table-fixed text-left border-collapse min-w-[900px]">
+                  <colgroup>
+                    <col className="w-[20%]" />
+                    <col className="w-[14%]" />
+                    <col className="w-[12%]" />
+                    <col className="w-[14%]" />
+                    <col className="w-[16%]" />
+                    <col className="w-[14%]" />
+                    <col className="w-[10%]" />
+                  </colgroup>
                   <thead>
                     <tr className="border-b border-outline-variant/20 bg-void-black/30 font-mono text-[10px] tracking-wider text-on-surface-variant/50 uppercase">
                       <th className="py-4 px-6 font-medium">TIMESTAMP (UTC)</th>
@@ -158,24 +244,16 @@ export default function ActivityPage() {
                       </tr>
                     ) : (
                       filteredTrades.map((log: TradeLogItem, index: number) => {
-                        const displayTime =
-                          log.timestamp && log.timestamp.includes("T")
-                            ? new Date(log.timestamp).toLocaleTimeString(
-                                undefined,
-                                {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  second: "2-digit",
-                                },
-                              )
-                            : log.timestamp;
+                        const timestampLabel = formatUtcTimestamp(
+                          log.timestamp,
+                        );
 
                         const actionColor =
                           log.actionColorClass ||
                           (log.action.startsWith("BUY")
                             ? "text-primary-fixed-dim"
                             : "text-error");
-                        const sizeValue = log.qty || log.size || "--";
+                        const sizeValue = formatSize(log.qty || log.size);
 
                         const statusColor =
                           log.statusColorClass ||
@@ -191,7 +269,10 @@ export default function ActivityPage() {
                             className="transition-colors duration-150 hover:bg-white/[0.01] cursor-default"
                           >
                             <td className="py-4 px-6 text-on-surface-variant/60">
-                              {displayTime}
+                              <div className="flex flex-col gap-1 leading-none">
+                                <span>{timestampLabel.date}</span>
+                                <span>{timestampLabel.time}</span>
+                              </div>
                             </td>
                             <td className="py-4 px-6">
                               <span className={actionColor}>{log.action}</span>
