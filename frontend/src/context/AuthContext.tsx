@@ -13,7 +13,11 @@ import {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (username: string, password: string, remember?: boolean) => Promise<void>;
+  login: (
+    username: string,
+    password: string,
+    remember?: boolean,
+  ) => Promise<void>;
   logout: () => Promise<void>;
   markOnboarded: () => void;
 }

@@ -89,9 +89,7 @@ export default function ActivityPage() {
   const rawAlerts: SystemAlertItem[] =
     currentUserID === 999 ? mockSystemAlerts : serverAlerts || [];
   const assetOptions = Array.from(
-    new Set(
-      rawTrades.map((item) => item.symbol || item.asset || "PORTFOLIO"),
-    ),
+    new Set(rawTrades.map((item) => item.symbol || item.asset || "PORTFOLIO")),
   ).sort();
 
   const filteredTrades = rawTrades.filter((item: TradeLogItem) => {
