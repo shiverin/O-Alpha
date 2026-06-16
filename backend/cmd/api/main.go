@@ -57,14 +57,6 @@ func main() {
 		portfolio.DefaultStrategyCatalogConfig(),
 	)
 
-	reconcileCtx, reconcileCancel := context.WithTimeout(context.Background(), 10*time.Second)
-	if reclaimed, err := agentRepo.MarkOrphanedAgentRunsFailed(reconcileCtx, 0); err != nil {
-		log.Error().Err(err).Msg("orphaned agent run reconciliation failed")
-	} else if reclaimed > 0 {
-		log.Info().Int64("reclaimed", reclaimed).Msg("reclaimed orphaned agent runs")
-	}
-	reconcileCancel()
-
 	h := api.NewHandler(repo, agentManager, agentRepo, portfolioRepo, portfolioOrchestrator, alpacaClient)
 	r := api.NewRouter(h, cfg)
 
@@ -80,6 +72,25 @@ func main() {
 		log.Info().Str("addr", cfg.HTTPAddr).Msg("starting API server")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatal().Err(err).Msg("server error")
+		}
+	}()
+
+	go func() {
+		resumeCtx, resumeCancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		result, err := portfolioOrchestrator.ResumeActiveRuns(resumeCtx)
+		resumeCancel()
+		if err != nil {
+			log.Error().Err(err).Int("resumed", result.Resumed).Int("skipped", result.Skipped).Int("failed", result.Failed).Msg("portfolio agent resume completed with failures")
+		} else if result.Resumed > 0 || result.Skipped > 0 {
+			log.Info().Int("resumed", result.Resumed).Int("skipped", result.Skipped).Msg("portfolio agent resume completed")
+		}
+
+		reconcileCtx, reconcileCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer reconcileCancel()
+		if reclaimed, err := agentRepo.MarkOrphanedAgentRunsFailed(reconcileCtx, 30*time.Minute); err != nil {
+			log.Error().Err(err).Msg("orphaned non-portfolio agent run reconciliation failed")
+		} else if reclaimed > 0 {
+			log.Info().Int64("reclaimed", reclaimed).Msg("reclaimed orphaned non-portfolio agent runs")
 		}
 	}()
 

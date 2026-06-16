@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -36,6 +38,29 @@ func (r *PortfolioRepository) InsertSystemAlert(ctx context.Context, userID int6
 		return fmt.Errorf("insert system alert: %w", err)
 	}
 	return nil
+}
+
+func (r *PortfolioRepository) LatestPortfolioRebalanceTime(ctx context.Context, userID, agentRunID int64) (time.Time, error) {
+	const q = `
+		SELECT (metadata->>'bar_time')::timestamptz
+		FROM system_alerts
+		WHERE user_id = $1
+			AND source = 'portfolio_agent'
+			AND metadata->>'run_id' = $2
+			AND title IN ('Rebalance executed', 'Broker paper rebalance executed')
+			AND metadata ? 'bar_time'
+		ORDER BY created_at DESC
+		LIMIT 1`
+
+	var out time.Time
+	err := r.db.QueryRow(ctx, q, userID, strconv.FormatInt(agentRunID, 10)).Scan(&out)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return time.Time{}, nil
+		}
+		return time.Time{}, fmt.Errorf("query latest portfolio rebalance time: %w", err)
+	}
+	return out.UTC(), nil
 }
 
 func (r *PortfolioRepository) GetAccountState(ctx context.Context, userID int64) (float64, map[string]float64, error) {
