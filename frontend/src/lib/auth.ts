@@ -2,6 +2,7 @@ import { jwtDecode } from "jwt-decode";
 
 const AUTH_COOKIE_NAME = "oa-auth";
 const TOKEN_STORAGE_KEY = "token";
+const REMEMBERED_TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 
 export interface User {
   id: number;
@@ -12,9 +13,18 @@ export interface User {
 /**
  * Set the JWT token in a cookie and localStorage
  */
-export function setToken(token: string): void {
-  document.cookie = `${AUTH_COOKIE_NAME}=${token}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax`;
-  localStorage.setItem(TOKEN_STORAGE_KEY, token);
+export function setToken(token: string, remember = false): void {
+  const cookieMaxAge = remember
+    ? `; max-age=${REMEMBERED_TOKEN_MAX_AGE_SECONDS}`
+    : "";
+  document.cookie = `${AUTH_COOKIE_NAME}=${token}; path=/${cookieMaxAge}; SameSite=Lax`;
+  if (remember) {
+    localStorage.setItem(TOKEN_STORAGE_KEY, token);
+    sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+    return;
+  }
+  sessionStorage.setItem(TOKEN_STORAGE_KEY, token);
+  localStorage.removeItem(TOKEN_STORAGE_KEY);
 }
 
 /**
@@ -27,7 +37,10 @@ export function getToken(): string | null {
   if (match) {
     return match[2];
   }
-  return localStorage.getItem(TOKEN_STORAGE_KEY);
+  return (
+    localStorage.getItem(TOKEN_STORAGE_KEY) ||
+    sessionStorage.getItem(TOKEN_STORAGE_KEY)
+  );
 }
 
 /**
@@ -36,6 +49,7 @@ export function getToken(): string | null {
 export function removeToken(): void {
   document.cookie = `${AUTH_COOKIE_NAME}=; path=/; max-age=0`;
   localStorage.removeItem(TOKEN_STORAGE_KEY);
+  sessionStorage.removeItem(TOKEN_STORAGE_KEY);
 }
 
 /**

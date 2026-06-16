@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { LandingShell } from "../../layout/LandingShell";
 
 type TierFeature = {
@@ -100,8 +103,15 @@ const specs: SpecRow[] = [
 ];
 
 export function PricingPage() {
+  const [loginOpen, setLoginOpen] = useState(false);
+
   return (
-    <LandingShell activePath="/pricing" className="bg-scanline">
+    <LandingShell
+      activePath="/pricing"
+      className="bg-scanline"
+      loginModalOpen={loginOpen}
+      onLoginModalOpenChange={setLoginOpen}
+    >
       <main className="flex-grow pt-32 pb-24">
         <section className="text-center px-margin-mobile md:px-margin-desktop max-w-[1440px] mx-auto mb-20 relative">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] bg-primary-container/10 rounded-full blur-3xl -z-10 pointer-events-none"></div>
@@ -198,6 +208,8 @@ export function PricingPage() {
                 ))}
               </div>
               <button
+                type="button"
+                onClick={() => setLoginOpen(true)}
                 className={
                   tier.accent === "primary"
                     ? "w-full py-3 bg-primary-container text-[#000000] font-label-caps text-label-caps uppercase rounded font-bold hover:bg-primary-fixed transition-colors"

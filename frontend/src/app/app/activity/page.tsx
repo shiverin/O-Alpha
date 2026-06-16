@@ -6,6 +6,7 @@ import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/ui/Icon";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
+import { downloadCsv } from "@/lib/csv";
 import { mockExecutionStream, mockSystemAlerts } from "@/lib/mockAppData";
 
 interface TradeLogItem {
@@ -65,6 +66,7 @@ function formatSize(value: number | string | undefined) {
 
 export default function ActivityPage() {
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
+  const [assetFilter, setAssetFilter] = useState<string>("ALL");
   const [tradeLimit, setTradeLimit] = useState<number>(15);
 
   const { user } = useAuth();
@@ -86,14 +88,47 @@ export default function ActivityPage() {
     currentUserID === 999 ? mockExecutionStream : serverTrades || [];
   const rawAlerts: SystemAlertItem[] =
     currentUserID === 999 ? mockSystemAlerts : serverAlerts || [];
+  const assetOptions = Array.from(
+    new Set(
+      rawTrades.map((item) => item.symbol || item.asset || "PORTFOLIO"),
+    ),
+  ).sort();
 
   const filteredTrades = rawTrades.filter((item: TradeLogItem) => {
-    if (activeFilter === "ALL") return true;
-    if (activeFilter === "FILLS") return item.status === "FILLED";
-    if (activeFilter === "ERRORS")
-      return item.status === "REJECTED" || item.status === "ERROR";
-    return true;
+    const asset = item.symbol || item.asset || "PORTFOLIO";
+    const matchesAction =
+      activeFilter === "ALL" ||
+      (activeFilter === "FILLS" && item.status === "FILLED") ||
+      (activeFilter === "ERRORS" &&
+        (item.status === "REJECTED" || item.status === "ERROR"));
+    return matchesAction && (assetFilter === "ALL" || asset === assetFilter);
   });
+
+  const handleExportCsv = () => {
+    downloadCsv(
+      "oalpha-activity-log.csv",
+      [
+        "timestamp_utc",
+        "action",
+        "asset",
+        "price",
+        "size",
+        "slippage",
+        "status",
+      ],
+      filteredTrades.map((item) => [
+        item.timestamp,
+        item.action,
+        item.symbol || item.asset || "PORTFOLIO",
+        item.price,
+        formatSize(item.qty || item.size),
+        typeof item.slippage === "number"
+          ? `${(item.slippage * 100).toFixed(2)}%`
+          : item.slippage,
+        item.status,
+      ]),
+    );
+  };
 
   return (
     <AppShell title="Activity Console">
@@ -109,7 +144,12 @@ export default function ActivityPage() {
           </div>
 
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <button className="w-full sm:w-auto justify-center px-5 py-2 rounded-full border border-outline-variant/30 text-xs font-mono font-medium tracking-wide text-on-surface hover:bg-surface-container transition-all duration-300">
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              disabled={filteredTrades.length === 0}
+              className="w-full sm:w-auto justify-center px-5 py-2 rounded-full border border-outline-variant/30 text-xs font-mono font-medium tracking-wide text-on-surface hover:bg-surface-container transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-45"
+            >
               Export CSV
             </button>
           </div>
@@ -137,12 +177,24 @@ export default function ActivityPage() {
                   </button>
                 ))}
               </div>
-              <div className="flex items-center gap-2 font-mono text-[11px] tracking-wide text-on-surface-variant/60 select-none">
+              <label className="flex items-center gap-2 font-mono text-[11px] tracking-wide text-on-surface-variant/60">
                 <span className="material-symbols-outlined text-[16px]">
                   filter_list
                 </span>
-                <span>Filter by Asset</span>
-              </div>
+                <span className="sr-only">Filter by Asset</span>
+                <select
+                  value={assetFilter}
+                  onChange={(event) => setAssetFilter(event.target.value)}
+                  className="max-w-[160px] cursor-pointer bg-transparent text-on-surface-variant/70 outline-none transition-colors hover:text-on-surface"
+                >
+                  <option value="ALL">All Assets</option>
+                  {assetOptions.map((asset) => (
+                    <option key={asset} value={asset}>
+                      {asset}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
 
             <div className="group relative rounded-[24px] bg-surface-container-low border border-outline-variant/30 overflow-hidden hover:shadow-[0_20px_40px_rgba(0,0,0,0.2)] transition-all duration-700">

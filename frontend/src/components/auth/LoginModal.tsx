@@ -19,6 +19,7 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,7 +60,7 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
     setError(null);
 
     try {
-      await login(username, password);
+      await login(username, password, rememberMe);
 
       router.push(redirectPath || "/app/dashboard");
       onClose();
@@ -156,15 +157,14 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
                 <input
                   className="h-4 w-4 rounded border-outline-variant/60 bg-transparent text-primary-container focus:ring-primary-container"
                   type="checkbox"
+                  checked={rememberMe}
+                  onChange={(event) => setRememberMe(event.target.checked)}
                 />
                 Remember Me
               </label>
-              <button
-                className="text-primary-container transition-colors hover:text-white"
-                type="button"
-              >
-                Reset Password
-              </button>
+              <span className="text-on-surface-variant/50">
+                Reset via support
+              </span>
             </div>
 
             <button
