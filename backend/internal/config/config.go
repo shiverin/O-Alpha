@@ -18,9 +18,11 @@ type Config struct {
 	JWTSecret          string
 	CORSAllowedOrigins []string
 
-	AlpacaAPIKey    string
-	AlpacaAPISecret string
-	AlpacaDataURL   string
+	AlpacaAPIKey      string
+	AlpacaAPISecret   string
+	AlpacaDataURL     string
+	AlpacaTradingURL  string
+	PortfolioExecMode string
 
 	IngestSymbols       []string
 	IngestInterval      string
@@ -43,6 +45,8 @@ func Load() (*Config, error) {
 		AlpacaAPIKey:        os.Getenv("ALPACA_API_KEY"),
 		AlpacaAPISecret:     os.Getenv("ALPACA_API_SECRET"),
 		AlpacaDataURL:       envOr("ALPACA_DATA_URL", "https://data.alpaca.markets"),
+		AlpacaTradingURL:    envOr("ALPACA_TRADING_URL", "https://paper-api.alpaca.markets"),
+		PortfolioExecMode:   strings.ToLower(strings.TrimSpace(envOr("PORTFOLIO_EXECUTION_MODE", "internal"))),
 		IngestInterval:      envOr("INGEST_INTERVAL", "1h"),
 		IngestForceBackfill: envBool("INGEST_FORCE_BACKFILL"),
 		IngestRunOnce:       envBool("INGEST_RUN_ONCE"),

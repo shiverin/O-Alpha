@@ -414,22 +414,27 @@ func ValidateBar(b models.Bar) error {
 
 // OrderRequest represents a request to place an order with Alpaca.
 type OrderRequest struct {
-	Symbol      string   `json:"symbol"`
-	Qty         *float64 `json:"qty,omitempty"`
-	Notional    *float64 `json:"notional,omitempty"`
-	Side        string   `json:"side"` // "buy" or "sell"
-	Type        string   `json:"type"` // initially "market"
-	TimeInForce string   `json:"time_in_force"`
+	Symbol        string   `json:"symbol"`
+	Qty           *float64 `json:"qty,omitempty"`
+	Notional      *float64 `json:"notional,omitempty"`
+	Side          string   `json:"side"` // "buy" or "sell"
+	Type          string   `json:"type"` // initially "market"
+	TimeInForce   string   `json:"time_in_force"`
+	ClientOrderID string   `json:"client_order_id,omitempty"`
 }
 
 // OrderResponse represents the response from placing an order with Alpaca.
 type OrderResponse struct {
-	ID     string `json:"id"`
-	Symbol string `json:"symbol"`
-	Qty    string `json:"qty"`
-	Side   string `json:"side"`
-	Type   string `json:"type"`
-	Status string `json:"status"`
+	ID             string `json:"id"`
+	ClientOrderID  string `json:"client_order_id"`
+	Symbol         string `json:"symbol"`
+	Qty            string `json:"qty"`
+	FilledQty      string `json:"filled_qty"`
+	FilledAvgPrice string `json:"filled_avg_price"`
+	Side           string `json:"side"`
+	Type           string `json:"type"`
+	Status         string `json:"status"`
+	RejectedReason string `json:"rejected_reason"`
 }
 
 type Asset struct {
@@ -509,6 +514,65 @@ func (c *Client) PlaceOrder(ctx context.Context, req *OrderRequest) (*OrderRespo
 	var orderResp OrderResponse
 	if err := json.Unmarshal(respBody, &orderResp); err != nil {
 		return nil, fmt.Errorf("decode order response: %w", err)
+	}
+	return &orderResp, nil
+}
+
+// GetOrder fetches a single Alpaca Trading API order by provider order ID.
+func (c *Client) GetOrder(ctx context.Context, orderID string) (*OrderResponse, error) {
+	orderID = strings.TrimSpace(orderID)
+	if orderID == "" {
+		return nil, fmt.Errorf("order id is required")
+	}
+	u, err := url.Parse(fmt.Sprintf("%s/v2/orders/%s", c.baseURL, url.PathEscape(orderID)))
+	if err != nil {
+		return nil, fmt.Errorf("parse order url: %w", err)
+	}
+	return c.getOrder(ctx, u.String())
+}
+
+// GetOrderByClientOrderID fetches an order by the deterministic client order ID
+// supplied when the order was submitted.
+func (c *Client) GetOrderByClientOrderID(ctx context.Context, clientOrderID string) (*OrderResponse, error) {
+	clientOrderID = strings.TrimSpace(clientOrderID)
+	if clientOrderID == "" {
+		return nil, fmt.Errorf("client order id is required")
+	}
+	u, err := url.Parse(c.baseURL + "/v2/orders:by_client_order_id")
+	if err != nil {
+		return nil, fmt.Errorf("parse client order url: %w", err)
+	}
+	q := u.Query()
+	q.Set("client_order_id", clientOrderID)
+	u.RawQuery = q.Encode()
+	return c.getOrder(ctx, u.String())
+}
+
+func (c *Client) getOrder(ctx context.Context, url string) (*OrderResponse, error) {
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create order lookup request: %w", err)
+	}
+	httpReq.Header.Set("APCA-API-KEY-ID", c.apiKey)
+	httpReq.Header.Set("APCA-API-SECRET-KEY", c.apiSecret)
+
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("alpaca order lookup request: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read order lookup response: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("alpaca order lookup status %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	var orderResp OrderResponse
+	if err := json.Unmarshal(respBody, &orderResp); err != nil {
+		return nil, fmt.Errorf("decode order lookup response: %w", err)
 	}
 	return &orderResp, nil
 }
