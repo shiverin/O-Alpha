@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -18,6 +19,8 @@ type PortfolioOrchestrator struct {
 	agentRepo     *db.AgentRepository
 	portfolioRepo *db.PortfolioRepository
 	alpacaClient  *alpaca.Client
+	paperBroker   AlpacaPaperBroker
+	executionMode string
 	cfg           StrategyCatalogConfig
 
 	mu      sync.Mutex
@@ -32,15 +35,37 @@ type userRun struct {
 	symbols     []string
 }
 
-func NewPortfolioOrchestrator(mgr *PortfolioAgentManager, barsRepo *db.BarsRepository, agentRepo *db.AgentRepository, portfolioRepo *db.PortfolioRepository, alpacaClient *alpaca.Client, cfg StrategyCatalogConfig) *PortfolioOrchestrator {
+type portfolioExecutionRouter interface {
+	ExecutePortfolioTargets(ctx context.Context, output backtest.PortfolioOutput, prices map[string]float64) error
+	ExecutePortfolioTargetsWithSettings(ctx context.Context, output backtest.PortfolioOutput, prices map[string]float64, settings RuntimeSettings) error
+}
+
+const (
+	PortfolioExecutionInternal    = "internal"
+	PortfolioExecutionAlpacaPaper = "alpaca_paper"
+)
+
+func NewPortfolioOrchestrator(mgr *PortfolioAgentManager, barsRepo *db.BarsRepository, agentRepo *db.AgentRepository, portfolioRepo *db.PortfolioRepository, alpacaClient *alpaca.Client, paperBroker AlpacaPaperBroker, executionMode string, cfg StrategyCatalogConfig) *PortfolioOrchestrator {
+	executionMode = normalizePortfolioExecutionMode(executionMode)
 	return &PortfolioOrchestrator{
 		mgr:           mgr,
 		barsRepo:      barsRepo,
 		agentRepo:     agentRepo,
 		portfolioRepo: portfolioRepo,
 		alpacaClient:  alpacaClient,
+		paperBroker:   paperBroker,
+		executionMode: executionMode,
 		cfg:           cfg,
 		running:       make(map[int64]*userRun),
+	}
+}
+
+func normalizePortfolioExecutionMode(mode string) string {
+	switch strings.ToLower(strings.TrimSpace(mode)) {
+	case PortfolioExecutionAlpacaPaper:
+		return PortfolioExecutionAlpacaPaper
+	default:
+		return PortfolioExecutionInternal
 	}
 }
 
@@ -57,6 +82,13 @@ func (o *PortfolioOrchestrator) IsRunningForUser(userID int64) bool {
 
 func (o *PortfolioOrchestrator) Catalog(symbols []string) []StrategySpec {
 	return AvailableStrategySpecs(symbols, o.cfg)
+}
+
+func (o *PortfolioOrchestrator) ExecutionMode() string {
+	if o == nil {
+		return PortfolioExecutionInternal
+	}
+	return o.executionMode
 }
 
 func (o *PortfolioOrchestrator) SpecByKey(key string, symbols []string) (StrategySpec, error) {
@@ -80,7 +112,7 @@ func (o *PortfolioOrchestrator) StartForUser(ctx context.Context, userID, agentR
 		return StrategySpec{}, err
 	}
 
-	router := NewDBExecutionRouter(o.portfolioRepo, userID, agentRunID, initialCash)
+	router := o.executionRouterFor(userID, agentRunID, initialCash)
 	worker, err := o.mgr.StartPortfolioAgent(context.Background(), userKey(userID), strategy, symbols, timeframe, initialCash, router)
 	if err != nil {
 		return StrategySpec{}, err
@@ -122,13 +154,21 @@ func (o *PortfolioOrchestrator) StartForUser(ctx context.Context, userID, agentR
 
 	go o.loop(userID, agentRunID, worker, router, timeframe, spec.BenchmarkSymbol)
 
-	_ = o.portfolioRepo.InsertSystemAlert(ctx, userID, "INFO", "Agent started", fmt.Sprintf("%s is now running in paper mode over %d symbols.", spec.DisplayName, len(symbols)), "portfolio_agent", map[string]interface{}{
+	_ = o.portfolioRepo.InsertSystemAlert(ctx, userID, "INFO", "Agent started", fmt.Sprintf("%s is now running in %s mode over %d symbols.", spec.DisplayName, o.executionMode, len(symbols)), "portfolio_agent", map[string]interface{}{
 		"run_id":            agentRunID,
 		"strategy_key":      strategyKey,
 		"deployment_status": string(spec.DeploymentStatus),
+		"execution_mode":    o.executionMode,
 	})
 
 	return spec, nil
+}
+
+func (o *PortfolioOrchestrator) executionRouterFor(userID, agentRunID int64, initialCash float64) portfolioExecutionRouter {
+	if o.executionMode == PortfolioExecutionAlpacaPaper && o.paperBroker != nil {
+		return NewAlpacaPaperExecutionRouter(o.portfolioRepo, o.paperBroker, userID, agentRunID, initialCash)
+	}
+	return NewDBExecutionRouter(o.portfolioRepo, userID, agentRunID, initialCash)
 }
 
 func (o *PortfolioOrchestrator) StopForUser(userID int64) error {
@@ -147,7 +187,7 @@ func (o *PortfolioOrchestrator) StopForUser(userID int64) error {
 	return nil
 }
 
-func (o *PortfolioOrchestrator) loop(userID, agentRunID int64, worker *PortfolioAgentWorker, router *DBExecutionRouter, timeframe string, benchmarkSymbol string) {
+func (o *PortfolioOrchestrator) loop(userID, agentRunID int64, worker *PortfolioAgentWorker, router portfolioExecutionRouter, timeframe string, benchmarkSymbol string) {
 	defer func() {
 		if recovered := recover(); recovered != nil {
 			log.Printf("[PortfolioOrchestrator] loop panic for user %d: %v", userID, recovered)
@@ -181,7 +221,7 @@ func (o *PortfolioOrchestrator) loop(userID, agentRunID int64, worker *Portfolio
 	}
 }
 
-func (o *PortfolioOrchestrator) evaluateOnce(ctx context.Context, userID, agentRunID int64, worker *PortfolioAgentWorker, router *DBExecutionRouter, opts db.BarQueryOptions, lookback time.Duration, benchmarkSymbol string, lastRebalance time.Time) time.Time {
+func (o *PortfolioOrchestrator) evaluateOnce(ctx context.Context, userID, agentRunID int64, worker *PortfolioAgentWorker, router portfolioExecutionRouter, opts db.BarQueryOptions, lookback time.Duration, benchmarkSymbol string, lastRebalance time.Time) time.Time {
 	end := time.Now().UTC()
 	start := end.Add(-lookback)
 	if err := o.refreshBarsBeforeEvaluation(ctx, worker, worker.Symbols(), worker.timeframe, start, end); err != nil {
