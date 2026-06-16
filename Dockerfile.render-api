@@ -13,9 +13,11 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/oalpha-api ./cmd/api
 
 FROM alpine:3.20
 RUN apk add --no-cache ca-certificates
+ENV OALPHA_DAILY_RANKER_ARTIFACT_ROOT=/opt/oalpha/ranker-fold-artifacts
 
 COPY --from=builder /bin/oalpha-api /usr/local/bin/oalpha-api
 COPY migrations /migrations
+COPY reports/batches/2026-06-03_yahoo100_daily_ranker_walkforward_slow_horizons_2018_2026/fold_artifacts/ /opt/oalpha/ranker-fold-artifacts/
 
 EXPOSE 10000
 ENTRYPOINT ["/usr/local/bin/oalpha-api"]

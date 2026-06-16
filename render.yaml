@@ -19,6 +19,8 @@ services:
         value: http://localhost:3000,http://127.0.0.1:3000,https://o-alpha-tan.vercel.app
       - key: ALPACA_DATA_URL
         value: https://data.alpaca.markets
+      - key: OALPHA_DAILY_RANKER_ARTIFACT_ROOT
+        value: /opt/oalpha/ranker-fold-artifacts
       - key: ALPACA_TRADING_URL
         value: https://paper-api.alpaca.markets
       - key: PORTFOLIO_EXECUTION_MODE
