@@ -446,7 +446,7 @@ export default function PortfolioPage() {
                           : "remove"}
                     </span>
                     {changePercent24h > 0 ? "+" : ""}
-                    {changePercent24h}% (24h)
+                    {changePercent24h.toFixed(2)}% (24h)
                   </span>
                   <span className="text-on-surface-variant/50 font-mono text-[11px] whitespace-nowrap">
                     {changeDollar24h > 0 ? "+" : ""}$

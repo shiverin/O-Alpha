@@ -36,6 +36,33 @@ interface SystemAlertItem {
 
 const fetcher = <T,>(path: string): Promise<T> => api.get<T>(path);
 
+function formatUtcTimestamp(timestamp: string) {
+  if (!timestamp || !timestamp.includes("T")) {
+    return { date: "", time: timestamp || "--" };
+  }
+
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return { date: "", time: timestamp };
+  }
+
+  return {
+    date: date.toISOString().slice(0, 10),
+    time: date.toISOString().slice(11, 19),
+  };
+}
+
+function formatSize(value: number | string | undefined) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value.toFixed(2);
+  }
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed.toFixed(2) : value;
+  }
+  return "--";
+}
+
 export default function ActivityPage() {
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
   const [tradeLimit, setTradeLimit] = useState<number>(15);
@@ -130,7 +157,16 @@ export default function ActivityPage() {
               />
 
               <div className="overflow-x-auto w-full">
-                <table className="w-full text-left border-collapse min-w-[750px]">
+                <table className="w-full table-fixed text-left border-collapse min-w-[900px]">
+                  <colgroup>
+                    <col className="w-[20%]" />
+                    <col className="w-[14%]" />
+                    <col className="w-[12%]" />
+                    <col className="w-[14%]" />
+                    <col className="w-[16%]" />
+                    <col className="w-[14%]" />
+                    <col className="w-[10%]" />
+                  </colgroup>
                   <thead>
                     <tr className="border-b border-outline-variant/20 bg-void-black/30 font-mono text-[10px] tracking-wider text-on-surface-variant/50 uppercase">
                       <th className="py-4 px-6 font-medium">TIMESTAMP (UTC)</th>
@@ -158,24 +194,16 @@ export default function ActivityPage() {
                       </tr>
                     ) : (
                       filteredTrades.map((log: TradeLogItem, index: number) => {
-                        const displayTime =
-                          log.timestamp && log.timestamp.includes("T")
-                            ? new Date(log.timestamp).toLocaleTimeString(
-                                undefined,
-                                {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  second: "2-digit",
-                                },
-                              )
-                            : log.timestamp;
+                        const timestampLabel = formatUtcTimestamp(
+                          log.timestamp,
+                        );
 
                         const actionColor =
                           log.actionColorClass ||
                           (log.action.startsWith("BUY")
                             ? "text-primary-fixed-dim"
                             : "text-error");
-                        const sizeValue = log.qty || log.size || "--";
+                        const sizeValue = formatSize(log.qty || log.size);
 
                         const statusColor =
                           log.statusColorClass ||
@@ -191,7 +219,10 @@ export default function ActivityPage() {
                             className="transition-colors duration-150 hover:bg-white/[0.01] cursor-default"
                           >
                             <td className="py-4 px-6 text-on-surface-variant/60">
-                              {displayTime}
+                              <div className="flex flex-col gap-1 leading-none">
+                                <span>{timestampLabel.date}</span>
+                                <span>{timestampLabel.time}</span>
+                              </div>
                             </td>
                             <td className="py-4 px-6">
                               <span className={actionColor}>{log.action}</span>
