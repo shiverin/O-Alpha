@@ -271,15 +271,48 @@ func TestPlaceOrderValidation(t *testing.T) {
 
 	// Test valid order (should succeed)
 	orderResp, err := c.PlaceOrder(context.Background(), &OrderRequest{
-		Symbol:      "AAPL",
-		Qty:         &qty,
-		Side:        "buy",
-		Type:        "market",
-		TimeInForce: "day",
+		Symbol:        "AAPL",
+		Qty:           &qty,
+		Side:          "buy",
+		Type:          "market",
+		TimeInForce:   "day",
+		ClientOrderID: "client-123",
 	})
 	assert.NoError(t, err)
 	assert.NotNil(t, orderResp)
 	assert.Equal(t, "order123", orderResp.ID)
 	assert.Equal(t, "AAPL", orderResp.Symbol)
 	assert.Equal(t, "new", orderResp.Status)
+}
+
+func TestGetOrderEndpoints(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "test-key", r.Header.Get("APCA-API-KEY-ID"))
+		assert.Equal(t, "test-secret", r.Header.Get("APCA-API-SECRET-KEY"))
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/v2/orders/order123":
+			assert.Equal(t, http.MethodGet, r.Method)
+			_, _ = w.Write([]byte(`{"id":"order123","symbol":"AAPL","qty":"10","filled_qty":"10","filled_avg_price":"123.45","side":"buy","status":"filled"}`))
+		case "/v2/orders:by_client_order_id":
+			assert.Equal(t, http.MethodGet, r.Method)
+			assert.Equal(t, "client-123", r.URL.Query().Get("client_order_id"))
+			_, _ = w.Write([]byte(`{"id":"order123","client_order_id":"client-123","symbol":"AAPL","qty":"10","side":"buy","status":"accepted"}`))
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer ts.Close()
+
+	c := NewClient(ts.URL, "test-key", "test-secret")
+	order, err := c.GetOrder(context.Background(), "order123")
+	assert.NoError(t, err)
+	assert.Equal(t, "filled", order.Status)
+	assert.Equal(t, "10", order.FilledQty)
+	assert.Equal(t, "123.45", order.FilledAvgPrice)
+
+	byClient, err := c.GetOrderByClientOrderID(context.Background(), "client-123")
+	assert.NoError(t, err)
+	assert.Equal(t, "client-123", byClient.ClientOrderID)
+	assert.Equal(t, "accepted", byClient.Status)
 }

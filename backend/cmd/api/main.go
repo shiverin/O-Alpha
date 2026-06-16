@@ -42,6 +42,7 @@ func main() {
 	portfolioRepo := db.NewPortfolioRepository(sqlDB)
 
 	alpacaClient := alpaca.NewClient(cfg.AlpacaDataURL, cfg.AlpacaAPIKey, cfg.AlpacaAPISecret)
+	alpacaTradingClient := alpaca.NewClient(cfg.AlpacaTradingURL, cfg.AlpacaAPIKey, cfg.AlpacaAPISecret)
 
 	agentManager := agent.NewAgentManager(alpacaClient, repo, agentRepo, portfolioRepo)
 	portfolioManager := portfolio.NewPortfolioAgentManager(repo, alpacaClient)
@@ -51,6 +52,8 @@ func main() {
 		agentRepo,
 		portfolioRepo,
 		alpacaClient,
+		alpacaTradingClient,
+		cfg.PortfolioExecMode,
 		portfolio.DefaultStrategyCatalogConfig(),
 	)
 

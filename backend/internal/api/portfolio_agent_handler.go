@@ -113,6 +113,7 @@ func (h *Handler) LaunchPortfolioAgent(c *gin.Context) {
 		"deployment_status": string(spec.DeploymentStatus),
 		"paper_only":        spec.PaperOnly,
 		"benchmark_symbol":  spec.BenchmarkSymbol,
+		"execution_mode":    h.Portfolio.ExecutionMode(),
 		"symbols":           symbols,
 	}
 	runID, err := h.AgentRepo.CreateAgentRun(c.Request.Context(), userID, spec.BenchmarkSymbol, portfolioStrategyTypeTag, timeframe, "paper", initialCash, false, parameters)
@@ -140,6 +141,7 @@ func (h *Handler) LaunchPortfolioAgent(c *gin.Context) {
 		"display_name":      spec.DisplayName,
 		"deployment_status": string(spec.DeploymentStatus),
 		"paper_only":        spec.PaperOnly,
+		"execution_mode":    h.Portfolio.ExecutionMode(),
 		"symbols":           symbols,
 	})
 }
