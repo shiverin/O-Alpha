@@ -98,7 +98,7 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
         <div className="relative z-10 flex flex-col items-center p-6 sm:p-8">
           <div className="mb-6 flex flex-col items-center text-center">
             <h1 className="mb-1 text-2xl font-bold text-on-background">
-              Log In or Create Account
+              Log In / Create Account
             </h1>
             <p className="max-w-[18rem] text-xs leading-relaxed text-on-surface-variant">
               Use an existing username to sign in, or enter a new one to create
@@ -162,9 +162,6 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
                 />
                 Remember Me
               </label>
-              <span className="text-on-surface-variant/50">
-                Reset via support
-              </span>
             </div>
 
             <button
