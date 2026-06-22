@@ -97,7 +97,7 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
         <div className="relative z-10 flex flex-col items-center p-6 sm:p-8">
           <div className="mb-6 flex flex-col items-center text-center">
             <h1 className="mb-1 text-2xl font-bold text-on-background">
-              Log In
+              Log In / Create Account
             </h1>
           </div>
 
@@ -155,12 +155,6 @@ export function LoginModal({ isOpen, onClose, redirectPath }: LoginModalProps) {
                 />
                 Remember Me
               </label>
-              <button
-                className="text-primary-container transition-colors hover:text-white"
-                type="button"
-              >
-                Reset Password
-              </button>
             </div>
 
             <button
