@@ -190,7 +190,7 @@ export default function TelemetryMetrics({
               <span className="text-4xl font-light tracking-tight text-on-surface">
                 {normalizedAnnualizedReturn === null
                   ? "--"
-                  : `+${normalizedAnnualizedReturn.toFixed(1)}%`}
+                  : `${normalizedAnnualizedReturn >= 0 ? "+" : ""}${normalizedAnnualizedReturn.toFixed(1)}%`}
               </span>
             </div>
           </div>

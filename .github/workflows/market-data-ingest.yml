@@ -1,0 +1,78 @@
+name: Market Data Ingest
+
+on:
+  workflow_dispatch:
+    inputs:
+      symbols:
+        description: "Optional comma-separated symbol override. Defaults to repository variable INGEST_SYMBOLS or the Yahoo100 paper universe."
+        required: false
+        type: string
+      lookback:
+        description: "Go duration lookback for cold starts or forced replays."
+        required: false
+        default: "168h"
+        type: string
+      force_backfill:
+        description: "Replay the configured lookback even when bars already exist."
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    # Weekdays after the US cash close, with buffer for daily bars to settle.
+    - cron: "30 22 * * 1-5"
+
+concurrency:
+  group: market-data-ingest
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    name: Sync Alpaca daily bars
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    defaults:
+      run:
+        working-directory: ./backend
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+      ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+      ALPACA_DATA_URL: https://data.alpaca.markets
+      MIGRATIONS_PATH: file://../migrations
+      INGEST_INTERVAL: 1Day
+      INGEST_RUN_ONCE: "true"
+      INGEST_LOOKBACK: ${{ github.event.inputs.lookback || '168h' }}
+      INGEST_FORCE_BACKFILL: ${{ github.event.inputs.force_backfill || 'false' }}
+      INGEST_SYMBOLS_OVERRIDE: ${{ github.event.inputs.symbols || vars.INGEST_SYMBOLS }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache-dependency-path: backend/go.sum
+
+      - name: Resolve ingest universe
+        run: |
+          set -euo pipefail
+          if [ -z "${DATABASE_URL}" ]; then
+            echo "DATABASE_URL secret is required" >&2
+            exit 1
+          fi
+          if [ -z "${ALPACA_API_KEY}" ] || [ -z "${ALPACA_API_SECRET}" ]; then
+            echo "ALPACA_API_KEY and ALPACA_API_SECRET secrets are required" >&2
+            exit 1
+          fi
+          if [ -n "${INGEST_SYMBOLS_OVERRIDE}" ]; then
+            echo "INGEST_SYMBOLS=${INGEST_SYMBOLS_OVERRIDE}" >> "$GITHUB_ENV"
+          else
+            echo "INGEST_SYMBOLS=VOO,AAPL,ADBE,ADP,AMAT,AMD,AMGN,AMZN,AVGO,BKNG,CMCSA,COST,CSCO,DIA,GILD,GOOGL,INTC,INTU,ISRG,IWM,LRCX,MDLZ,META,MSFT,NFLX,NVDA,PEP,QCOM,QQQ,SBUX,SMH,SPY,TSLA,TXN,VTI,XLB,XLE,XLF,XLI,XLK,XLP,XLU,XLV,XLY,HON,ABBV,ABT,ACN,GE,KO,SCHW,AMT,AXP,BA,BAC,BLK,BMY,C,CAT,CI,COP,CRM,CVS,CVX,DE,DIS,ELV,GS,HD,IBM,JNJ,JPM,LIN,LLY,LOW,MA,MCD,MDT,MO,MRK,NEE,NKE,NOW,ORCL,PFE,PG,PLD,PM,RTX,SO,SYK,T,TMO,UNH,UPS,USB,V,VZ,WMT,XOM" >> "$GITHUB_ENV"
+          fi
+
+      - name: Run one-shot daily ingest
+        run: go run ./cmd/ingest

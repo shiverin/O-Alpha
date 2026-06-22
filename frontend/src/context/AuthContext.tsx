@@ -13,7 +13,11 @@ import {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  login: (
+    username: string,
+    password: string,
+    remember?: boolean,
+  ) => Promise<void>;
   logout: () => Promise<void>;
   markOnboarded: () => void;
 }
@@ -65,14 +69,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkAuth();
   }, []);
 
-  const login = async (username: string, password: string) => {
+  const login = async (
+    username: string,
+    password: string,
+    remember = false,
+  ) => {
     try {
       const response = await api.post<{
         token: string;
         user: { id: number; username: string; is_onboarded: boolean };
       }>("/auth/login", { username, password });
 
-      setToken(response.token);
+      setToken(response.token, remember);
 
       setUser({
         id: response.user.id,

@@ -6,6 +6,7 @@ import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/ui/Icon";
 import { useAuth } from "@/context/AuthContext";
 import { api, streamPortfolioLive } from "@/lib/api";
+import { downloadCsv } from "@/lib/csv";
 import {
   applyLivePriceToHistory,
   applyLivePriceToPositions,
@@ -57,6 +58,7 @@ const PORTFOLIO_FLAT_SPARKLINE = {
 
 const fetcher = <T,>(path: string): Promise<T> => api.get<T>(path);
 const REALTIME_REFRESH_MS = 15000;
+const DEFAULT_VISIBLE_POSITIONS = 8;
 type PriceFlashDirection = "up" | "down";
 const priceFlashStyles: Record<
   PriceFlashDirection,
@@ -82,6 +84,7 @@ export default function PortfolioPage() {
   const [priceFlashes, setPriceFlashes] = useState<
     Partial<Record<string, PriceFlashDirection>>
   >({});
+  const [showAllPositions, setShowAllPositions] = useState(false);
 
   const { data: serverSummary, mutate: mutateSummary } =
     useSWR<ServerPortfolioSummary>(
@@ -392,6 +395,51 @@ export default function PortfolioPage() {
 
   const ringCenterLabel = compositionSegmentsList[0]?.label || "Cash & Equiv";
   const ringCenterPercentage = compositionSegmentsList[0]?.percentage || 100;
+  const positionCount =
+    currentUserID === 999
+      ? mockPositions.length
+      : (serverPositions?.length ?? 0);
+  const hasMorePositions = positionCount > DEFAULT_VISIBLE_POSITIONS;
+  const displayedMockPositions = showAllPositions
+    ? mockPositions
+    : mockPositions.slice(0, DEFAULT_VISIBLE_POSITIONS);
+  const displayedServerPositions =
+    showAllPositions || !serverPositions
+      ? serverPositions
+      : serverPositions.slice(0, DEFAULT_VISIBLE_POSITIONS);
+
+  const handleExportPositions = () => {
+    const headers = [
+      "asset",
+      "symbol",
+      "allocation_percent",
+      "current_price",
+      "unrealized_pnl",
+      "exposure",
+    ];
+    const rows =
+      currentUserID === 999
+        ? mockPositions.map((position) => [
+            position.name,
+            position.symbol,
+            position.allocation.toFixed(2),
+            position.currentPrice.toFixed(2),
+            position.unrealizedPnL.toFixed(2),
+            position.exposure.toFixed(2),
+          ])
+        : (serverPositions ?? []).map((position) => [
+            `${position.symbol} Asset Node`,
+            position.symbol,
+            totalAssetValue > 0
+              ? ((position.exposure / totalAssetValue) * 100).toFixed(2)
+              : "0.00",
+            position.current_price.toFixed(2),
+            position.unrealized_pnl.toFixed(2),
+            position.exposure.toFixed(2),
+          ]);
+
+    downloadCsv("oalpha-positions.csv", headers, rows);
+  };
 
   return (
     <AppShell title="Portfolio">
@@ -446,11 +494,14 @@ export default function PortfolioPage() {
                           : "remove"}
                     </span>
                     {changePercent24h > 0 ? "+" : ""}
-                    {changePercent24h}% (24h)
+                    {changePercent24h.toFixed(2)}% (24h)
                   </span>
                   <span className="text-on-surface-variant/50 font-mono text-[11px] whitespace-nowrap">
                     {changeDollar24h > 0 ? "+" : ""}$
-                    {changeDollar24h.toLocaleString()}
+                    {changeDollar24h.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </span>
                 </div>
               </div>
@@ -662,7 +713,12 @@ export default function PortfolioPage() {
             <h3 className="text-sm sm:text-md font-light tracking-wide text-on-surface">
               Positions
             </h3>
-            <button className="font-mono text-[11px] text-primary-fixed-dim hover:text-primary-fixed flex items-center gap-1.5 transition-colors duration-300 shrink-0">
+            <button
+              type="button"
+              onClick={handleExportPositions}
+              disabled={positionCount === 0}
+              className="font-mono text-[11px] text-primary-fixed-dim hover:text-primary-fixed flex items-center gap-1.5 transition-colors duration-300 shrink-0 disabled:cursor-not-allowed disabled:opacity-45"
+            >
               <span className="material-symbols-outlined text-[16px]">
                 download
               </span>
@@ -689,7 +745,7 @@ export default function PortfolioPage() {
               </thead>
               <tbody className="text-xs sm:text-sm text-on-surface/90 divide-y divide-outline-variant/10">
                 {currentUserID === 999 ? (
-                  mockPositions.map(
+                  displayedMockPositions.map(
                     (position: MockPositionMetrics, idx: number) => (
                       <tr
                         key={idx}
@@ -751,7 +807,7 @@ export default function PortfolioPage() {
                     </td>
                   </tr>
                 ) : (
-                  serverPositions.map(
+                  (displayedServerPositions ?? []).map(
                     (position: ServerPositionMetrics, idx: number) => {
                       const isPositive = position.unrealized_pnl >= 0;
                       const flashDirection =
@@ -827,11 +883,19 @@ export default function PortfolioPage() {
             </table>
           </div>
 
-          <div className="p-5 text-center border-t border-outline-variant/10 bg-white/[0.005]">
-            <button className="font-mono text-[10px] tracking-wider uppercase text-on-surface-variant/70 hover:text-on-surface border border-outline-variant/20 rounded-full px-5 py-2 hover:bg-void-black transition-all duration-300">
-              View All Positions
-            </button>
-          </div>
+          {hasMorePositions && (
+            <div className="p-5 text-center border-t border-outline-variant/10 bg-white/[0.005]">
+              <button
+                type="button"
+                onClick={() => setShowAllPositions((current) => !current)}
+                className="font-mono text-[10px] tracking-wider uppercase text-on-surface-variant/70 hover:text-on-surface border border-outline-variant/20 rounded-full px-5 py-2 hover:bg-void-black transition-all duration-300"
+              >
+                {showAllPositions
+                  ? "Show Fewer Positions"
+                  : "View All Positions"}
+              </button>
+            </div>
+          )}
         </section>
       </div>
     </AppShell>

@@ -1,23 +1,21 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { isAuthenticated } from "@/lib/auth";
+import { useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [ready, setReady] = useState(false);
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    const authed = isAuthenticated();
-    if (!authed) {
+    if (loading) return;
+    if (!user) {
       router.replace("/?auth=required");
-      return;
     }
-    setReady(true);
-  }, [router]);
+  }, [loading, router, user]);
 
-  if (!ready) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen bg-background text-on-background flex items-center justify-center">
         <span className="font-body-md text-body-md text-on-surface-variant">

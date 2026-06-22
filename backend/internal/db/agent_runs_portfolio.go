@@ -9,6 +9,7 @@ import (
 
 type AgentRunSummary struct {
 	ID              int64                  `json:"id"`
+	UserID          int64                  `json:"-"`
 	Symbol          string                 `json:"symbol"`
 	StrategyType    string                 `json:"strategy_type"`
 	StrategyKey     string                 `json:"strategy_key,omitempty"`
@@ -22,9 +23,11 @@ type AgentRunSummary struct {
 	LastHeartbeatAt *time.Time             `json:"last_heartbeat_at,omitempty"`
 }
 
+const portfolioWorkerAdvisoryLockKey int64 = 602214110042
+
 func (r *AgentRepository) ListActiveAgentRuns(ctx context.Context, userID int64) ([]AgentRunSummary, error) {
 	const q = `
-		SELECT id, symbol, strategy_type, timeframe, mode, status, initial_cash, parameters, started_at, last_heartbeat_at
+		SELECT id, user_id, symbol, strategy_type, timeframe, mode, status, initial_cash, parameters, started_at, last_heartbeat_at
 		FROM agent_runs
 		WHERE user_id = $1 AND status IN ('starting', 'running')
 		ORDER BY started_at DESC`
@@ -41,6 +44,7 @@ func (r *AgentRepository) ListActiveAgentRuns(ctx context.Context, userID int64)
 		var paramsBytes []byte
 		if err := rows.Scan(
 			&s.ID,
+			&s.UserID,
 			&s.Symbol,
 			&s.StrategyType,
 			&s.Timeframe,
@@ -53,26 +57,146 @@ func (r *AgentRepository) ListActiveAgentRuns(ctx context.Context, userID int64)
 		); err != nil {
 			return nil, err
 		}
-		if len(paramsBytes) > 0 {
-			if err := json.Unmarshal(paramsBytes, &s.Parameters); err != nil {
-				return nil, fmt.Errorf("unmarshal agent run parameters: %w", err)
-			}
-			if key, ok := s.Parameters["strategy_key"].(string); ok {
-				s.StrategyKey = key
-			}
-			if state, ok := s.Parameters["runtime_state"].(map[string]interface{}); ok {
-				s.RuntimeState = state
-			}
+		if err := decodeAgentRunParameters(paramsBytes, &s); err != nil {
+			return nil, err
 		}
 		summaries = append(summaries, s)
 	}
 	return summaries, rows.Err()
 }
 
+func (r *AgentRepository) ListResumablePortfolioRuns(ctx context.Context) ([]AgentRunSummary, error) {
+	const q = `
+		SELECT id, user_id, symbol, strategy_type, timeframe, mode, status, initial_cash, parameters, started_at, last_heartbeat_at
+		FROM agent_runs
+		WHERE strategy_type = 'PORTFOLIO_CATALOG'
+			AND status IN ('starting', 'running')
+		ORDER BY user_id, started_at DESC`
+
+	rows, err := r.db.Query(ctx, q)
+	if err != nil {
+		return nil, fmt.Errorf("list resumable portfolio agent runs: %w", err)
+	}
+	defer rows.Close()
+	return scanAgentRunSummaries(rows)
+}
+
+func (r *AgentRepository) ListActivePortfolioAgentRuns(ctx context.Context, limit int) ([]AgentRunSummary, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+	const q = `
+		SELECT id, user_id, symbol, strategy_type, timeframe, mode, status, initial_cash, parameters, started_at, last_heartbeat_at
+		FROM agent_runs
+		WHERE strategy_type = 'PORTFOLIO_CATALOG'
+			AND status = 'running'
+		ORDER BY last_heartbeat_at NULLS FIRST, started_at ASC
+		LIMIT $1`
+
+	rows, err := r.db.Query(ctx, q, limit)
+	if err != nil {
+		return nil, fmt.Errorf("list active portfolio agent runs: %w", err)
+	}
+	defer rows.Close()
+	return scanAgentRunSummaries(rows)
+}
+
+type agentRunRows interface {
+	Next() bool
+	Scan(dest ...interface{}) error
+	Err() error
+}
+
+func scanAgentRunSummaries(rows agentRunRows) ([]AgentRunSummary, error) {
+	summaries := make([]AgentRunSummary, 0)
+	for rows.Next() {
+		var s AgentRunSummary
+		var paramsBytes []byte
+		if err := rows.Scan(
+			&s.ID,
+			&s.UserID,
+			&s.Symbol,
+			&s.StrategyType,
+			&s.Timeframe,
+			&s.Mode,
+			&s.Status,
+			&s.InitialCash,
+			&paramsBytes,
+			&s.StartedAt,
+			&s.LastHeartbeatAt,
+		); err != nil {
+			return nil, err
+		}
+		if err := decodeAgentRunParameters(paramsBytes, &s); err != nil {
+			return nil, err
+		}
+		summaries = append(summaries, s)
+	}
+	return summaries, rows.Err()
+}
+
+func decodeAgentRunParameters(paramsBytes []byte, summary *AgentRunSummary) error {
+	if len(paramsBytes) == 0 || summary == nil {
+		return nil
+	}
+	if err := json.Unmarshal(paramsBytes, &summary.Parameters); err != nil {
+		return fmt.Errorf("unmarshal agent run parameters: %w", err)
+	}
+	if key, ok := summary.Parameters["strategy_key"].(string); ok {
+		summary.StrategyKey = key
+	}
+	if state, ok := summary.Parameters["runtime_state"].(map[string]interface{}); ok {
+		summary.RuntimeState = state
+	}
+	return nil
+}
+
+func (r *AgentRepository) TryPortfolioWorkerLock(ctx context.Context) (func(context.Context), bool, error) {
+	conn, err := r.db.Acquire(ctx)
+	if err != nil {
+		return nil, false, fmt.Errorf("acquire portfolio worker lock connection: %w", err)
+	}
+
+	var locked bool
+	if err := conn.QueryRow(ctx, `SELECT pg_try_advisory_lock($1)`, portfolioWorkerAdvisoryLockKey).Scan(&locked); err != nil {
+		conn.Release()
+		return nil, false, fmt.Errorf("try portfolio worker advisory lock: %w", err)
+	}
+	if !locked {
+		conn.Release()
+		return nil, false, nil
+	}
+
+	unlock := func(unlockCtx context.Context) {
+		defer conn.Release()
+		var released bool
+		_ = conn.QueryRow(unlockCtx, `SELECT pg_advisory_unlock($1)`, portfolioWorkerAdvisoryLockKey).Scan(&released)
+	}
+	return unlock, true, nil
+}
+
 func (r *AgentRepository) UpdateAgentRunHeartbeat(ctx context.Context, runID int64) error {
 	const q = `UPDATE agent_runs SET last_heartbeat_at = NOW() WHERE id = $1 AND status = 'running'`
 	if _, err := r.db.Exec(ctx, q, runID); err != nil {
 		return fmt.Errorf("update agent run heartbeat: %w", err)
+	}
+	return nil
+}
+
+func (r *AgentRepository) MarkAgentRunResumed(ctx context.Context, runID int64) error {
+	const q = `
+		UPDATE agent_runs
+		SET status = 'running',
+			last_heartbeat_at = NOW(),
+			stopped_at = NULL,
+			stop_reason = NULL
+		WHERE id = $1 AND status IN ('starting', 'running')`
+	tag, err := r.db.Exec(ctx, q, runID)
+	if err != nil {
+		return fmt.Errorf("mark agent run resumed: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("agent run %d was not found in resumable status", runID)
 	}
 	return nil
 }
@@ -98,7 +222,7 @@ func (r *AgentRepository) UpdateAgentRunRuntimeState(ctx context.Context, runID 
 	return nil
 }
 
-func (r *AgentRepository) MarkActivePortfolioRunStopped(ctx context.Context, userID int64, reason string) error {
+func (r *AgentRepository) MarkActivePortfolioRunStopped(ctx context.Context, userID int64, reason string) (int64, error) {
 	const q = `
 		WITH latest AS (
 			SELECT id
@@ -114,22 +238,26 @@ func (r *AgentRepository) MarkActivePortfolioRunStopped(ctx context.Context, use
 			stopped_at = NOW(),
 			stop_reason = $2
 		WHERE id = (SELECT id FROM latest)`
-	if _, err := r.db.Exec(ctx, q, userID, reason); err != nil {
-		return fmt.Errorf("mark active portfolio run stopped: %w", err)
+	tag, err := r.db.Exec(ctx, q, userID, reason)
+	if err != nil {
+		return 0, fmt.Errorf("mark active portfolio run stopped: %w", err)
 	}
-	return nil
+	return tag.RowsAffected(), nil
 }
 
 func (r *AgentRepository) MarkOrphanedAgentRunsFailed(ctx context.Context, staleAfter time.Duration) (int64, error) {
+	if staleAfter <= 0 {
+		return 0, nil
+	}
 	const q = `
 		UPDATE agent_runs
 		SET status = 'failed',
 			stopped_at = NOW(),
 			stop_reason = 'orphaned_on_restart'
 		WHERE status IN ('starting', 'running', 'stopping')
+			AND strategy_type <> 'PORTFOLIO_CATALOG'
 			AND (
-				$1::bigint = 0
-				OR last_heartbeat_at IS NULL
+				last_heartbeat_at IS NULL
 				OR last_heartbeat_at < NOW() - ($1::text || ' seconds')::interval
 			)`
 	seconds := int64(staleAfter.Seconds())

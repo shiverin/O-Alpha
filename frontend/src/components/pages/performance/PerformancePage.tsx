@@ -12,6 +12,21 @@ import RegimeDetectionCard from "@/components/sections/performance/RegimeDetecti
 import RiskArchitectureCard from "@/components/sections/performance/RiskArchitectureCard";
 import TelemetryMetrics from "@/components/sections/performance/TelemetryMetrics";
 
+const annualizedReturnPct = (
+  result: Awaited<ReturnType<typeof runBacktest>>,
+) => {
+  const annualizedReturn =
+    result.annualized_return ??
+    result.metrics?.annualized_return ??
+    result.annual_return ??
+    result.metrics?.annual_return;
+
+  return typeof annualizedReturn === "number" &&
+    Number.isFinite(annualizedReturn)
+    ? annualizedReturn * 100
+    : null;
+};
+
 export function PerformancePage() {
   const [data, setData] = useState<EquityPoint[]>([]);
   const [loading, setLoading] = useState(false);
@@ -23,7 +38,7 @@ export function PerformancePage() {
   }>({
     sharpeRatio: null,
     maxDrawdown: null,
-    annualizedReturn: 6.7,
+    annualizedReturn: null,
   });
 
   const [symbol, setSymbol] = useState("AAPL");
@@ -67,11 +82,11 @@ export function PerformancePage() {
 
       const result = await runBacktest(payload);
       setData(result.equity_curve);
-      setBacktestMetrics((prev) => ({
+      setBacktestMetrics({
         sharpeRatio: result.sharpe ?? null,
         maxDrawdown: result.max_drawdown ?? null,
-        annualizedReturn: prev.annualizedReturn,
-      }));
+        annualizedReturn: annualizedReturnPct(result),
+      });
     } catch (err) {
       setData(DEFAULT_EQUITY_CURVE);
       setBacktestMetrics({

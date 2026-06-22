@@ -5,9 +5,9 @@ import "testing"
 func TestRiskProfileDefaultStrategyMatchesRiskBucket(t *testing.T) {
 	cases := map[string]string{
 		"conservative": "ranker_proxy_h63_low",
-		"moderate":     "lgbm_ranker_h63_medium",
+		"moderate":     "ranker_proxy_h63_medium",
 		"aggressive":   "composite_momentum_high",
-		"":             "lgbm_ranker_h63_low",
+		"":             "ranker_proxy_h63_low",
 	}
 
 	for profile, want := range cases {
