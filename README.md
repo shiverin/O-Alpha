@@ -224,19 +224,34 @@ The v1 execution router is long-only. It sells reductions before buys, uses dete
 
 ## Testing
 
+The canonical test policy, tiers, and safety invariants live in `docs/TEST_STRATEGY.md`.
+
 Backend:
 
 ```bash
-cd backend
-go test ./...
+make test-backend
 ```
 
 Frontend:
 
 ```bash
 cd frontend
-npm run lint -- --no-cache
+npm run lint
 npm run typecheck
+npm test
+npm run test:e2e
+```
+
+All fast unit suites:
+
+```bash
+make test-all
+```
+
+Opt-in database integration tests:
+
+```bash
+OALPHA_TEST_DATABASE_URL=postgres://... make test-integration
 ```
 
 Full-stack smoke checklist:
