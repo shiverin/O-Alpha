@@ -4,7 +4,7 @@ ifneq (,$(wildcard .env))
     export
 endif
 
-.PHONY: help up down logs db-shell migrate test-backend run-api run-ingest setup-local setup-docker
+.PHONY: help up down logs db-shell migrate test-backend test-frontend test-all test-integration test-e2e run-api run-ingest setup-local setup-docker
 
 help:
 	@echo "O(Alpha) dev commands:"
@@ -22,6 +22,10 @@ help:
 	@echo "Local Development:"
 	@echo "  make migrate       - run migrations locally"
 	@echo "  make test-backend  - go test ./..."
+	@echo "  make test-frontend - frontend unit tests"
+	@echo "  make test-all      - backend + frontend unit tests"
+	@echo "  make test-integration - opt-in Go integration tests (needs OALPHA_TEST_DATABASE_URL)"
+	@echo "  make test-e2e      - Playwright browser smoke tests"
 	@echo "  make run-api       - run API locally (requires .env)"
 	@echo "  make run-ingest    - run ingest locally (requires .env)"
 
@@ -69,6 +73,17 @@ migrate:
 
 test-backend:
 	cd backend && go test ./...
+
+test-frontend:
+	cd frontend && npm test
+
+test-all: test-backend test-frontend
+
+test-integration:
+	cd backend && go test -tags=integration ./...
+
+test-e2e:
+	cd frontend && npm run test:e2e
 
 run-api:
 	cd backend && MIGRATIONS_PATH=file://../migrations go run ./cmd/api/main.go
