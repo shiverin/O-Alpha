@@ -10,7 +10,10 @@ export default function StrategyControls({
   universeSize,
 }: StrategyControlsProps) {
   return (
-    <div className="md:col-span-12 xl:col-span-4 group relative flex flex-col h-auto xl:h-[460px] bg-surface-container-low border border-outline-variant/30 rounded-[32px] p-5 sm:p-8 overflow-hidden hover:bg-surface-container transition-all duration-700 hover:shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+    <div
+      data-tour-id="dashboard-strategy-profile"
+      className="md:col-span-12 xl:col-span-4 group relative flex flex-col h-auto xl:h-[460px] bg-surface-container-low border border-outline-variant/30 rounded-[32px] p-5 sm:p-8 overflow-hidden hover:bg-surface-container transition-all duration-700 hover:shadow-[0_20px_40px_rgba(0,0,0,0.2)]"
+    >
       <div className="mb-6 xl:mb-8 border-b border-outline-variant/20 pb-4 flex items-center justify-between">
         <h3 className="text-[10px] font-medium tracking-[0.2em] text-on-surface uppercase">
           Strategy Profile

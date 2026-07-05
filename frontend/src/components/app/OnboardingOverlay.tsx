@@ -254,6 +254,12 @@ export default function OnboardingOverlay({
       "Allows wider paper-risk limits for comparison runs while keeping catalog strategy recipes unchanged.",
   };
 
+  const profileSummaries: Record<RiskProfile, string> = {
+    conservative: "Lower exposure, fewer positions, weekly rebalance.",
+    moderate: "Balanced exposure, standard exits, daily cadence.",
+    aggressive: "Higher paper-risk limits for comparison runs.",
+  };
+
   const strategiesForRisk = useMemo(() => {
     const bucket = riskBuckets[riskProfile];
     return catalog.strategies.filter(
@@ -468,7 +474,9 @@ export default function OnboardingOverlay({
               </span>
             </h1>
             <p className="text-sm sm:text-base font-light text-on-surface-variant/70 leading-relaxed mb-10">
-              Setup your agent
+              Choose a risk profile, run a five-year catalog backtest, then
+              accept the result to finish setup. After onboarding, a short guide
+              will walk you through the main dashboard controls.
             </p>
             <button
               onClick={() => setStep(2)}
@@ -488,6 +496,10 @@ export default function OnboardingOverlay({
               <h2 className="text-2xl font-light tracking-tight text-on-surface">
                 Select Your Risk Profile
               </h2>
+              <p className="mt-2 text-xs sm:text-sm font-light leading-relaxed text-on-surface-variant/70 max-w-2xl">
+                This picks the default settings used by your paper portfolio
+                agent. You can adjust the profile later in Agent Settings.
+              </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-10">
@@ -522,6 +534,9 @@ export default function OnboardingOverlay({
                           >
                             {profile}
                           </h4>
+                          <p className="mt-3 max-w-[14rem] text-center text-[11px] font-light leading-relaxed text-on-surface-variant/60">
+                            {profileSummaries[profile]}
+                          </p>
                         </div>
                         <div className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)] flex flex-col justify-center bg-surface-container-high border border-outline-variant/40 rounded-2xl p-6 shadow-xl">
                           <button
@@ -567,7 +582,9 @@ export default function OnboardingOverlay({
                   Backtest Your Chosen Strategy
                 </h2>
                 <p className="text-xs sm:text-sm font-light text-on-surface-variant/70 mt-2 max-w-2xl">
-                  Run a 5-year backtest.
+                  Run a five-year historical simulation for the selected catalog
+                  strategy. Accepting the backtest saves the onboarding profile;
+                  it does not place live brokerage orders.
                 </p>
               </div>
               <button

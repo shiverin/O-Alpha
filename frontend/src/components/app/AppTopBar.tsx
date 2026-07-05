@@ -10,9 +10,10 @@ import { appNavItems } from "@/components/app/appNav";
 type AppTopBarProps = {
   title: string;
   onSignOut: () => void;
+  onStartGuide: () => void;
 };
 
-export function AppTopBar({ title, onSignOut }: AppTopBarProps) {
+export function AppTopBar({ title, onSignOut, onStartGuide }: AppTopBarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
 
@@ -20,7 +21,7 @@ export function AppTopBar({ title, onSignOut }: AppTopBarProps) {
     <header className="sticky top-0 z-40 bg-background/60 backdrop-blur-xl border-b border-outline-variant/20">
       <Container>
         <div className="relative h-20 flex items-center">
-          <h1 className="max-w-[calc(100%-120px)] truncate pr-4 text-xl md:text-2xl font-light tracking-wide text-on-background">
+          <h1 className="max-w-[calc(100%-120px)] truncate pr-4 text-xl font-light tracking-wide text-on-background md:max-w-[calc(100%-220px)] md:text-2xl">
             {title}
           </h1>
 
@@ -37,12 +38,24 @@ export function AppTopBar({ title, onSignOut }: AppTopBarProps) {
             />
           </button>
 
-          <button
-            className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 px-5 py-2 rounded-full border border-outline-variant/30 text-xs font-medium tracking-wide text-on-surface-variant hover:text-on-background hover:bg-surface-container transition-all duration-300 ease-out"
-            onClick={onSignOut}
-          >
-            Sign Out
-          </button>
+          <div className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 items-center gap-2">
+            <button
+              type="button"
+              data-tour-id="app-guide-button"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-outline-variant/30 text-xs font-medium tracking-wide text-on-surface-variant hover:text-on-background hover:bg-surface-container transition-all duration-300 ease-out"
+              onClick={onStartGuide}
+              title="Replay beginner guide"
+            >
+              <Icon name="help" size="small" color="text-current" />
+              Guide
+            </button>
+            <button
+              className="px-5 py-2 rounded-full border border-outline-variant/30 text-xs font-medium tracking-wide text-on-surface-variant hover:text-on-background hover:bg-surface-container transition-all duration-300 ease-out"
+              onClick={onSignOut}
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
       </Container>
       <div
@@ -67,6 +80,7 @@ export function AppTopBar({ title, onSignOut }: AppTopBarProps) {
               <Link
                 key={item.href}
                 href={item.href}
+                data-tour-id={`app-nav-${item.tourId}`}
                 onClick={() => setMenuOpen(false)}
                 className={
                   "flex items-center gap-3 rounded-xl px-3 py-2 transition-colors duration-300 " +
@@ -91,6 +105,18 @@ export function AppTopBar({ title, onSignOut }: AppTopBarProps) {
             );
           })}
           <div className="pt-2 border-t border-outline-variant/30">
+            <button
+              type="button"
+              data-tour-id="app-guide-button"
+              className="w-full mt-2 px-4 py-2 rounded-full border border-outline-variant/30 text-xs font-medium tracking-wide text-on-surface-variant hover:text-on-background hover:bg-surface-container transition-all duration-300 ease-out inline-flex items-center justify-center gap-2"
+              onClick={() => {
+                setMenuOpen(false);
+                onStartGuide();
+              }}
+            >
+              <Icon name="help" size="small" color="text-current" />
+              Replay Guide
+            </button>
             <button
               className="w-full mt-2 px-4 py-2 rounded-full border border-outline-variant/30 text-xs font-medium tracking-wide text-on-surface-variant hover:text-on-background hover:bg-surface-container transition-all duration-300 ease-out"
               onClick={() => {
