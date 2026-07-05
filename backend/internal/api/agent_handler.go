@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -37,6 +38,17 @@ type AgentControlRequest struct {
 	MLEnterLong        float64 `json:"ml_enter_long"`
 	MLMaxWeight        float64 `json:"ml_max_weight"`
 	MLFailOpenOnError  *bool   `json:"ml_fail_open_on_error"`
+}
+
+type saveAgentSettingsRequest struct {
+	RiskProfile   string  `json:"risk_profile" binding:"required"`
+	Leverage      int     `json:"leverage" binding:"required"`
+	MaxPositions  int     `json:"max_positions" binding:"required"`
+	StopLossPct   float64 `json:"stop_loss_pct" binding:"required"`
+	TakeProfitPct float64 `json:"take_profit_pct" binding:"required"`
+	RebalanceFreq string  `json:"rebalance_freq" binding:"required"`
+	StrategyKey   string  `json:"strategy_key"`
+	BacktestOK    bool    `json:"backtest_accepted"`
 }
 
 // LaunchLiveAgent starts a user-scoped paper trading worker.
@@ -336,16 +348,7 @@ func (h *Handler) GetUserSettings(c *gin.Context) {
 
 // SaveUserSettings validates and persists agent settings for the authenticated user.
 func (h *Handler) SaveUserSettings(c *gin.Context) {
-	var req struct {
-		RiskProfile   string  `json:"risk_profile" binding:"required"`
-		Leverage      int     `json:"leverage" binding:"required"`
-		MaxPositions  int     `json:"max_positions" binding:"required"`
-		StopLossPct   float64 `json:"stop_loss_pct" binding:"required"`
-		TakeProfitPct float64 `json:"take_profit_pct" binding:"required"`
-		RebalanceFreq string  `json:"rebalance_freq" binding:"required"`
-		StrategyKey   string  `json:"strategy_key"`
-		BacktestOK    bool    `json:"backtest_accepted"`
-	}
+	var req saveAgentSettingsRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -361,57 +364,60 @@ func (h *Handler) SaveUserSettings(c *gin.Context) {
 		return
 	}
 
+	settings := agentSettingsFromRequest(userID, req)
 	currentSettings, err := h.AgentRepo.GetAgentSettings(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if currentSettings != nil && currentSettings.RiskProfile != req.RiskProfile {
-		activeRuns, err := h.AgentRepo.ListActiveAgentRuns(c.Request.Context(), userID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		if len(activeRuns) > 0 {
-			c.JSON(http.StatusConflict, gin.H{"error": "stop the running agent before changing risk_profile"})
-			return
-		}
-		if !req.BacktestOK {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "accepted catalog backtest is required before changing risk_profile"})
-			return
-		}
-		strategyKey := strings.ToLower(strings.TrimSpace(req.StrategyKey))
-		if strategyKey == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "strategy_key is required before changing risk_profile"})
-			return
-		}
-		spec, err := agentportfolio.StrategySpecByKey(strategyKey, nil, agentportfolio.DefaultStrategyCatalogConfig())
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		if spec.RiskProfile != onboardingRiskBucket(req.RiskProfile) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "strategy_key does not match requested risk_profile"})
-			return
-		}
-	}
-
-	settings := &db.AgentSettings{
-		UserID:        userID,
-		RiskProfile:   req.RiskProfile,
-		Leverage:      req.Leverage,
-		MaxPositions:  req.MaxPositions,
-		StopLossPct:   req.StopLossPct,
-		TakeProfitPct: req.TakeProfitPct,
-		RebalanceFreq: req.RebalanceFreq,
+	if err := validateRiskProfileChangeBacktest(currentSettings, settings, req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
 	if err := h.AgentRepo.SaveAgentSettings(c.Request.Context(), settings); err != nil {
+		if errors.Is(err, db.ErrActiveAgentSettingsLocked) {
+			c.JSON(http.StatusConflict, gin.H{"error": db.ErrActiveAgentSettingsLocked.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "synchronized"})
+}
+
+func agentSettingsFromRequest(userID int64, req saveAgentSettingsRequest) *db.AgentSettings {
+	return &db.AgentSettings{
+		UserID:        userID,
+		RiskProfile:   strings.ToLower(strings.TrimSpace(req.RiskProfile)),
+		Leverage:      req.Leverage,
+		MaxPositions:  req.MaxPositions,
+		StopLossPct:   req.StopLossPct,
+		TakeProfitPct: req.TakeProfitPct,
+		RebalanceFreq: strings.ToLower(strings.TrimSpace(req.RebalanceFreq)),
+	}
+}
+
+func validateRiskProfileChangeBacktest(current *db.AgentSettings, next *db.AgentSettings, req saveAgentSettingsRequest) error {
+	if current == nil || next == nil || strings.ToLower(strings.TrimSpace(current.RiskProfile)) == next.RiskProfile {
+		return nil
+	}
+	if !req.BacktestOK {
+		return fmt.Errorf("accepted catalog backtest is required before changing risk_profile")
+	}
+	strategyKey := strings.ToLower(strings.TrimSpace(req.StrategyKey))
+	if strategyKey == "" {
+		return fmt.Errorf("strategy_key is required before changing risk_profile")
+	}
+	spec, err := agentportfolio.StrategySpecByKey(strategyKey, nil, agentportfolio.DefaultStrategyCatalogConfig())
+	if err != nil {
+		return err
+	}
+	if spec.RiskProfile != onboardingRiskBucket(next.RiskProfile) {
+		return fmt.Errorf("strategy_key does not match requested risk_profile")
+	}
+	return nil
 }
 
 func parseRiskProfile(value string) (agent.RiskProfile, string, error) {
@@ -448,6 +454,8 @@ func parseRegimeMode(value string, riskOverlayEnabled *bool) (agent.RegimeMode, 
 }
 
 func validAgentSettings(riskProfile string, leverage, maxPositions int, stopLossPct, takeProfitPct float64, rebalanceFreq string) bool {
+	riskProfile = strings.ToLower(strings.TrimSpace(riskProfile))
+	rebalanceFreq = strings.ToLower(strings.TrimSpace(rebalanceFreq))
 	switch riskProfile {
 	case "conservative", "moderate", "aggressive":
 	default:

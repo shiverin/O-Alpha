@@ -70,7 +70,10 @@ export default function BalanceCard({
   }, [historyData]);
 
   return (
-    <div className="md:col-span-12 xl:col-span-8 group relative flex flex-col h-auto min-h-[380px] sm:h-[460px] bg-surface-container-low border border-outline-variant/30 rounded-[32px] p-5 sm:p-8 overflow-hidden hover:bg-surface-container transition-all duration-700 hover:shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+    <div
+      data-tour-id="dashboard-balance-card"
+      className="md:col-span-12 xl:col-span-8 group relative flex flex-col h-auto min-h-[380px] sm:h-[460px] bg-surface-container-low border border-outline-variant/30 rounded-[32px] p-5 sm:p-8 overflow-hidden hover:bg-surface-container transition-all duration-700 hover:shadow-[0_20px_40px_rgba(0,0,0,0.2)]"
+    >
       <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-primary-container/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
       <div className="flex justify-between items-center mb-6 sm:mb-8 border-b border-outline-variant/20 pb-4 relative z-10">

@@ -14,6 +14,7 @@ import {
   type StrategySpec,
 } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { hasActivePortfolioAgent } from "@/lib/agentRuns";
 
 type RiskProfile = "conservative" | "moderate" | "aggressive";
 type RiskBucket = "low" | "medium" | "high";
@@ -205,6 +206,9 @@ export default function AgentSettingsPage() {
   const { user } = useAuth();
   const currentUserID = user?.id || 999;
   const riskProfileChanged = riskProfile !== savedRiskProfile;
+  const settingsLocked = currentUserID !== 999 && isPortfolioAgentRunning;
+  const settingsLockedMessage =
+    "Stop the running portfolio agent before editing settings.";
 
   const strategiesForRisk = useMemo(() => {
     const bucket = riskBuckets[riskProfile];
@@ -362,11 +366,7 @@ export default function AgentSettingsPage() {
       try {
         const response = await agentStatusApi.list();
         if (cancelled) return;
-        setIsPortfolioAgentRunning(
-          response.agents?.some(
-            (agent) => agent.strategy_type === "PORTFOLIO_CATALOG",
-          ) ?? false,
-        );
+        setIsPortfolioAgentRunning(hasActivePortfolioAgent(response.agents));
       } catch (err) {
         console.error("Failed to read active agent state:", err);
       }
@@ -382,10 +382,8 @@ export default function AgentSettingsPage() {
 
   const handleProfileSelection = (profile: RiskProfile) => {
     setSettingsError(null);
-    if (profile !== savedRiskProfile && isPortfolioAgentRunning) {
-      setSettingsError(
-        "Stop the running portfolio agent before changing risk profile.",
-      );
+    if (settingsLocked) {
+      setSettingsError(settingsLockedMessage);
       return;
     }
     setRiskProfile(profile);
@@ -426,6 +424,10 @@ export default function AgentSettingsPage() {
   };
 
   const handleStrategySelect = (strategy: StrategySpec) => {
+    if (settingsLocked) {
+      setSettingsError(settingsLockedMessage);
+      return;
+    }
     setSelectedStrategyKey(strategy.key);
     setBacktestResult(null);
     setStreamingEquityCurve([]);
@@ -436,6 +438,10 @@ export default function AgentSettingsPage() {
   };
 
   const handleRunBacktest = async () => {
+    if (settingsLocked) {
+      setBacktestError(settingsLockedMessage);
+      return;
+    }
     if (!selectedStrategy) {
       setBacktestError(
         "No catalog strategy is available for this risk profile.",
@@ -525,6 +531,10 @@ export default function AgentSettingsPage() {
   };
 
   const handleAcceptBacktest = () => {
+    if (settingsLocked) {
+      setSettingsError(settingsLockedMessage);
+      return;
+    }
     if (!backtestResult || !selectedStrategy) return;
     setAcceptedStrategyKey(selectedStrategy.key);
     setSettingsError(null);
@@ -532,10 +542,8 @@ export default function AgentSettingsPage() {
 
   const handleSave = async () => {
     setSettingsError(null);
-    if (riskProfileChanged && isPortfolioAgentRunning) {
-      setSettingsError(
-        "Stop the running portfolio agent before changing risk profile.",
-      );
+    if (settingsLocked) {
+      setSettingsError(settingsLockedMessage);
       return;
     }
     if (riskProfileChanged && !riskBacktestAccepted) {
@@ -579,6 +587,13 @@ export default function AgentSettingsPage() {
     };
 
     try {
+      const response = await agentStatusApi.list();
+      const running = hasActivePortfolioAgent(response.agents);
+      setIsPortfolioAgentRunning(running);
+      if (running) {
+        setSettingsError(settingsLockedMessage);
+        return;
+      }
       await settingsApi.save(configPayload);
       setSavedRiskProfile(riskProfile);
       setAcceptedStrategyKey("");
@@ -645,8 +660,9 @@ export default function AgentSettingsPage() {
                   <div
                     key={profile}
                     onClick={() => handleProfileSelection(profile)}
+                    aria-disabled={settingsLocked}
                     className={`[perspective:1000px] h-44 w-full select-none ${
-                      isPortfolioAgentRunning && profile !== savedRiskProfile
+                      settingsLocked
                         ? "cursor-not-allowed opacity-50"
                         : "cursor-pointer"
                     }`}
@@ -716,7 +732,7 @@ export default function AgentSettingsPage() {
             }`}
           >
             {settingsError ||
-              "A portfolio agent is running. Stop it from the dashboard before changing risk profile."}
+              "A portfolio agent is running. Stop it from the dashboard before editing settings."}
           </div>
         )}
 
@@ -749,7 +765,7 @@ export default function AgentSettingsPage() {
                       key={strategy.key}
                       type="button"
                       onClick={() => handleStrategySelect(strategy)}
-                      disabled={isBacktesting || isSaving}
+                      disabled={settingsLocked || isBacktesting || isSaving}
                       className={`text-left rounded-2xl border p-4 transition-all duration-200 ${
                         selected
                           ? "border-primary-fixed-dim bg-surface-container shadow-[0_0_20px_rgba(0,240,255,0.06)]"
@@ -856,6 +872,7 @@ export default function AgentSettingsPage() {
                   disabled={
                     isBacktesting ||
                     isSaving ||
+                    settingsLocked ||
                     !selectedStrategy ||
                     isPortfolioAgentRunning
                   }
@@ -870,6 +887,7 @@ export default function AgentSettingsPage() {
                     !backtestResult ||
                     isBacktesting ||
                     isSaving ||
+                    settingsLocked ||
                     acceptedStrategyKey === selectedStrategyKey
                   }
                   className="px-8 py-3 bg-primary-container text-void-black font-mono font-medium text-xs tracking-wider uppercase rounded-full disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
@@ -900,8 +918,9 @@ export default function AgentSettingsPage() {
                   min="1"
                   max="5"
                   value={leverage}
+                  disabled={settingsLocked || isSaving}
                   onChange={(e) => setLeverage(parseInt(e.target.value))}
-                  className="w-full h-[2px] appearance-none bg-outline-variant/30 rounded-full outline-none accent-primary-container cursor-pointer"
+                  className="w-full h-[2px] appearance-none bg-outline-variant/30 rounded-full outline-none accent-primary-container cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
 
@@ -919,8 +938,9 @@ export default function AgentSettingsPage() {
                   min="1"
                   max="20"
                   value={maxPositions}
+                  disabled={settingsLocked || isSaving}
                   onChange={(e) => setMaxPositions(parseInt(e.target.value))}
-                  className="w-full h-[2px] appearance-none bg-outline-variant/30 rounded-full outline-none accent-primary-container cursor-pointer"
+                  className="w-full h-[2px] appearance-none bg-outline-variant/30 rounded-full outline-none accent-primary-container cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
 
@@ -935,8 +955,9 @@ export default function AgentSettingsPage() {
                       <button
                         key={freq}
                         type="button"
+                        disabled={settingsLocked || isSaving}
                         onClick={() => setRebalanceFreq(freq)}
-                        className={`py-1.5 rounded-lg font-mono text-[10px] tracking-wide uppercase transition-all duration-200 ${
+                        className={`py-1.5 rounded-lg font-mono text-[10px] tracking-wide uppercase transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${
                           active
                             ? "bg-surface-container text-on-surface border border-outline-variant/30 font-medium"
                             : "text-on-surface-variant/40 hover:text-on-surface"
@@ -964,8 +985,9 @@ export default function AgentSettingsPage() {
                   max="10"
                   step="0.5"
                   value={stopLoss}
+                  disabled={settingsLocked || isSaving}
                   onChange={(e) => setStopLoss(parseFloat(e.target.value))}
-                  className="w-full h-[2px] appearance-none bg-outline-variant/30 rounded-full outline-none accent-error cursor-pointer"
+                  className="w-full h-[2px] appearance-none bg-outline-variant/30 rounded-full outline-none accent-error cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
 
@@ -984,14 +1006,15 @@ export default function AgentSettingsPage() {
                   max="20"
                   step="0.5"
                   value={takeProfit}
+                  disabled={settingsLocked || isSaving}
                   onChange={(e) => setTakeProfit(parseFloat(e.target.value))}
-                  className="w-full h-[2px] appearance-none bg-outline-variant/30 rounded-full outline-none accent-primary-fixed-dim cursor-pointer"
+                  className="w-full h-[2px] appearance-none bg-outline-variant/30 rounded-full outline-none accent-primary-fixed-dim cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
 
               <div className="bg-white/[0.01] border border-outline-variant/10 rounded-xl p-3.5 text-[11px] font-light text-on-surface-variant/50 leading-relaxed mt-1">
                 Saved controls are applied to catalog paper agents on their next
-                evaluation tick. Strategy recipes stay unchanged.
+                evaluation tick. Stop a running agent before editing them.
               </div>
             </div>
           </div>
@@ -1004,14 +1027,14 @@ export default function AgentSettingsPage() {
             disabled={
               isSaving ||
               isBacktesting ||
-              (riskProfileChanged &&
-                (isPortfolioAgentRunning || !riskBacktestAccepted))
+              settingsLocked ||
+              (riskProfileChanged && !riskBacktestAccepted)
             }
             className={`w-full sm:w-auto px-8 py-3 rounded-full text-xs font-mono font-medium tracking-wider uppercase text-background transition-all duration-300 active:scale-95 shadow-md ${
               isSaving ||
               isBacktesting ||
-              (riskProfileChanged &&
-                (isPortfolioAgentRunning || !riskBacktestAccepted))
+              settingsLocked ||
+              (riskProfileChanged && !riskBacktestAccepted)
                 ? "bg-primary-container/40 cursor-not-allowed text-void-black/40"
                 : "bg-primary-container text-void-black shadow-primary-container/10 hover:bg-primary-container/90"
             }`}

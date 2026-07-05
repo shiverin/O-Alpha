@@ -24,6 +24,10 @@ type AgentSettings struct {
 	UpdatedAt     time.Time `json:"updated_at"`
 }
 
+var ErrActiveAgentSettingsLocked = errors.New("stop the running agent before changing agent settings")
+
+const agentSettingsAdvisoryLockBase int64 = 6022141100430000
+
 // AgentRepository persists user trading parameters.
 type AgentRepository struct {
 	db *pgxpool.Pool
@@ -55,7 +59,60 @@ func (r *AgentRepository) GetAgentSettings(ctx context.Context, userID int64) (*
 }
 
 // SaveAgentSettings creates or updates saved settings with an upsert.
+// Settings changes are fail-closed while any user agent run is starting or running.
 func (r *AgentRepository) SaveAgentSettings(ctx context.Context, s *AgentSettings) error {
+	tx, err := r.db.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("begin agent settings transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	if err := lockUserAgentSettingsTx(ctx, tx, s.UserID); err != nil {
+		return err
+	}
+
+	current, err := getAgentSettingsTx(ctx, tx, s.UserID)
+	if err != nil {
+		return err
+	}
+
+	active, err := hasActiveAgentRunsTx(ctx, tx, s.UserID)
+	if err != nil {
+		return err
+	}
+	if ShouldBlockAgentSettingsSave(current, s, active) {
+		return ErrActiveAgentSettingsLocked
+	}
+
+	if err := upsertAgentSettingsTx(ctx, tx, s); err != nil {
+		return err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit agent settings transaction: %w", err)
+	}
+	return nil
+}
+
+func getAgentSettingsTx(ctx context.Context, tx pgx.Tx, userID int64) (*AgentSettings, error) {
+	const q = `
+		SELECT user_id, risk_profile, leverage, max_positions, stop_loss_pct, take_profit_pct, rebalance_freq, updated_at
+		FROM agent_settings
+		WHERE user_id = $1`
+
+	var s AgentSettings
+	err := tx.QueryRow(ctx, q, userID).Scan(
+		&s.UserID, &s.RiskProfile, &s.Leverage, &s.MaxPositions, &s.StopLossPct, &s.TakeProfitPct, &s.RebalanceFreq, &s.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("select agent settings: %w", err)
+	}
+	return &s, nil
+}
+
+func upsertAgentSettingsTx(ctx context.Context, tx pgx.Tx, s *AgentSettings) error {
 	const q = `
 		INSERT INTO agent_settings (user_id, risk_profile, leverage, max_positions, stop_loss_pct, take_profit_pct, rebalance_freq, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
@@ -68,11 +125,64 @@ func (r *AgentRepository) SaveAgentSettings(ctx context.Context, s *AgentSetting
 			rebalance_freq = EXCLUDED.rebalance_freq,
 			updated_at = NOW()`
 
-	_, err := r.db.Exec(ctx, q, s.UserID, s.RiskProfile, s.Leverage, s.MaxPositions, s.StopLossPct, s.TakeProfitPct, s.RebalanceFreq)
+	_, err := tx.Exec(ctx, q, s.UserID, s.RiskProfile, s.Leverage, s.MaxPositions, s.StopLossPct, s.TakeProfitPct, s.RebalanceFreq)
 	if err != nil {
 		return fmt.Errorf("upsert agent settings: %w", err)
 	}
 	return nil
+}
+
+func hasActiveAgentRunsTx(ctx context.Context, tx pgx.Tx, userID int64) (bool, error) {
+	const q = `
+		SELECT EXISTS (
+			SELECT 1
+			FROM agent_runs
+			WHERE user_id = $1
+				AND status IN ('starting', 'running')
+		)`
+	var active bool
+	if err := tx.QueryRow(ctx, q, userID).Scan(&active); err != nil {
+		return false, fmt.Errorf("check active agent runs: %w", err)
+	}
+	return active, nil
+}
+
+func lockUserAgentSettingsTx(ctx context.Context, tx pgx.Tx, userID int64) error {
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock($1)`, agentSettingsAdvisoryLockKey(userID)); err != nil {
+		return fmt.Errorf("lock user agent settings: %w", err)
+	}
+	return nil
+}
+
+func agentSettingsAdvisoryLockKey(userID int64) int64 {
+	if userID < 0 {
+		userID = -userID
+	}
+	return agentSettingsAdvisoryLockBase + userID
+}
+
+// AgentSettingsChanged reports whether any guarded runtime setting differs.
+func AgentSettingsChanged(current *AgentSettings, next *AgentSettings) bool {
+	if next == nil {
+		return false
+	}
+	if current == nil {
+		return true
+	}
+	return normalizeSettingsString(current.RiskProfile) != normalizeSettingsString(next.RiskProfile) ||
+		current.Leverage != next.Leverage ||
+		current.MaxPositions != next.MaxPositions ||
+		current.StopLossPct != next.StopLossPct ||
+		current.TakeProfitPct != next.TakeProfitPct ||
+		normalizeSettingsString(current.RebalanceFreq) != normalizeSettingsString(next.RebalanceFreq)
+}
+
+func ShouldBlockAgentSettingsSave(current *AgentSettings, next *AgentSettings, hasActiveRun bool) bool {
+	return hasActiveRun && AgentSettingsChanged(current, next)
+}
+
+func normalizeSettingsString(value string) string {
+	return strings.ToLower(strings.TrimSpace(value))
 }
 
 // CreateAgentRun provisions a persisted runtime record for a paper or live agent.
@@ -110,6 +220,10 @@ func (r *AgentRepository) CreateAgentRun(
 		return 0, fmt.Errorf("begin agent run transaction: %w", err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
+
+	if err := lockUserAgentSettingsTx(ctx, tx, userID); err != nil {
+		return 0, err
+	}
 
 	if err := ensureAssetTx(ctx, tx, symbol); err != nil {
 		return 0, err

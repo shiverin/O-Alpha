@@ -30,6 +30,7 @@ import {
   applyLivePriceToPositions,
   applyLivePriceToSummary,
 } from "@/lib/portfolioLiveState";
+import { hasActivePortfolioAgent } from "@/lib/agentRuns";
 
 const fetcher = <T,>(path: string): Promise<T> => api.get<T>(path);
 type RiskProfile = "conservative" | "moderate" | "aggressive";
@@ -97,12 +98,16 @@ export default function DashboardPage() {
 
   const activePortfolioAgent = useMemo(() => {
     return agentList?.agents?.find(
-      (agent) => agent.strategy_type === "PORTFOLIO_CATALOG",
+      (agent) =>
+        agent.strategy_type === "PORTFOLIO_CATALOG" &&
+        (agent.status === "starting" || agent.status === "running"),
     );
   }, [agentList]);
 
   const isAgentActive =
-    currentUserID === 999 ? isDemoAgentActive : Boolean(activePortfolioAgent);
+    currentUserID === 999
+      ? isDemoAgentActive
+      : hasActivePortfolioAgent(agentList?.agents);
 
   const regimeLabel = useMemo(() => {
     const label = activePortfolioAgent?.runtime_state?.regime_label;
@@ -319,6 +324,7 @@ export default function DashboardPage() {
           <button
             onClick={handleAgentToggle}
             disabled={agentActionPending}
+            data-tour-id="dashboard-agent-action"
             className="w-full sm:w-auto px-6 py-2.5 rounded-full text-xs font-medium tracking-wider uppercase shadow-md transition-all duration-500 active:scale-95 bg-primary-container text-black shadow-primary-container/20 hover:bg-primary-container/90 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {agentActionPending
