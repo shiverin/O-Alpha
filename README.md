@@ -1,24 +1,24 @@
 # O(Alpha)
 
-O(Alpha) is a quantitative research and paper-trading platform for validating portfolio strategies before they ever touch real execution.
+O(Alpha) is a paper-trading platform for running approved portfolio catalog strategies before they ever touch real execution.
 
-It combines a Go research and trading backend, a Next.js dashboard, PostgreSQL/TimescaleDB market-data storage, and a strict validation workflow. The project is intentionally paper-only: strategy candidates are researched, stress-tested, promoted into a catalog, and then run through persisted paper fills, positions, snapshots, and alerts.
+It combines a Go trading backend, a Next.js dashboard, PostgreSQL/TimescaleDB market-data storage, and a catalog-driven paper workflow. The project is intentionally paper-only: approved catalog strategies run through persisted paper fills, positions, snapshots, and alerts.
 
 ## Highlights
 
-- Validated alpha workflow: research reports are written to `reports/batches/` and promotion decisions come from the harness, not hand-entered metrics.
 - Portfolio-agent paper trading: one active agent per user, one chosen catalog strategy, daily-bar evaluation, deterministic fill idempotency, and DB-backed account state.
 - Real dashboard state: portfolio summary, positions, allocation, execution log, alerts, and regime labels are read from backend state.
 - Curated default universe: Yahoo100-style equity/ETF universe with `VOO` included as the portfolio benchmark anchor.
-- Artifact-aware ranker strategies: LGBM rankers read local model artifacts and fail closed when required artifacts are missing.
+- Artifact-aware ranker strategies: LGBM rankers read private model artifacts and fail closed when required artifacts are missing.
 - Local or containerized development: run against Supabase locally, or bring up TimescaleDB, Redis, API, ingest, and frontend with Docker Compose.
 
 ## What It Does
 
-O(Alpha) has two main loops:
+O(Alpha) has one production-facing loop:
 
-1. Research loop: run strategy candidates through the Go validation harness, including walk-forward folds, costs, PBO/DSR checks, benchmark comparisons, and promotion gates.
-2. Paper-trading loop: start a catalog strategy from the dashboard/API, evaluate on daily bars, reconcile target weights into paper fills, and persist the resulting state for the dashboard.
+1. Paper-trading loop: start a catalog strategy from the dashboard/API, evaluate on daily bars, reconcile target weights into paper fills, and persist the resulting state for the dashboard.
+
+Strategy research, promotion evidence, and raw model-training artifacts are maintained outside this public repository. The public app consumes only approved catalog strategy definitions and private runtime artifacts.
 
 The current production-facing paper flow is the portfolio catalog path:
 
@@ -45,11 +45,9 @@ The current production-facing paper flow is the portfolio catalog path:
 ## Repository Map
 
 ```text
-backend/                 Go API, research CLIs, portfolio agent, DB repositories
+backend/                 Go API, portfolio agent, DB repositories
 frontend/                Next.js dashboard
 migrations/              SQL migrations
-reports/batches/         Committed validation and parity artifacts
-docs/                    Research log, plan, and blockers
 scripts/                 Utility scripts
 docker-compose.yml       Local full-stack orchestration
 ```
@@ -144,16 +142,22 @@ Important variables:
 | `INGEST_INTERVAL` | Ingest interval, usually `1Day` for portfolio strategies |
 | `INGEST_LOOKBACK` | Backfill lookback duration |
 | `INGEST_RUN_ONCE` | Whether ingest exits after one pass |
-| `OALPHA_DAILY_RANKER_ARTIFACT_ROOT` | Local root for LGBM ranker model artifacts |
+| `OALPHA_DAILY_RANKER_ARTIFACT_ROOT` | Private root for LGBM ranker model artifacts |
 | `OALPHA_DAILY_RANKER_PIT_UNIVERSE` | Optional point-in-time universe file |
 
-For local ranker artifacts, mount or point:
+For local ranker artifacts, mount or point to a private, ignored directory:
 
 ```env
 OALPHA_DAILY_RANKER_ARTIFACT_ROOT=/var/lib/oalpha/models/fold_artifacts
 ```
 
 Do not store large model blobs in Postgres. Use local mounts for development and object storage plus `ml_model_artifacts.artifact_uri` as the deployment registry path.
+
+## Private Artifacts
+
+Research reports, validation runs, model files, feature fixtures, and promotion evidence are intentionally excluded from this public repository. Keep them in a private artifact store, encrypted bucket, private model registry, or ignored local mount.
+
+Runtime code expects approved LGBM ranker artifacts at `OALPHA_DAILY_RANKER_ARTIFACT_ROOT`. The default container path is `/opt/oalpha/ranker-fold-artifacts`, but deployment must provide that directory privately. The Docker image does not copy artifacts from the source tree.
 
 ## Market Data
 
@@ -178,38 +182,6 @@ make db-shell
 ```
 
 For Supabase or another remote database, connect with your normal SQL client and inspect the bars, positions, fills, snapshots, and alerts tables.
-
-## Research Workflow
-
-Research results are only real when they trace to committed artifacts under `reports/batches/`.
-
-Primary validation loop:
-
-```bash
-cd backend
-go run ./cmd/alpha-research \
-  -symbols "AAPL,MSFT,..." \
-  -strategies "all" \
-  -timeframe 1Day \
-  -from 2015-01-01 \
-  -to 2025-12-31 \
-  -train-bars 756 \
-  -test-bars 126 \
-  -step-bars 126 \
-  -min-trades 30
-```
-
-Useful research commands:
-
-```bash
-cd backend
-go run ./cmd/backtest -help
-go run ./cmd/ml-meta-research -help
-go run ./cmd/hmm-exit-research -help
-go run ./cmd/paper-ranker-signal -help
-```
-
-Promotion is fail-closed. A candidate is not considered promotable unless the validation gate passes with PBO estimated, sufficient out-of-sample trades, benchmark-aware risk improvement, cost stress, and data-quality checks. See `AGENTS.md`, `docs/RESEARCH_LOG.md`, and `reports/batches/` for the operating rules and evidence trail.
 
 ## Paper Trading Flow
 

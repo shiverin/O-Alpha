@@ -401,7 +401,6 @@ export interface StrategySpec {
   paper_only: boolean;
   benchmark_symbol: string;
   description: string;
-  evidence_paths?: string[];
   notes?: string[];
 }
 
