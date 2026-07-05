@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	defaultRankerArtifactRoot = "../reports/batches/2026-06-03_yahoo100_daily_ranker_walkforward_slow_horizons_2018_2026/fold_artifacts"
+	defaultRankerArtifactRoot = "/opt/oalpha/ranker-fold-artifacts"
 	defaultRankerVariant      = "stocks_h63_s15_top3_reb63_z10"
 )
 
@@ -55,7 +55,6 @@ type StrategySpec struct {
 	PaperOnly              bool                     `json:"paper_only"`
 	BenchmarkSymbol        string                   `json:"benchmark_symbol"`
 	Description            string                   `json:"description"`
-	EvidencePaths          []string                 `json:"evidence_paths,omitempty"`
 	Notes                  []string                 `json:"notes,omitempty"`
 }
 
@@ -218,7 +217,6 @@ func catalogEntries(cfg StrategyCatalogConfig) []strategyCatalogEntry {
 				PaperOnly:              true,
 				BenchmarkSymbol:        benchmark,
 				Description:            "VOO core with a 5% learned-ranker active sleeve; stricter score threshold and single active name.",
-				EvidencePaths:          h63EvidencePaths(),
 				Notes: []string{
 					"Conservative settings are derived from the promoted h63 checkpoint, but this exact sizing has not passed the official promotion gate.",
 					"Research/paper only until PIT price coverage clears.",
@@ -238,10 +236,7 @@ func catalogEntries(cfg StrategyCatalogConfig) []strategyCatalogEntry {
 				PaperOnly:        true,
 				BenchmarkSymbol:  benchmark,
 				Description:      "VOO core with an 8% deterministic h63 momentum/vol active sleeve.",
-				EvidencePaths: []string{
-					"reports/batches/2026-06-03_alpha_validation_yahoo100_ranker_proxy_h63_longpanel_csv/",
-				},
-				Notes: []string{"Lower active sleeve than the official h63 proxy checkpoint; exact low-risk variant is not separately promoted."},
+				Notes:            []string{"Lower active sleeve than the official h63 proxy checkpoint; exact low-risk variant is not separately promoted."},
 			},
 			new: func(symbols []string, cfg StrategyCatalogConfig) backtest.PortfolioStrategy {
 				return momentum.NewCompositeMomentumStrategy(symbols, rankerProxyConfig(cfg.BenchmarkSymbol, 63, 63, 0.08, 2, 0.04, 0.02, 0.35))
@@ -257,10 +252,7 @@ func catalogEntries(cfg StrategyCatalogConfig) []strategyCatalogEntry {
 				PaperOnly:        true,
 				BenchmarkSymbol:  benchmark,
 				Description:      "VOO core with a small low-volatility stock sleeve.",
-				EvidencePaths: []string{
-					"reports/batches/2026-06-03_alpha_validation_yahoo100_longpanel_checkpoint/",
-				},
-				Notes: []string{"Low-vol sleeve is useful as a defensive comparison, but prior official runs rejected it as alpha."},
+				Notes:            []string{"Low-vol sleeve is useful as a defensive comparison, but prior official runs rejected it as alpha."},
 			},
 			new: func(symbols []string, cfg StrategyCatalogConfig) backtest.PortfolioStrategy {
 				return momentum.NewCompositeMomentumStrategy(symbols, lowVolConfig(cfg.BenchmarkSymbol, 42, 0.10, 5, "low_vol"))
@@ -278,7 +270,6 @@ func catalogEntries(cfg StrategyCatalogConfig) []strategyCatalogEntry {
 				PaperOnly:              true,
 				BenchmarkSymbol:        benchmark,
 				Description:            "Current best checkpoint: VOO core with a 15% learned-ranker active sleeve, top 3 stocks, 63-bar rebalance.",
-				EvidencePaths:          h63EvidencePaths(),
 				Notes: []string{
 					"Promoted in official Yahoo100 CSV windows 2015 through 2020 versus VOO.",
 					"Still research/paper only because the current panel is survivorship-biased and PIT price coverage is not available.",
@@ -299,10 +290,7 @@ func catalogEntries(cfg StrategyCatalogConfig) []strategyCatalogEntry {
 				PaperOnly:          true,
 				BenchmarkSymbol:    benchmark,
 				Description:        "VOO core with the official deterministic h63 proxy active sleeve.",
-				EvidencePaths: []string{
-					"reports/batches/2026-06-03_alpha_validation_yahoo100_ranker_proxy_h63_longpanel_csv/",
-				},
-				Notes: []string{"Primary 2015 window promoted, but shifted 2016 failed PBO; lower confidence than learned h63."},
+				Notes:              []string{"Primary 2015 window promoted, but shifted 2016 failed PBO; lower confidence than learned h63."},
 			},
 			new: func(symbols []string, cfg StrategyCatalogConfig) backtest.PortfolioStrategy {
 				return momentum.NewCompositeMomentumStrategy(symbols, rankerProxyConfig(cfg.BenchmarkSymbol, 63, 63, 0.15, 3, 0.05, 0.00, 0.45))
@@ -318,11 +306,7 @@ func catalogEntries(cfg StrategyCatalogConfig) []strategyCatalogEntry {
 				PaperOnly:        true,
 				BenchmarkSymbol:  benchmark,
 				Description:      "VOO core with a broader risk-budgeted momentum sleeve.",
-				EvidencePaths: []string{
-					"reports/batches/2026-06-03_alpha_validation_yahoo100_ranked_sleeves_shifted_2017/",
-					"reports/batches/2026-06-03_alpha_validation_yahoo100_ranked_sleeves_longpanel/",
-				},
-				Notes: []string{"Promoted in one shifted 2017 run, but failed the 2015 long-panel run; keep as diagnostic/fallback."},
+				Notes:            []string{"Promoted in one shifted 2017 run, but failed the 2015 long-panel run; keep as diagnostic/fallback."},
 			},
 			new: func(symbols []string, cfg StrategyCatalogConfig) backtest.PortfolioStrategy {
 				return momentum.NewCompositeMomentumStrategy(symbols, rankedSleeveConfig(cfg.BenchmarkSymbol, 21, 189, 0.30, 5, 0.08, 0.03))
@@ -339,7 +323,6 @@ func catalogEntries(cfg StrategyCatalogConfig) []strategyCatalogEntry {
 				PaperOnly:              true,
 				BenchmarkSymbol:        benchmark,
 				Description:            "VOO core with a 25% learned-ranker active sleeve, wider top-k, and lower score threshold.",
-				EvidencePaths:          h63EvidencePaths(),
 				Notes:                  []string{"Aggressive sizing variant is not promoted; use only for paper comparison and risk-cap testing."},
 			},
 			new: func(symbols []string, cfg StrategyCatalogConfig) backtest.PortfolioStrategy {
@@ -356,10 +339,7 @@ func catalogEntries(cfg StrategyCatalogConfig) []strategyCatalogEntry {
 				PaperOnly:        true,
 				BenchmarkSymbol:  benchmark,
 				Description:      "VOO core with larger ETF and broad-universe time-series momentum sleeves.",
-				EvidencePaths: []string{
-					"reports/batches/2026-06-03_alpha_validation_yahoo100_benchmark_funded_suite_2015_csv/",
-				},
-				Notes: []string{"Economically plausible but rejected by PBO in official runs; useful as high-risk challenger only."},
+				Notes:            []string{"Economically plausible but rejected by PBO in official runs; useful as high-risk challenger only."},
 			},
 			new: func(symbols []string, cfg StrategyCatalogConfig) backtest.PortfolioStrategy {
 				return momentum.NewCompositeMomentumStrategy(symbols, tsmomConfig(cfg.BenchmarkSymbol, 42, 126, 252, 0.18, 0.10))
@@ -375,10 +355,7 @@ func catalogEntries(cfg StrategyCatalogConfig) []strategyCatalogEntry {
 				PaperOnly:        true,
 				BenchmarkSymbol:  benchmark,
 				Description:      "Higher-active-weight composite momentum sleeve across ETFs and stocks.",
-				EvidencePaths: []string{
-					"reports/batches/2026-06-03_alpha_validation_yahoo100_longpanel_checkpoint/",
-				},
-				Notes: []string{"Raw return was attractive, but PBO failed; use only as high-risk experimental comparison."},
+				Notes:            []string{"Raw return was attractive, but PBO failed; use only as high-risk experimental comparison."},
 			},
 			new: func(symbols []string, cfg StrategyCatalogConfig) backtest.PortfolioStrategy {
 				return momentum.NewCompositeMomentumStrategy(symbols, compositeHighConfig(cfg.BenchmarkSymbol))
@@ -523,17 +500,6 @@ func compositeHighConfig(benchmark string) momentum.CompositeMomentumConfig {
 		},
 	}
 	return cfg
-}
-
-func h63EvidencePaths() []string {
-	return []string{
-		"reports/batches/2026-06-03_alpha_validation_yahoo100_lgbm_ranker_h63_2015_csv/",
-		"reports/batches/2026-06-03_alpha_validation_yahoo100_lgbm_ranker_h63_2016_csv/",
-		"reports/batches/2026-06-03_alpha_validation_yahoo100_lgbm_ranker_h63_2017_csv/",
-		"reports/batches/2026-06-03_alpha_validation_yahoo100_lgbm_ranker_h63_2018_csv/",
-		"reports/batches/2026-06-03_alpha_validation_yahoo100_lgbm_ranker_h63_2019_csv/",
-		"reports/batches/2026-06-03_alpha_validation_yahoo100_lgbm_ranker_h63_2020_csv/",
-	}
 }
 
 func (c StrategyCatalogConfig) withDefaults(symbols []string) StrategyCatalogConfig {

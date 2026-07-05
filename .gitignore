@@ -18,6 +18,21 @@ frontend/tsconfig.tsbuildinfo
 scripts/venv/
 backend/scripts/venv/
 research/ml/.venv/
+research/
+reports/
+backend/internal/research/
+backend/cmd/alpha-research/
+backend/cmd/hmm-exit-research/
+backend/cmd/ml-meta-research/
+backend/cmd/paper-ranker-signal/
+backend/cmd/validate-daily-ranker-leaves-parity/
+backend/cmd/validate-daily-ranker-parity/
+backend/cmd/validate-feature-parity/
+backend/cmd/validate-leaves-parity/
+ranker-fold-artifacts/
+private-artifacts/
+*.model
+model.txt
 __pycache__/
 scripts/__pycache__/
 backend/scripts/__pycache__/
@@ -37,10 +52,11 @@ repomix-output.xml
 
 *.xml
 
-reports/
 /AGENTS.md
 /plan.md
 /*prompt*.md
 /*prompts*.md
 
 /docs
+
+/output

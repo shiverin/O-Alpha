@@ -12,11 +12,10 @@ frontend/.turbo
 frontend/tsconfig.tsbuildinfo
 
 reports/**
-!reports/batches/
-!reports/batches/2026-06-03_yahoo100_daily_ranker_walkforward_slow_horizons_2018_2026/
-!reports/batches/2026-06-03_yahoo100_daily_ranker_walkforward_slow_horizons_2018_2026/fold_artifacts/
-!reports/batches/2026-06-03_yahoo100_daily_ranker_walkforward_slow_horizons_2018_2026/fold_artifacts/**
-research/ml/.venv
+research/
+reports/
+private-artifacts/
+ranker-fold-artifacts/
 scripts/venv
 backend/scripts/venv
 
