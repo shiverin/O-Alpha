@@ -30,6 +30,7 @@ import {
   applyLivePriceToPositions,
   applyLivePriceToSummary,
 } from "@/lib/portfolioLiveState";
+import { hasActivePortfolioAgent } from "@/lib/agentRuns";
 
 const fetcher = <T,>(path: string): Promise<T> => api.get<T>(path);
 type RiskProfile = "conservative" | "moderate" | "aggressive";
@@ -97,12 +98,16 @@ export default function DashboardPage() {
 
   const activePortfolioAgent = useMemo(() => {
     return agentList?.agents?.find(
-      (agent) => agent.strategy_type === "PORTFOLIO_CATALOG",
+      (agent) =>
+        agent.strategy_type === "PORTFOLIO_CATALOG" &&
+        (agent.status === "starting" || agent.status === "running"),
     );
   }, [agentList]);
 
   const isAgentActive =
-    currentUserID === 999 ? isDemoAgentActive : Boolean(activePortfolioAgent);
+    currentUserID === 999
+      ? isDemoAgentActive
+      : hasActivePortfolioAgent(agentList?.agents);
 
   const regimeLabel = useMemo(() => {
     const label = activePortfolioAgent?.runtime_state?.regime_label;
