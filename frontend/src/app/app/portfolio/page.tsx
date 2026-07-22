@@ -5,7 +5,7 @@ import useSWR from "swr";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/ui/Icon";
 import { useAuth } from "@/context/AuthContext";
-import { api, streamPortfolioLive } from "@/lib/api";
+import { api, settingsApi, streamPortfolioLive } from "@/lib/api";
 import { downloadCsv } from "@/lib/csv";
 import {
   applyLivePriceToHistory,
@@ -106,6 +106,12 @@ export default function PortfolioPage() {
   >(
     currentUserID !== 999 ? "/api/v1/user/portfolio/history?limit=30" : null,
     fetcher,
+    { refreshInterval: REALTIME_REFRESH_MS },
+  );
+
+  const { data: savedSettings } = useSWR(
+    currentUserID !== 999 ? "/api/v1/user/settings" : null,
+    () => settingsApi.check(),
     { refreshInterval: REALTIME_REFRESH_MS },
   );
 
@@ -668,7 +674,7 @@ export default function PortfolioPage() {
                 <p className="text-xl sm:text-2xl font-light text-on-surface truncate">
                   {currentUserID === 999
                     ? mockMetrics.riskProfile.label
-                    : "Moderate"}
+                    : formatRiskProfile(savedSettings?.settings?.risk_profile)}
                 </p>
                 <p className="font-mono text-xs text-on-surface-variant/70 mt-2 truncate">
                   Sharpe Ratio:{" "}
@@ -952,4 +958,15 @@ function normalizeCompositionPercentages<
     });
 
   return rounded.filter((segment) => segment.percentage > 0);
+}
+
+function formatRiskProfile(riskProfile?: string) {
+  if (
+    riskProfile !== "conservative" &&
+    riskProfile !== "moderate" &&
+    riskProfile !== "aggressive"
+  ) {
+    return "Unavailable";
+  }
+  return `${riskProfile.charAt(0).toUpperCase()}${riskProfile.slice(1)}`;
 }
