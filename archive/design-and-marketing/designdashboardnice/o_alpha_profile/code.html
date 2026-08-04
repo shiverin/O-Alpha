@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Profile &amp; Account | O(Alpha)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-surface-variant": "#b9cacb",
+                        "tertiary-container": "#d9d9d9",
+                        "on-primary-container": "#006970",
+                        "surface-dim": "#131313",
+                        "inverse-primary": "#006970",
+                        "on-tertiary": "#2f3131",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "on-primary": "#00363a",
+                        "on-background": "#e5e2e1",
+                        "primary-fixed-dim": "#00dbe9",
+                        "outline": "#849495",
+                        "surface-container-highest": "#353535",
+                        "on-secondary-container": "#725f00",
+                        "on-primary-fixed": "#002022",
+                        "on-secondary": "#3a3000",
+                        "surface-container": "#20201f",
+                        "on-secondary-fixed": "#221b00",
+                        "on-tertiary-container": "#5d5f5f",
+                        "error": "#ffb4ab",
+                        "primary-fixed": "#7df4ff",
+                        "surface-gray": "#1E1E1E",
+                        "surface-container-low": "#1c1b1b",
+                        "primary-container": "#00f0ff",
+                        "tertiary-fixed": "#e2e2e2",
+                        "glow-gold": "rgba(255, 215, 0, 0.3)",
+                        "void-black": "#0A0A0A",
+                        "inverse-on-surface": "#313030",
+                        "inverse-surface": "#e5e2e1",
+                        "background": "#131313",
+                        "surface-bright": "#393939",
+                        "secondary-fixed": "#ffe16d",
+                        "outline-variant": "#3b494b",
+                        "on-primary-fixed-variant": "#004f54",
+                        "surface-variant": "#353535",
+                        "tertiary": "#f5f5f5",
+                        "on-surface": "#e5e2e1",
+                        "tertiary-fixed-dim": "#c6c6c7",
+                        "on-secondary-fixed-variant": "#544600",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-high": "#2a2a2a",
+                        "secondary-container": "#ffdb3c",
+                        "glow-cyan": "rgba(0, 240, 255, 0.4)",
+                        "secondary": "#fff9ef",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "surface-container-lowest": "#0e0e0e",
+                        "secondary-fixed-dim": "#e9c400",
+                        "error-container": "#93000a",
+                        "surface": "#131313",
+                        "surface-tint": "#00dbe9",
+                        "on-error": "#690005",
+                        "border-glass": "rgba(255, 255, 255, 0.12)",
+                        "primary": "#dbfcff"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "margin-mobile": "24px",
+                        "gutter": "24px",
+                        "container-max": "1280px",
+                        "section-gap": "120px",
+                        "margin-desktop": "64px"
+                    },
+                    fontFamily: {
+                        "body-md": ["Inter"],
+                        "headline-xl": ["Inter"],
+                        "display-lg-mobile": ["Inter"],
+                        "label-mono": ["JetBrains Mono"],
+                        "display-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Inter"]
+                    },
+                    fontSize: {
+                        "body-md": ["16px", { lineHeight: "28px", letterSpacing: "0em", fontWeight: "400" }],
+                        "headline-xl": ["48px", { lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "600" }],
+                        "display-lg-mobile": ["48px", { lineHeight: "52px", letterSpacing: "-0.03em", fontWeight: "700" }],
+                        "label-mono": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "500" }],
+                        "display-lg": ["80px", { lineHeight: "88px", letterSpacing: "-0.04em", fontWeight: "700" }],
+                        "body-lg": ["18px", { lineHeight: "32px", letterSpacing: "0em", fontWeight: "400" }],
+                        "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: theme('colors.void-black'); color: theme('colors.on-surface'); }
+        /* Smooth scrolling and transitions */
+        html { scroll-behavior: smooth; }
+        .glass-card {
+            background-color: theme('colors.surface-gray');
+            border: 1px solid theme('colors.border-glass');
+            border-radius: theme('borderRadius.xl');
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md antialiased min-h-screen flex">
+<!-- SideNavBar Component -->
+<nav class="flex flex-col fixed left-0 top-0 h-screen w-64 bg-void-black border-r border-border-glass py-margin-mobile px-4 z-40">
+<!-- Brand -->
+<div class="mb-8 px-4 flex items-center gap-3">
+<span class="material-symbols-outlined text-primary-fixed-dim" style="font-variation-settings: 'FILL' 1;">dataset</span>
+<div>
+<h1 class="font-headline-lg text-headline-lg text-primary-fixed-dim tracking-tight">O(Alpha)</h1>
+<p class="font-label-mono text-label-mono text-on-surface-variant uppercase tracking-widest mt-1 opacity-70">AI-Driven Quant</p>
+</div>
+</div>
+<!-- Main Navigation Tabs -->
+<div class="flex flex-col gap-2 flex-grow">
+<!-- Overview -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors hover:bg-surface-container-high hover:text-primary-fixed-dim transition-all duration-300" href="#">
+<span class="material-symbols-outlined text-xl">dashboard</span>
+<span class="font-label-mono text-label-mono tracking-widest uppercase">Overview</span>
+</a>
+<!-- Agent Settings -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors hover:bg-surface-container-high hover:text-primary-fixed-dim transition-all duration-300" href="#">
+<span class="material-symbols-outlined text-xl">smart_toy</span>
+<span class="font-label-mono text-label-mono tracking-widest uppercase">Agent Settings</span>
+</a>
+<!-- Portfolio -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors hover:bg-surface-container-high hover:text-primary-fixed-dim transition-all duration-300" href="#">
+<span class="material-symbols-outlined text-xl">account_balance_wallet</span>
+<span class="font-label-mono text-label-mono tracking-widest uppercase">Portfolio</span>
+</a>
+<!-- Activity -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors hover:bg-surface-container-high hover:text-primary-fixed-dim transition-all duration-300" href="#">
+<span class="material-symbols-outlined text-xl">analytics</span>
+<span class="font-label-mono text-label-mono tracking-widest uppercase">Activity</span>
+</a>
+</div>
+<!-- CTA Button -->
+<div class="px-4 mb-8">
+<button class="w-full py-3 px-4 rounded-full bg-primary-fixed-dim text-void-black font-label-mono text-label-mono tracking-wider uppercase hover:shadow-[0_0_20px_rgba(0,240,255,0.4)] transition-all duration-300 active:scale-95 ease-in-out">
+                Connect API
+            </button>
+</div>
+<!-- Footer Navigation Tabs -->
+<div class="flex flex-col gap-2 border-t border-border-glass pt-4">
+<!-- Support -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors hover:bg-surface-container-high hover:text-primary-fixed-dim transition-all duration-300" href="#">
+<span class="material-symbols-outlined text-xl">help</span>
+<span class="font-label-mono text-label-mono tracking-widest uppercase">Support</span>
+</a>
+<!-- Settings (ACTIVE) -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-primary-fixed-dim border-r-2 border-primary-fixed-dim bg-glow-cyan shadow-[0_0_20px_rgba(0,240,255,0.1)] transition-all duration-300 active:scale-95 ease-in-out" href="#">
+<span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-label-mono text-label-mono tracking-widest uppercase">Settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-grow ml-64 flex flex-col min-h-screen w-[calc(100%-256px)]">
+<!-- TopAppBar Component -->
+<header class="flex justify-between items-center w-full h-20 px-margin-desktop sticky top-0 z-50 bg-void-black/80 backdrop-blur-xl border-b border-border-glass">
+<div class="flex-1 flex items-center gap-4">
+<h2 class="font-headline-lg text-headline-lg text-on-surface">System Matrix</h2>
+</div>
+<!-- Search Bar -->
+<div class="hidden md:flex flex-1 justify-end items-center mr-8">
+<div class="relative w-64 group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary-fixed-dim transition-colors">search</span>
+<input class="w-full bg-surface-container-lowest border border-border-glass rounded-full py-2 pl-10 pr-4 text-on-surface font-label-mono text-label-mono focus:outline-none focus:border-primary-fixed-dim focus:shadow-[0_0_15px_rgba(0,240,255,0.2)] transition-all" placeholder="Query Matrix..." type="text"/>
+</div>
+</div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-6">
+<button class="text-on-surface-variant hover:text-primary-fixed-dim hover:shadow-[0_0_20px_rgba(0,240,255,0.4)] transition-all duration-300 relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-primary-fixed-dim rounded-full shadow-[0_0_5px_rgba(0,240,255,0.8)]"></span>
+</button>
+<button class="text-on-surface-variant hover:text-primary-fixed-dim hover:shadow-[0_0_20px_rgba(0,240,255,0.4)] transition-all duration-300">
+<span class="material-symbols-outlined">wifi_tethering</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary-fixed-dim hover:shadow-[0_0_20px_rgba(0,240,255,0.4)] transition-all duration-300">
+<img alt="User Profile Avatar" class="w-8 h-8 rounded-full border border-border-glass object-cover" data-alt="A cinematic, high-contrast portrait of a male quantitative analyst in a dimly lit, high-tech control room setting. His face is partially illuminated by the cold, cyan glow of unseen terminal screens, casting sharp shadows that emphasize a serious, focused expression. The visual style is intensely atmospheric, adhering to a dark mode aesthetic with deep black voids and stark, technical lighting. The overall mood is intelligent, secretive, and highly professional." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCCxHz6OVxmOkf_YfgsH6huL8XA3ksPIvR1xm9MOzNOxZAlqaNCJbaEM3LXCGg59DtKwahgAm7HXFOAiVjHzUIu8peYHhPtIiA-ePNS0TJBpJxa7tkbcL39z9QFsWQpvs4wpK_r-cp2llCSkVvO30u_X7Vzkxqcnnr2BiWdPoR4smD_oigQCcQzSSewVqkiXPW9xrhEviVB8WksLuY0IHIKafB37cVPSd37km7NkW0LIsfv8eyBadgS-UzhvtnB-zBexbytwW_B3zMM"/>
+</button>
+</div>
+</header>
+<!-- Main Page Content Canvas -->
+<main class="flex-grow p-margin-desktop bg-void-black">
+<div class="max-w-container-max mx-auto space-y-gutter">
+<!-- Section Header -->
+<div class="mb-12">
+<h1 class="font-display-lg text-display-lg text-on-surface mb-2">Profile Matrix</h1>
+<p class="font-label-mono text-label-mono text-on-surface-variant uppercase tracking-widest">Identify &amp; Security Architecture</p>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- LEFT COLUMN (Span 4) -->
+<div class="lg:col-span-4 flex flex-col gap-gutter">
+<!-- Identity Matrix Card -->
+<div class="glass-card p-8 flex flex-col items-center text-center group hover:shadow-[0_0_30px_rgba(0,240,255,0.05)] transition-all duration-500">
+<div class="relative mb-6">
+<img alt="User Avatar Large" class="w-32 h-32 rounded-full border-2 border-border-glass object-cover relative z-10 group-hover:border-primary-fixed-dim transition-colors duration-500" data-alt="A cinematic, high-contrast portrait of a male quantitative analyst in a dimly lit, high-tech control room setting. His face is partially illuminated by the cold, cyan glow of unseen terminal screens, casting sharp shadows that emphasize a serious, focused expression. The visual style is intensely atmospheric, adhering to a dark mode aesthetic with deep black voids and stark, technical lighting. The overall mood is intelligent, secretive, and highly professional." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCOqa397RBFYVLAMjB_CLzIknfY3BcTnhug9TkNJvpUgar7GaWhumfvfMVst7uwYxgo7evPaX79emSdUR6gXrf3Mkz-MlB3DIVyrC623pauF1QegOyr64uXE7fP9KUirFK5lOaMSH3r5tbE1C3AsyHRrwj8www39UJlFxgVY-Y9OBjmjApKCn6HnKmz_fCZilpx7UaOLI8Y0CB7mnXj7o3BHmLxwjfnoriNrgw_rfOW5oHjVODI2rlqdPubRfyI_Yy80MjNnyz-C538"/>
+<div class="absolute inset-0 rounded-full border-2 border-primary-fixed-dim scale-[1.15] opacity-0 group-hover:opacity-30 group-hover:animate-pulse transition-opacity duration-500 z-0"></div>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-1">Dr. Alex Vance</h2>
+<p class="font-label-mono text-label-mono text-primary-fixed-dim uppercase tracking-widest mb-6">Lead Quant</p>
+<div class="w-full space-y-3">
+<div class="flex justify-between items-center py-2 border-b border-border-glass/50">
+<span class="font-label-mono text-label-mono text-on-surface-variant uppercase">Clearance</span>
+<span class="font-label-mono text-label-mono text-on-surface bg-surface-container-high px-2 py-1 rounded border border-border-glass">Level 5</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-border-glass/50">
+<span class="font-label-mono text-label-mono text-on-surface-variant uppercase">Entity</span>
+<span class="font-label-mono text-label-mono text-on-surface">Alpha Structuring LLC</span>
+</div>
+<div class="flex justify-between items-center py-2">
+<span class="font-label-mono text-label-mono text-on-surface-variant uppercase">System UID</span>
+<span class="font-label-mono text-label-mono text-on-surface opacity-50">0x8F...A12B</span>
+</div>
+</div>
+</div>
+<!-- Plan Tier Card -->
+<div class="glass-card p-8">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-primary-fixed-dim">verified</span>
+<h3 class="font-body-lg text-body-lg text-on-surface font-semibold">Plan Tier</h3>
+</div>
+<div class="mb-6">
+<div class="text-4xl font-headline-xl text-on-surface mb-1">Institutional</div>
+<div class="font-label-mono text-label-mono text-primary-fixed-dim uppercase tracking-widest">Active Status</div>
+</div>
+<ul class="space-y-4">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary-fixed-dim text-sm mt-0.5">check</span>
+<span class="font-body-md text-on-surface-variant text-sm">Unlimited API Connectivity</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary-fixed-dim text-sm mt-0.5">check</span>
+<span class="font-body-md text-on-surface-variant text-sm">Sub-millisecond latency</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary-fixed-dim text-sm mt-0.5">check</span>
+<span class="font-body-md text-on-surface-variant text-sm">Dedicated Quant Support</span>
+</li>
+</ul>
+<button class="mt-8 w-full py-3 rounded-full border border-border-glass text-on-surface font-label-mono text-label-mono tracking-wider uppercase hover:bg-surface-container-high transition-colors">
+                                Manage Subscription
+                            </button>
+</div>
+</div>
+<!-- RIGHT COLUMN (Span 8) -->
+<div class="lg:col-span-8 flex flex-col gap-gutter">
+<!-- API Connectivity Matrix -->
+<div class="glass-card p-8">
+<div class="flex justify-between items-center mb-8 border-b border-border-glass pb-4">
+<div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface text-2xl">API Connectivity</h3>
+<p class="font-label-mono text-label-mono text-on-surface-variant uppercase mt-1">Exchange Keys &amp; Webhooks</p>
+</div>
+<button class="flex items-center gap-2 bg-surface-container border border-border-glass px-4 py-2 rounded-full text-on-surface hover:border-primary-fixed-dim hover:text-primary-fixed-dim transition-colors group">
+<span class="material-symbols-outlined text-sm">add</span>
+<span class="font-label-mono text-label-mono uppercase">New Key</span>
+</button>
+</div>
+<div class="space-y-2">
+<!-- Exchange Row 1 -->
+<div class="flex items-center justify-between p-4 rounded-lg bg-surface-container-lowest border border-border-glass/50 hover:border-border-glass transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-void-black border border-border-glass flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant">currency_bitcoin</span>
+</div>
+<div>
+<div class="font-body-lg text-on-surface text-base">Binance Institutional</div>
+<div class="font-label-mono text-label-mono text-on-surface-variant opacity-60 mt-1">Key: bin_inst_09A...</div>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-primary-fixed-dim shadow-[0_0_8px_rgba(0,240,255,0.8)]"></div>
+<span class="font-label-mono text-label-mono text-primary-fixed-dim uppercase">Active</span>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Exchange Row 2 -->
+<div class="flex items-center justify-between p-4 rounded-lg bg-surface-container-lowest border border-border-glass/50 hover:border-border-glass transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-void-black border border-border-glass flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant">account_balance</span>
+</div>
+<div>
+<div class="font-body-lg text-on-surface text-base">Kraken Pro</div>
+<div class="font-label-mono text-label-mono text-on-surface-variant opacity-60 mt-1">Key: krk_pro_72F...</div>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-primary-fixed-dim shadow-[0_0_8px_rgba(0,240,255,0.8)]"></div>
+<span class="font-label-mono text-label-mono text-primary-fixed-dim uppercase">Active</span>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Exchange Row 3 (Inactive) -->
+<div class="flex items-center justify-between p-4 rounded-lg bg-surface-container-lowest border border-border-glass/50 hover:border-border-glass transition-colors opacity-60">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-void-black border border-border-glass flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant">show_chart</span>
+</div>
+<div>
+<div class="font-body-lg text-on-surface text-base">Deribit Options</div>
+<div class="font-label-mono text-label-mono text-on-surface-variant opacity-60 mt-1">Key: der_opt_REVOKED</div>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-surface-variant"></div>
+<span class="font-label-mono text-label-mono text-on-surface-variant uppercase">Inactive</span>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Security Protocols -->
+<div class="glass-card p-8 border-l-4 border-l-border-glass hover:border-l-secondary-container transition-all duration-300">
+<div class="flex items-start gap-4 mb-8">
+<span class="material-symbols-outlined text-secondary-container text-3xl mt-1">shield_lock</span>
+<div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface text-2xl">Security Protocols</h3>
+<p class="font-label-mono text-label-mono text-secondary-container uppercase tracking-widest mt-1 opacity-80">High-Risk Environment</p>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+<!-- 2FA Toggle -->
+<div class="p-5 rounded-xl border border-border-glass bg-surface-container-lowest flex justify-between items-center">
+<div>
+<div class="font-body-lg text-on-surface mb-1">Hardware 2FA</div>
+<div class="font-label-mono text-label-mono text-on-surface-variant">YubiKey enforced</div>
+</div>
+<!-- Toggle Switch (Visual) -->
+<div class="w-12 h-6 bg-primary-fixed-dim/20 rounded-full relative cursor-pointer border border-primary-fixed-dim/50 shadow-[0_0_10px_rgba(0,240,255,0.1)]">
+<div class="w-5 h-5 bg-primary-fixed-dim rounded-full absolute right-0.5 top-0.5 shadow-[0_0_5px_rgba(0,240,255,0.8)]"></div>
+</div>
+</div>
+<!-- IP Whitelist -->
+<div class="p-5 rounded-xl border border-border-glass bg-surface-container-lowest flex justify-between items-center">
+<div>
+<div class="font-body-lg text-on-surface mb-1">IP Whitelisting</div>
+<div class="font-label-mono text-label-mono text-secondary-container">Strict Enforcement</div>
+</div>
+<div class="w-12 h-6 bg-primary-fixed-dim/20 rounded-full relative cursor-pointer border border-primary-fixed-dim/50 shadow-[0_0_10px_rgba(0,240,255,0.1)]">
+<div class="w-5 h-5 bg-primary-fixed-dim rounded-full absolute right-0.5 top-0.5 shadow-[0_0_5px_rgba(0,240,255,0.8)]"></div>
+</div>
+</div>
+</div>
+<!-- Session Management -->
+<div class="border-t border-border-glass pt-6">
+<h4 class="font-label-mono text-label-mono text-on-surface-variant uppercase tracking-widest mb-4">Active Sessions</h4>
+<div class="space-y-3">
+<!-- Current Session -->
+<div class="flex items-center justify-between py-3">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary-fixed-dim opacity-70">desktop_windows</span>
+<div>
+<div class="font-body-md text-on-surface text-sm">MacBook Pro - Chrome</div>
+<div class="font-label-mono text-label-mono text-on-surface-variant text-[10px] mt-0.5">IP: 192.168.1.1 (Zurich, CH)</div>
+</div>
+</div>
+<span class="font-label-mono text-label-mono text-primary-fixed-dim bg-primary-fixed-dim/10 px-2 py-1 rounded">Current</span>
+</div>
+<!-- Other Session -->
+<div class="flex items-center justify-between py-3">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant opacity-70">terminal</span>
+<div>
+<div class="font-body-md text-on-surface text-sm">Linux API Server</div>
+<div class="font-label-mono text-label-mono text-on-surface-variant text-[10px] mt-0.5">IP: 45.32.X.X (Frankfurt, DE)</div>
+</div>
+</div>
+<button class="font-label-mono text-label-mono text-secondary-container hover:text-white hover:bg-secondary-container/20 px-2 py-1 rounded transition-colors border border-transparent hover:border-secondary-container">Revoke</button>
+</div>
+</div>
+<div class="mt-6 flex justify-end">
+<button class="text-secondary-container font-label-mono text-label-mono uppercase tracking-wider flex items-center gap-2 hover:bg-secondary-container/10 px-4 py-2 rounded transition-colors">
+<span class="material-symbols-outlined text-sm">logout</span>
+                                        Terminate All Sessions
+                                    </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

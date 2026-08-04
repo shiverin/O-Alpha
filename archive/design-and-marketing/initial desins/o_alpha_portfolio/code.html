@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>O(Alpha) - Portfolio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-tint": "#00dbe9",
+                        "glow-cyan": "rgba(0, 240, 255, 0.4)",
+                        "on-secondary": "#3a3000",
+                        "on-secondary-fixed-variant": "#544600",
+                        "on-error": "#690005",
+                        "inverse-on-surface": "#313030",
+                        "on-primary-fixed": "#002022",
+                        "primary": "#dbfcff",
+                        "on-primary-container": "#006970",
+                        "tertiary-fixed": "#e2e2e2",
+                        "tertiary": "#f5f5f5",
+                        "on-surface-variant": "#b9cacb",
+                        "on-primary": "#00363a",
+                        "inverse-surface": "#e5e2e1",
+                        "glow-gold": "rgba(255, 215, 0, 0.3)",
+                        "on-surface": "#e5e2e1",
+                        "surface-container-low": "#1c1b1b",
+                        "secondary-fixed-dim": "#e9c400",
+                        "on-secondary-container": "#725f00",
+                        "on-tertiary-container": "#5d5f5f",
+                        "background": "#131313",
+                        "primary-fixed-dim": "#00dbe9",
+                        "outline-variant": "#3b494b",
+                        "surface-gray": "#1E1E1E",
+                        "surface-container": "#20201f",
+                        "tertiary-fixed-dim": "#c6c6c7",
+                        "border-glass": "rgba(255, 255, 255, 0.12)",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "surface": "#131313",
+                        "primary-fixed": "#7df4ff",
+                        "surface-variant": "#353535",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "secondary": "#fff9ef",
+                        "secondary-container": "#ffdb3c",
+                        "on-background": "#e5e2e1",
+                        "surface-container-high": "#2a2a2a",
+                        "on-primary-fixed-variant": "#004f54",
+                        "primary-container": "#00f0ff",
+                        "error": "#ffb4ab",
+                        "on-tertiary": "#2f3131",
+                        "on-error-container": "#ffdad6",
+                        "surface-bright": "#393939",
+                        "tertiary-container": "#d9d9d9",
+                        "surface-container-lowest": "#0e0e0e",
+                        "error-container": "#93000a",
+                        "surface-dim": "#131313",
+                        "on-secondary-fixed": "#221b00",
+                        "void-black": "#0A0A0A",
+                        "surface-container-highest": "#353535",
+                        "outline": "#849495",
+                        "inverse-primary": "#006970",
+                        "secondary-fixed": "#ffe16d"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px",
+                        "24px": "24px"
+                    },
+                    spacing: {
+                        "margin-mobile": "24px",
+                        "container-max": "1280px",
+                        "gutter": "24px",
+                        "section-gap": "120px",
+                        "margin-desktop": "64px"
+                    },
+                    fontFamily: {
+                        "display-lg-mobile": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-mono": ["JetBrains Mono"],
+                        "headline-xl": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    fontSize: {
+                        "display-lg-mobile": ["48px", { lineHeight: "52px", letterSpacing: "-0.03em", fontWeight: "700" }],
+                        "display-lg": ["80px", { lineHeight: "88px", letterSpacing: "-0.04em", fontWeight: "700" }],
+                        "body-md": ["16px", { lineHeight: "28px", letterSpacing: "0em", fontWeight: "400" }],
+                        "label-mono": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "500" }],
+                        "headline-xl": ["48px", { lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "600" }],
+                        "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "600" }],
+                        "body-lg": ["18px", { lineHeight: "32px", letterSpacing: "0em", fontWeight: "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0A0A0A; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #353535; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00dbe9; 
+        }
+
+        .gradient-top-glow {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
+        }
+    </style>
+</head>
+<body class="bg-void-black text-on-surface font-body-md text-body-md antialiased flex selection:bg-primary-fixed-dim selection:text-on-primary-fixed">
+<!-- SideNavBar -->
+<nav class="flex flex-col fixed left-0 top-0 h-screen w-64 border-r border-border-glass bg-void-black py-margin-mobile px-4 z-40 hidden md:flex">
+<div class="mb-12 px-4">
+<h1 class="font-headline-lg text-headline-lg text-primary-fixed-dim tracking-tight">O(Alpha)</h1>
+<p class="font-label-mono text-label-mono text-on-surface-variant mt-1">AI-Driven Quant</p>
+</div>
+<ul class="flex flex-col gap-2 flex-1">
+<!-- Overview -->
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors hover:bg-surface-container-high hover:text-primary-fixed-dim transition-all duration-300 font-label-mono text-label-mono group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary-fixed-dim transition-colors">dashboard</span>
+                    Overview
+                </a>
+</li>
+<!-- Agent Settings -->
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors hover:bg-surface-container-high hover:text-primary-fixed-dim transition-all duration-300 font-label-mono text-label-mono group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary-fixed-dim transition-colors">smart_toy</span>
+                    Agent Settings
+                </a>
+</li>
+<!-- Portfolio (ACTIVE) -->
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg font-label-mono text-label-mono text-primary-fixed-dim border-r-2 border-primary-fixed-dim bg-glow-cyan shadow-[0_0_20px_rgba(0,240,255,0.1)] scale-95 duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+                    Portfolio
+                </a>
+</li>
+<!-- Activity -->
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors hover:bg-surface-container-high hover:text-primary-fixed-dim transition-all duration-300 font-label-mono text-label-mono group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary-fixed-dim transition-colors">analytics</span>
+                    Activity
+                </a>
+</li>
+</ul>
+<div class="mt-auto pt-8 flex flex-col gap-4">
+<button class="w-full bg-primary-fixed-dim text-void-black font-label-mono text-label-mono py-3 rounded-full hover:bg-primary transition-colors flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,219,233,0.3)]">
+                Connect API
+            </button>
+<ul class="flex flex-col gap-2 border-t border-border-glass pt-4">
+<li>
+<a class="flex items-center gap-3 px-4 py-2 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors font-label-mono text-label-mono group" href="#">
+<span class="material-symbols-outlined text-[18px] group-hover:text-primary-fixed-dim transition-colors">help</span>
+                        Support
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-2 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors font-label-mono text-label-mono group" href="#">
+<span class="material-symbols-outlined text-[18px] group-hover:text-primary-fixed-dim transition-colors">settings</span>
+                        Settings
+                    </a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col min-h-screen md:ml-64 w-full relative overflow-x-hidden">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center w-full h-20 px-4 md:px-margin-desktop sticky top-0 z-50 bg-surface/80 backdrop-blur-xl border-b border-border-glass">
+<div class="flex items-center gap-4">
+<button class="md:hidden text-on-surface-variant hover:text-primary-fixed-dim transition-colors">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<!-- Title hidden on desktop as it's in sidebar, but JSON says include it, so we'll show breadcrumb style -->
+<div class="hidden md:flex items-center gap-2 text-on-surface-variant font-label-mono text-label-mono">
+<span>O(Alpha)</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-primary-fixed-dim font-bold">Portfolio</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<!-- Search (on_right per JSON) -->
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+<input class="bg-surface-container-high border-none rounded-full py-2 pl-10 pr-4 text-on-surface focus:ring-1 focus:ring-primary-fixed-dim focus:bg-surface text-sm w-48 transition-all" placeholder="Search assets..." type="text"/>
+</div>
+<!-- Trailing Actions -->
+<button class="text-on-surface-variant hover:text-glow-cyan transition-all hover:shadow-glow-cyan duration-300 relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-primary-fixed-dim rounded-full shadow-[0_0_5px_rgba(0,219,233,0.8)]"></span>
+</button>
+<button class="text-on-surface-variant hover:text-glow-cyan transition-all hover:shadow-glow-cyan duration-300">
+<span class="material-symbols-outlined">wifi_tethering</span>
+</button>
+<button class="text-on-surface-variant hover:text-glow-cyan transition-all hover:shadow-glow-cyan duration-300">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Page Content Canvas -->
+<main class="flex-1 p-4 md:p-margin-desktop flex flex-col gap-12 md:gap-24 max-w-container-max mx-auto w-full">
+<!-- Section 1: Total Value & Sparkline -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
+<div class="lg:col-span-12 bg-surface-gray border border-border-glass rounded-24px p-8 md:p-12 gradient-top-glow relative overflow-hidden group hover:shadow-[0_0_30px_rgba(0,240,255,0.05)] transition-shadow duration-500">
+<!-- Background Grid Effect -->
+<div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.15) 1px, transparent 0); background-size: 32px 32px;"></div>
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 relative z-10">
+<div>
+<p class="font-label-mono text-label-mono text-on-surface-variant mb-4 uppercase tracking-widest">Total Asset Value</p>
+<h2 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface tracking-tight">
+                                $2,481,903<span class="text-on-surface-variant">.50</span>
+</h2>
+<div class="flex items-center gap-3 mt-4">
+<span class="bg-primary-fixed-dim/10 text-primary-fixed-dim font-label-mono text-label-mono px-3 py-1 rounded-full flex items-center gap-1 border border-primary-fixed-dim/20 shadow-[0_0_10px_rgba(0,240,255,0.2)]">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span>
+                                    +4.2% (24h)
+                                </span>
+<span class="text-on-surface-variant font-label-mono text-label-mono">+$104,239.95</span>
+</div>
+</div>
+<!-- Sparkline Visualization -->
+<div class="w-full md:w-1/2 h-32 relative">
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 400 100">
+<defs>
+<lineargradient id="cyan-fade" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="rgba(0, 219, 233, 0.2)"></stop>
+<stop offset="100%" stop-color="rgba(0, 219, 233, 0)"></stop>
+</lineargradient>
+<filter id="glow">
+<fegaussianblur result="coloredBlur" stddeviation="3"></fegaussianblur>
+<femerge>
+<femergenode in="coloredBlur"></femergenode>
+<femergenode in="SourceGraphic"></femergenode>
+</femerge>
+</filter>
+</defs>
+<!-- Area under line -->
+<path d="M0 80 Q 50 70, 100 85 T 200 60 T 300 40 T 400 20 L 400 100 L 0 100 Z" fill="url(#cyan-fade)"></path>
+<!-- The Line itself -->
+<path d="M0 80 Q 50 70, 100 85 T 200 60 T 300 40 T 400 20" fill="none" filter="url(#glow)" stroke="#00dbe9" stroke-width="2"></path>
+<!-- Data points -->
+<circle cx="400" cy="20" fill="#00dbe9" filter="url(#glow)" r="4"></circle>
+</svg>
+<!-- Axis hints -->
+<div class="absolute bottom-0 left-0 w-full flex justify-between text-on-surface-variant font-label-mono text-[10px] opacity-50 border-t border-border-glass pt-1">
+<span>24h Ago</span>
+<span>Now</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 2: Composition & Metrics -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
+<!-- Left: Donut Chart -->
+<div class="lg:col-span-5 bg-surface-gray border border-border-glass rounded-24px p-8 gradient-top-glow flex flex-col">
+<h3 class="font-headline-lg text-headline-lg text-on-surface mb-8">Composition</h3>
+<div class="relative flex-1 flex items-center justify-center min-h-[300px]">
+<!-- Abstract Donut using SVG -->
+<svg class="transform -rotate-90" height="240" viewbox="0 0 240 240" width="240">
+<!-- Background track -->
+<circle cx="120" cy="120" fill="none" r="100" stroke="#2a2a2a" stroke-width="20"></circle>
+<!-- Segment 1: Equities (Cyan) -->
+<circle class="drop-shadow-[0_0_10px_rgba(0,219,233,0.5)] transition-all duration-1000" cx="120" cy="120" fill="none" r="100" stroke="#00dbe9" stroke-dasharray="628" stroke-dashoffset="251" stroke-width="20"></circle>
+<!-- Segment 2: Crypto (Gold) -->
+<circle class="drop-shadow-[0_0_8px_rgba(233,196,0,0.3)] transition-all duration-1000 delay-100" cx="120" cy="120" fill="none" r="100" stroke="#e9c400" stroke-dasharray="628 628" stroke-dashoffset="439" stroke-width="20" transform="rotate(216 120 120)"></circle>
+<!-- Segment 3: Cash (Gray) -->
+<circle class="transition-all duration-1000 delay-200" cx="120" cy="120" fill="none" r="100" stroke="#849495" stroke-dasharray="628" stroke-dashoffset="565" stroke-width="20" transform="rotate(324 120 120)"></circle>
+</svg>
+<!-- Center Value -->
+<div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+<span class="font-label-mono text-label-mono text-on-surface-variant uppercase">Equities</span>
+<span class="font-headline-xl text-headline-xl text-on-surface mt-1">60%</span>
+</div>
+</div>
+<!-- Legend -->
+<div class="mt-8 flex flex-col gap-3 font-label-mono text-label-mono">
+<div class="flex justify-between items-center group cursor-default">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-primary-fixed-dim shadow-[0_0_8px_rgba(0,219,233,0.5)] group-hover:scale-125 transition-transform"></span>
+<span class="text-on-surface">Equities</span>
+</div>
+<span class="text-on-surface-variant group-hover:text-primary-fixed-dim transition-colors">60%</span>
+</div>
+<div class="flex justify-between items-center group cursor-default">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-secondary-fixed-dim shadow-[0_0_8px_rgba(233,196,0,0.3)] group-hover:scale-125 transition-transform"></span>
+<span class="text-on-surface">Crypto Assets</span>
+</div>
+<span class="text-on-surface-variant group-hover:text-secondary-fixed-dim transition-colors">30%</span>
+</div>
+<div class="flex justify-between items-center group cursor-default">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-outline group-hover:scale-125 transition-transform"></span>
+<span class="text-on-surface">Cash &amp; Equiv</span>
+</div>
+<span class="text-on-surface-variant group-hover:text-on-surface transition-colors">10%</span>
+</div>
+</div>
+</div>
+<!-- Right: Metric Grid -->
+<div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6">
+<!-- Metric Card 1 -->
+<div class="bg-surface-gray border border-border-glass rounded-24px p-6 flex flex-col justify-between hover:bg-surface-container-high transition-colors">
+<div class="flex justify-between items-start mb-6">
+<span class="material-symbols-outlined text-primary-fixed-dim">trending_up</span>
+<span class="bg-border-glass border border-border-glass px-2 py-1 rounded-full font-label-mono text-[10px] text-on-surface-variant uppercase">Alpha Gen</span>
+</div>
+<div>
+<p class="font-label-mono text-label-mono text-on-surface-variant mb-1">Top Performer</p>
+<p class="font-headline-lg text-headline-lg text-on-surface">NVDA</p>
+<p class="font-label-mono text-label-mono text-primary-fixed-dim mt-2">+12.4% <span class="text-on-surface-variant">contribution</span></p>
+</div>
+</div>
+<!-- Metric Card 2 -->
+<div class="bg-surface-gray border border-border-glass rounded-24px p-6 flex flex-col justify-between hover:bg-surface-container-high transition-colors relative overflow-hidden">
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-secondary-fixed-dim opacity-10 rounded-full blur-2xl"></div>
+<div class="flex justify-between items-start mb-6 relative z-10">
+<span class="material-symbols-outlined text-secondary-fixed-dim">shield</span>
+<span class="bg-border-glass border border-border-glass px-2 py-1 rounded-full font-label-mono text-[10px] text-on-surface-variant uppercase">Metrics</span>
+</div>
+<div class="relative z-10">
+<p class="font-label-mono text-label-mono text-on-surface-variant mb-1">Risk Profile</p>
+<p class="font-headline-lg text-headline-lg text-on-surface">Moderate</p>
+<p class="font-label-mono text-label-mono text-on-surface-variant mt-2">Sharpe Ratio: <span class="text-on-surface">1.84</span></p>
+</div>
+</div>
+<!-- Metric Card 3 (Full width in subgrid) -->
+<div class="sm:col-span-2 bg-surface-gray border border-border-glass rounded-24px p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center hover:bg-surface-container-high transition-colors">
+<div>
+<p class="font-label-mono text-label-mono text-on-surface-variant mb-1">Estimated Annual Yield</p>
+<p class="font-headline-xl text-headline-xl text-on-surface">$124,500<span class="text-on-surface-variant font-headline-lg">.00</span></p>
+</div>
+<div class="mt-4 sm:mt-0 text-right">
+<p class="font-label-mono text-label-mono text-primary-fixed-dim mb-1">Target Met</p>
+<div class="w-32 h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary-fixed-dim w-[85%] shadow-[0_0_10px_rgba(0,219,233,0.8)]"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 3: Positions Table -->
+<section class="w-full bg-surface-gray border border-border-glass rounded-24px overflow-hidden gradient-top-glow pb-4">
+<div class="p-8 border-b border-border-glass/50 flex justify-between items-center">
+<h3 class="font-headline-lg text-headline-lg text-on-surface">Positions</h3>
+<button class="font-label-mono text-label-mono text-primary-fixed-dim hover:text-primary flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[16px]">download</span>
+                        Export
+                    </button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="font-label-mono text-label-mono text-on-surface-variant border-b border-border-glass/50 bg-void-black/20">
+<th class="p-6 font-medium">Asset</th>
+<th class="p-6 font-medium">Allocation</th>
+<th class="p-6 font-medium">Current Price</th>
+<th class="p-6 font-medium text-right">Unrealized P&amp;L</th>
+<th class="p-6 font-medium text-right">Exposure</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-on-surface divide-y divide-border-glass/30">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-high transition-colors group">
+<td class="p-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-void-black border border-border-glass flex items-center justify-center font-label-mono text-[10px]">NV</div>
+<div>
+<p class="font-medium group-hover:text-primary-fixed-dim transition-colors">NVIDIA Corp</p>
+<p class="font-label-mono text-[10px] text-on-surface-variant">NVDA • Equity</p>
+</div>
+</div>
+</td>
+<td class="p-6 font-label-mono">18.5%</td>
+<td class="p-6 font-label-mono">$134.20</td>
+<td class="p-6 text-right">
+<span class="text-primary-fixed-dim font-label-mono drop-shadow-[0_0_5px_rgba(0,219,233,0.3)]">+$45,200.00</span>
+</td>
+<td class="p-6 text-right font-label-mono">$459,152.00</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-high transition-colors group">
+<td class="p-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-void-black border border-border-glass flex items-center justify-center font-label-mono text-[10px]">BT</div>
+<div>
+<p class="font-medium group-hover:text-primary-fixed-dim transition-colors">Bitcoin</p>
+<p class="font-label-mono text-[10px] text-on-surface-variant">BTC • Crypto</p>
+</div>
+</div>
+</td>
+<td class="p-6 font-label-mono">15.0%</td>
+<td class="p-6 font-label-mono">$64,230.00</td>
+<td class="p-6 text-right">
+<span class="text-primary-fixed-dim font-label-mono drop-shadow-[0_0_5px_rgba(0,219,233,0.3)]">+$12,450.00</span>
+</td>
+<td class="p-6 text-right font-label-mono">$372,285.00</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-high transition-colors group">
+<td class="p-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-void-black border border-border-glass flex items-center justify-center font-label-mono text-[10px]">AP</div>
+<div>
+<p class="font-medium group-hover:text-primary-fixed-dim transition-colors">Apple Inc</p>
+<p class="font-label-mono text-[10px] text-on-surface-variant">AAPL • Equity</p>
+</div>
+</div>
+</td>
+<td class="p-6 font-label-mono">12.2%</td>
+<td class="p-6 font-label-mono">$189.50</td>
+<td class="p-6 text-right">
+<span class="text-error font-label-mono">-$2,100.50</span>
+</td>
+<td class="p-6 text-right font-label-mono">$302,789.00</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-high transition-colors group">
+<td class="p-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-void-black border border-border-glass flex items-center justify-center font-label-mono text-[10px] text-secondary-fixed-dim border-secondary-fixed-dim/30">ET</div>
+<div>
+<p class="font-medium group-hover:text-primary-fixed-dim transition-colors">Ethereum</p>
+<p class="font-label-mono text-[10px] text-on-surface-variant">ETH • Crypto</p>
+</div>
+</div>
+</td>
+<td class="p-6 font-label-mono">8.4%</td>
+<td class="p-6 font-label-mono">$3,450.20</td>
+<td class="p-6 text-right">
+<span class="text-primary-fixed-dim font-label-mono drop-shadow-[0_0_5px_rgba(0,219,233,0.3)]">+$8,900.00</span>
+</td>
+<td class="p-6 text-right font-label-mono">$208,483.00</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-6 text-center">
+<button class="font-label-mono text-label-mono text-on-surface-variant hover:text-on-surface border border-border-glass rounded-full px-6 py-2 hover:bg-void-black transition-all">
+                        View All 42 Positions
+                    </button>
+</div>
+</section>
+</main>
+</div>
+</body></html>

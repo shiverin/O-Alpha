@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>O(Alpha) - How it Works</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "outline-variant": "#3b494b",
+                      "surface-container-lowest": "#0e0e0e",
+                      "tertiary": "#f5f5f5",
+                      "on-secondary": "#3a3000",
+                      "primary-fixed": "#7df4ff",
+                      "tertiary-fixed-dim": "#c6c6c7",
+                      "on-primary": "#00363a",
+                      "inverse-surface": "#e5e2e1",
+                      "inverse-primary": "#006970",
+                      "on-primary-fixed": "#002022",
+                      "surface-tint": "#00dbe9",
+                      "error": "#ffb4ab",
+                      "on-primary-container": "#006970",
+                      "on-secondary-fixed-variant": "#544600",
+                      "on-background": "#e5e2e1",
+                      "on-primary-fixed-variant": "#004f54",
+                      "surface-dim": "#131313",
+                      "secondary-fixed": "#ffe16d",
+                      "surface-container-highest": "#353535",
+                      "secondary-fixed-dim": "#e9c400",
+                      "on-secondary-fixed": "#221b00",
+                      "surface": "#131313",
+                      "on-surface": "#e5e2e1",
+                      "secondary": "#fff9ef",
+                      "background": "#131313",
+                      "on-surface-variant": "#b9cacb",
+                      "outline": "#849495",
+                      "error-container": "#93000a",
+                      "tertiary-fixed": "#e2e2e2",
+                      "inverse-on-surface": "#313030",
+                      "on-error-container": "#ffdad6",
+                      "glow-cyan": "rgba(0, 240, 255, 0.4)",
+                      "on-tertiary": "#2f3131",
+                      "on-error": "#690005",
+                      "tertiary-container": "#d9d9d9",
+                      "surface-container": "#20201f",
+                      "primary-container": "#00f0ff",
+                      "surface-container-high": "#2a2a2a",
+                      "primary": "#dbfcff",
+                      "glow-gold": "rgba(255, 215, 0, 0.3)",
+                      "surface-variant": "#353535",
+                      "secondary-container": "#ffdb3c",
+                      "surface-container-low": "#1c1b1b",
+                      "on-secondary-container": "#725f00",
+                      "on-tertiary-fixed-variant": "#454747",
+                      "border-glass": "rgba(255, 255, 255, 0.12)",
+                      "on-tertiary-container": "#5d5f5f",
+                      "primary-fixed-dim": "#00dbe9",
+                      "surface-gray": "#1E1E1E",
+                      "on-tertiary-fixed": "#1a1c1c",
+                      "void-black": "#0A0A0A",
+                      "surface-bright": "#393939"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-desktop": "64px",
+                      "container-max": "1280px",
+                      "gutter": "24px",
+                      "section-gap": "120px",
+                      "margin-mobile": "24px"
+              },
+              "fontFamily": {
+                      "display-lg-mobile": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "label-mono": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ],
+                      "headline-xl": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "display-lg-mobile": [
+                              "48px",
+                              {
+                                      "lineHeight": "52px",
+                                      "letterSpacing": "-0.03em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "28px",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "80px",
+                              {
+                                      "lineHeight": "88px",
+                                      "letterSpacing": "-0.04em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-mono": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-xl": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body {
+            background-color: #0A0A0A;
+            color: #e5e2e1;
+        }
+        
+        .glow-hover:hover {
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+            transition: box-shadow 0.3s ease-in-out;
+        }
+
+        .glass-panel {
+            background: rgba(30, 30, 30, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+      </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col font-sans">
+<!-- TopNavBar -->
+<nav class="bg-surface/80 dark:bg-surface/80 backdrop-blur-xl fixed top-0 w-full z-50 border-b border-border-glass shadow-sm">
+<div class="flex justify-between items-center h-20 px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
+<div class="font-headline-lg text-headline-lg font-bold text-primary tracking-tighter">
+                O(Alpha)
+            </div>
+<div class="hidden md:flex space-x-8 font-body-md text-body-md">
+<a class="text-on-surface-variant hover:text-primary transition-colors hover:bg-white/5 transition-all duration-300 px-3 py-2 rounded-md active:scale-95 transition-transform" href="#">Product</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors hover:bg-white/5 transition-all duration-300 px-3 py-2 rounded-md active:scale-95 transition-transform" href="#">Performance</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors hover:bg-white/5 transition-all duration-300 px-3 py-2 rounded-md active:scale-95 transition-transform" href="#">Pricing</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors hover:bg-white/5 transition-all duration-300 px-3 py-2 rounded-md active:scale-95 transition-transform" href="#">Mission</a>
+</div>
+<div class="flex items-center space-x-4">
+<button class="hidden md:block font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">Login</button>
+<button class="bg-primary-fixed-dim text-void-black px-6 py-2 rounded-full font-body-md text-body-md font-semibold hover:bg-primary-container transition-colors glow-hover active:scale-95">Launch App</button>
+</div>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="flex-grow pt-32 pb-24">
+<!-- Hero Section -->
+<section class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop mb-section-gap">
+<div class="flex flex-col items-center text-center space-y-8">
+<div class="inline-flex items-center px-4 py-1.5 rounded-full border border-border-glass bg-surface-gray/50 font-label-mono text-label-mono text-primary-fixed-dim">
+<span class="material-symbols-outlined text-[16px] mr-2" data-icon="memory">memory</span>
+                    SYSTEM ARCHITECTURE
+                </div>
+<h1 class="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg text-primary">
+                    Systematic Precision.
+                </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+                    Understand the three pillars of O(Alpha)'s execution logic. From initial configuration to continuous regime detection, our architecture is designed for uncompromising performance.
+                </p>
+</div>
+</section>
+<!-- Pillar 1: Configure -->
+<section class="w-full bg-surface-gray py-section-gap mb-section-gap border-y border-border-glass relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none"></div>
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+<div class="space-y-6">
+<div class="font-label-mono text-label-mono text-secondary-fixed-dim mb-4">PILLAR 01</div>
+<h2 class="font-headline-xl text-headline-xl text-primary">Configure</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                        Define your operational parameters. Set risk tolerances, asset allocations, and execution mandates. The system translates human intent into rigorous mathematical constraints, ensuring every action aligns strictly with your strategic preferences.
+                    </p>
+<ul class="space-y-4 font-body-md text-body-md text-on-surface border-t border-white/10 pt-6">
+<li class="flex items-center">
+<span class="material-symbols-outlined text-secondary-fixed-dim mr-3 text-[20px]" data-icon="tune">tune</span>
+                            Parameter Definition
+                        </li>
+<li class="flex items-center">
+<span class="material-symbols-outlined text-secondary-fixed-dim mr-3 text-[20px]" data-icon="security">security</span>
+                            Risk Constraint Mapping
+                        </li>
+</ul>
+</div>
+<div class="glass-panel rounded-2xl p-8 aspect-square flex flex-col justify-center items-center relative group glow-hover">
+<div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&amp;w=2940&amp;auto=format&amp;fit=crop')] bg-cover bg-center opacity-10 mix-blend-luminosity rounded-2xl" data-alt="A highly technical, abstract visualization of data parameters being set. Thin, precise cyan lines and glowing nodes connect on a deep void-black background, representing the intricate configuration phase of an advanced trading algorithm. The aesthetic is clean, modern, and mathematically rigorous."></div>
+<!-- Abstract UI Mockup inside Card -->
+<div class="w-full max-w-sm space-y-4 z-10 relative">
+<div class="flex justify-between items-center pb-2 border-b border-border-glass">
+<span class="font-label-mono text-label-mono text-on-surface-variant">VOLATILITY CAP</span>
+<span class="font-label-mono text-label-mono text-primary-fixed-dim">12.5%</span>
+</div>
+<div class="w-full h-1 bg-surface-container rounded-full overflow-hidden">
+<div class="w-[65%] h-full bg-primary-fixed-dim"></div>
+</div>
+<div class="flex justify-between items-center pb-2 border-b border-border-glass pt-4">
+<span class="font-label-mono text-label-mono text-on-surface-variant">LEVERAGE RATIO</span>
+<span class="font-label-mono text-label-mono text-primary-fixed-dim">2.0x</span>
+</div>
+<div class="w-full h-1 bg-surface-container rounded-full overflow-hidden">
+<div class="w-[40%] h-full bg-primary-fixed-dim"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Pillar 2: Agent Executes -->
+<section class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop mb-section-gap">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+<div class="order-2 md:order-1 glass-panel rounded-2xl p-8 h-[500px] flex flex-col justify-end relative overflow-hidden group glow-hover">
+<div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1639762681485-074b7f4d8b62?q=80&amp;w=3132&amp;auto=format&amp;fit=crop')] bg-cover bg-center opacity-20 mix-blend-screen rounded-2xl" data-alt="A sophisticated abstract representation of automated financial trading execution. Bright, high-contrast cyan and gold light trails stream across a dark, void-like canvas, signifying high-speed data transmission and algorithmic decision making in a highly advanced, technical environment."></div>
+<div class="z-10 relative bg-surface-gray/90 backdrop-blur-md p-4 rounded-xl border border-border-glass w-full max-w-xs ml-auto">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center">
+<span class="material-symbols-outlined text-primary-fixed-dim text-[16px] mr-2" data-icon="bolt">bolt</span>
+<span class="font-label-mono text-label-mono text-on-surface">EXECUTION_LOG</span>
+</div>
+<span class="font-label-mono text-label-mono text-secondary-fixed-dim">LIVE</span>
+</div>
+<div class="space-y-1 font-label-mono text-[10px] text-on-surface-variant">
+<div class="flex justify-between"><span>[14:02:01] ROUTE:</span> <span class="text-primary-fixed">DARK_POOL_A</span></div>
+<div class="flex justify-between"><span>[14:02:02] FILL:</span> <span>10,000 @ $142.50</span></div>
+<div class="flex justify-between"><span>[14:02:02] SLIPPAGE:</span> <span class="text-primary-fixed">0.001%</span></div>
+</div>
+</div>
+</div>
+<div class="order-1 md:order-2 space-y-6">
+<div class="font-label-mono text-label-mono text-secondary-fixed-dim mb-4">PILLAR 02</div>
+<h2 class="font-headline-xl text-headline-xl text-primary">Agent Executes</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                        Upon configuration, autonomous agents take over. Utilizing high-frequency routing and advanced order-slicing algorithms, the system executes complex strategies with sub-millisecond precision, minimizing market impact and maximizing fill quality.
+                    </p>
+<ul class="space-y-4 font-body-md text-body-md text-on-surface border-t border-white/10 pt-6">
+<li class="flex items-center">
+<span class="material-symbols-outlined text-secondary-fixed-dim mr-3 text-[20px]" data-icon="timeline">timeline</span>
+                            Algorithmic Routing
+                        </li>
+<li class="flex items-center">
+<span class="material-symbols-outlined text-secondary-fixed-dim mr-3 text-[20px]" data-icon="speed">speed</span>
+                            Low-Latency Execution
+                        </li>
+</ul>
+</div>
+</div>
+</section>
+<!-- Pillar 3: Continuous Intelligence -->
+<section class="w-full bg-surface-gray py-section-gap relative overflow-hidden border-t border-border-glass">
+<div class="absolute inset-0 bg-gradient-to-t from-white/[0.02] to-transparent pointer-events-none"></div>
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+<div class="space-y-6">
+<div class="font-label-mono text-label-mono text-secondary-fixed-dim mb-4">PILLAR 03</div>
+<h2 class="font-headline-xl text-headline-xl text-primary">Continuous Intelligence</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                        The market is not static. Our architecture continuously monitors macroeconomic data feeds, order book dynamics, and sentiment anomalies. It employs real-time regime detection to automatically recalibrate execution strategies before conditions shift.
+                    </p>
+<ul class="space-y-4 font-body-md text-body-md text-on-surface border-t border-white/10 pt-6">
+<li class="flex items-center">
+<span class="material-symbols-outlined text-secondary-fixed-dim mr-3 text-[20px]" data-icon="radar">radar</span>
+                            Regime Detection
+                        </li>
+<li class="flex items-center">
+<span class="material-symbols-outlined text-secondary-fixed-dim mr-3 text-[20px]" data-icon="sync">sync</span>
+                            Dynamic Recalibration
+                        </li>
+</ul>
+</div>
+<!-- Abstract Data Visualization -->
+<div class="glass-panel rounded-2xl p-8 aspect-square flex flex-col justify-center items-center relative group glow-hover">
+<div class="w-full h-full relative">
+<!-- Simplified structural graph -->
+<svg class="absolute inset-0 w-full h-full" preserveaspectratio="none" viewbox="0 0 100 100">
+<path d="M0,80 Q25,70 50,85 T100,60" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"></path>
+<path class="animate-pulse" d="M0,50 Q25,40 50,65 T100,30" fill="none" stroke="rgba(0,240,255,0.4)" stroke-width="2"></path>
+</svg>
+<!-- Floating Data Nodes -->
+<div class="absolute top-1/4 left-1/4 bg-void-black border border-primary-fixed-dim/50 rounded p-2 text-center">
+<div class="font-label-mono text-[10px] text-on-surface-variant">STATE</div>
+<div class="font-label-mono text-[12px] text-primary-fixed-dim">VOLATILE</div>
+</div>
+<div class="absolute bottom-1/4 right-1/4 bg-void-black border border-secondary-fixed-dim/50 rounded p-2 text-center">
+<div class="font-label-mono text-[10px] text-on-surface-variant">ADJUSTMENT</div>
+<div class="font-label-mono text-[12px] text-secondary-fixed-dim">HEDGED</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-void-black w-full py-16 border-t border-border-glass">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
+<div>
+<div class="font-headline-sm text-headline-sm text-primary mb-4">
+                    O(Alpha)
+                </div>
+<div class="font-label-mono text-label-mono text-on-tertiary-fixed-variant opacity-100 hover:opacity-80">
+                    © 2024 O(Alpha) Intelligence. All rights reserved.
+                </div>
+</div>
+<div class="flex flex-wrap gap-x-8 gap-y-4 font-label-mono text-label-mono text-tertiary-fixed-dim justify-start md:justify-end">
+<a class="text-on-tertiary-fixed-variant hover:text-primary-fixed transition-colors opacity-100 hover:opacity-80" href="#">Privacy Policy</a>
+<a class="text-on-tertiary-fixed-variant hover:text-primary-fixed transition-colors opacity-100 hover:opacity-80" href="#">Terms of Service</a>
+<a class="text-on-tertiary-fixed-variant hover:text-primary-fixed transition-colors opacity-100 hover:opacity-80" href="#">Security</a>
+<a class="text-on-tertiary-fixed-variant hover:text-primary-fixed transition-colors opacity-100 hover:opacity-80" href="#">Status</a>
+<a class="text-on-tertiary-fixed-variant hover:text-primary-fixed transition-colors opacity-100 hover:opacity-80" href="#">API Docs</a>
+</div>
+</div>
+</footer>
+</body></html>

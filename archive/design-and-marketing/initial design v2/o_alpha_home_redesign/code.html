@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>O(Alpha) - Your Personal AI Trading Agent</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline-variant": "#3b494b",
+                        "surface-container-lowest": "#0e0e0e",
+                        "tertiary": "#f5f5f5",
+                        "on-secondary": "#3a3000",
+                        "primary-fixed": "#7df4ff",
+                        "tertiary-fixed-dim": "#c6c6c7",
+                        "on-primary": "#00363a",
+                        "inverse-surface": "#e5e2e1",
+                        "inverse-primary": "#006970",
+                        "on-primary-fixed": "#002022",
+                        "surface-tint": "#00dbe9",
+                        "error": "#ffb4ab",
+                        "on-primary-container": "#006970",
+                        "on-secondary-fixed-variant": "#544600",
+                        "on-background": "#e5e2e1",
+                        "on-primary-fixed-variant": "#004f54",
+                        "surface-dim": "#131313",
+                        "secondary-fixed": "#ffe16d",
+                        "surface-container-highest": "#353535",
+                        "secondary-fixed-dim": "#e9c400",
+                        "on-secondary-fixed": "#221b00",
+                        "surface": "#131313",
+                        "on-surface": "#e5e2e1",
+                        "secondary": "#fff9ef",
+                        "background": "#131313",
+                        "on-surface-variant": "#b9cacb",
+                        "outline": "#849495",
+                        "error-container": "#93000a",
+                        "tertiary-fixed": "#e2e2e2",
+                        "inverse-on-surface": "#313030",
+                        "on-error-container": "#ffdad6",
+                        "glow-cyan": "rgba(0, 240, 255, 0.4)",
+                        "on-tertiary": "#2f3131",
+                        "on-error": "#690005",
+                        "tertiary-container": "#d9d9d9",
+                        "surface-container": "#20201f",
+                        "primary-container": "#00f0ff",
+                        "surface-container-high": "#2a2a2a",
+                        "primary": "#dbfcff",
+                        "glow-gold": "rgba(255, 215, 0, 0.3)",
+                        "surface-variant": "#353535",
+                        "secondary-container": "#ffdb3c",
+                        "surface-container-low": "#1c1b1b",
+                        "on-secondary-container": "#725f00",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "border-glass": "rgba(255, 255, 255, 0.12)",
+                        "on-tertiary-container": "#5d5f5f",
+                        "primary-fixed-dim": "#00dbe9",
+                        "surface-gray": "#1E1E1E",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "void-black": "#0A0A0A",
+                        "surface-bright": "#393939"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "64px",
+                        "container-max": "1280px",
+                        "gutter": "24px",
+                        "section-gap": "120px",
+                        "margin-mobile": "24px"
+                    },
+                    "fontFamily": {
+                        "display-lg-mobile": ["Inter"],
+                        "body-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-mono": ["JetBrains Mono"],
+                        "headline-lg": ["Inter"],
+                        "headline-xl": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-lg-mobile": ["48px", { "lineHeight": "52px", "letterSpacing": "-0.03em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "28px", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "display-lg": ["80px", { "lineHeight": "88px", "letterSpacing": "-0.04em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "32px", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "label-mono": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "headline-xl": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        };
+    </script>
+<style>
+        .glow-hover:hover {
+            box-shadow: 0 0 20px var(--color-glow-cyan);
+        }
+        .bg-grid-pattern {
+            background-image: linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<nav class="bg-surface/80 dark:bg-surface/80 backdrop-blur-xl border-b border-border-glass shadow-sm fixed top-0 w-full z-50 transition-all duration-300">
+<div class="flex justify-between items-center h-20 px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
+<!-- Brand Logo -->
+<a class="font-headline-lg text-headline-lg font-bold text-primary tracking-tighter active:scale-95 transition-transform hover:bg-white/5 transition-all duration-300 rounded px-2" href="#">
+                O(Alpha)
+            </a>
+<!-- Navigation Links (Desktop) -->
+<div class="hidden md:flex gap-8 items-center">
+<a class="font-body-md text-body-md text-primary font-semibold border-b-2 border-primary-fixed-dim pb-1 hover:bg-white/5 transition-all duration-300 px-2 rounded-t" href="#">Product</a>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-white/5 transition-all duration-300 px-2 rounded" href="#">Performance</a>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-white/5 transition-all duration-300 px-2 rounded" href="#">Pricing</a>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-white/5 transition-all duration-300 px-2 rounded" href="#">Mission</a>
+</div>
+<!-- Actions -->
+<div class="flex gap-4 items-center">
+<a class="hidden md:inline-flex font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-white/5 transition-all duration-300 px-4 py-2 rounded" href="#">Login</a>
+<button class="bg-primary-fixed-dim text-void-black font-body-md font-semibold px-6 py-2 rounded-full hover:opacity-90 transition-all active:scale-95 glow-hover">
+                    Launch App
+                </button>
+</div>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="flex-grow pt-20">
+<!-- Hero Section -->
+<section class="relative min-h-[921px] flex items-center justify-center overflow-hidden bg-void-black px-margin-mobile md:px-margin-desktop py-section-gap">
+<div class="absolute inset-0 bg-grid-pattern opacity-20 pointer-events-none"></div>
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary-fixed-dim/10 blur-[120px] rounded-full pointer-events-none"></div>
+<div class="max-w-container-max mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
+<div class="flex flex-col items-start gap-8">
+<div class="font-label-mono text-label-mono text-primary-fixed-dim uppercase tracking-widest border border-border-glass rounded-full px-4 py-1.5 bg-white/5 backdrop-blur-md">
+                        System Online
+                    </div>
+<h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-primary leading-tight">
+                        Your personal <br/>
+<span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-fixed-dim to-secondary-fixed">AI trading agent.</span>
+</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl">
+                        O(Alpha) translates your strategic intent into autonomous execution. High-frequency capability meets institutional-grade intelligence, now in your control.
+                    </p>
+<div class="flex gap-4 pt-4">
+<button class="bg-primary-fixed-dim text-void-black font-body-md font-semibold px-8 py-4 rounded-full hover:opacity-90 transition-all active:scale-95 glow-hover text-lg">
+                            Launch Your Agent
+                        </button>
+<button class="border border-border-glass text-primary font-body-md font-semibold px-8 py-4 rounded-full hover:bg-white/5 transition-all active:scale-95 text-lg">
+                            View Documentation
+                        </button>
+</div>
+</div>
+<div class="relative h-[500px] lg:h-[700px] w-full rounded-3xl overflow-hidden border border-border-glass bg-surface-gray shadow-[0_0_40px_rgba(0,240,255,0.1)]">
+<div class="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent z-10 pointer-events-none"></div>
+<img alt="Abstract visualization of a trading algorithm" class="w-full h-full object-cover opacity-80 mix-blend-luminosity hover:mix-blend-normal transition-all duration-700" data-alt="A sleek, high-tech abstract visualization of a trading algorithm or AI agent in action. The composition features glowing cyan and gold data streams, geometric nodes, and dynamic waveforms set against a deep, atmospheric void-black background. The lighting is sophisticated and moody, creating a sense of intelligent, autonomous high-frequency trading. The aesthetic is ultra-modern, combining glassmorphism elements with precise editorial structure, embodying the 'Intelligent Minimalism' style of an advanced aerospace or research platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0rkJh8T4HlXSeJ5QbjIe3b8y2lrnZi2oVJClDglPdtxrWWjMFNKj6SWhNlnfPUgIDINfqikKmM2rCcMz981M2cyZwk2pv6nkskz5cehAq8K1ri6F0XPE94K79Abhlb3UILBTopJFAthnMSxI-nllBGUTUpRHkNm8e9zuMhBYPvB_qGHT6AWY0UQPmZdwPkP7myrFo7FWcMFTo3wc5Ukz07H_e7jPyUUiq4Juq_h1SdnN8C8xVugecwKIX2VzxxlAo2ITBQVPwgagC"/>
+<!-- Overlay UI Elements -->
+<div class="absolute bottom-8 left-8 right-8 bg-surface/80 backdrop-blur-md border border-border-glass rounded-2xl p-6 z-20">
+<div class="flex justify-between items-center mb-4">
+<span class="font-label-mono text-label-mono text-on-surface-variant">Live Execution Status</span>
+<span class="flex items-center gap-2 font-label-mono text-label-mono text-primary-fixed-dim">
+<span class="w-2 h-2 rounded-full bg-primary-fixed-dim animate-pulse"></span> Optimal
+                            </span>
+</div>
+<div class="h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="w-3/4 h-full bg-primary-fixed-dim rounded-full relative">
+<div class="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-r from-transparent to-white/50 animate-pulse"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- The Product Section -->
+<section class="py-section-gap px-margin-mobile md:px-margin-desktop bg-surface">
+<div class="max-w-container-max mx-auto">
+<div class="text-center mb-20">
+<h2 class="font-headline-xl text-headline-xl text-primary mb-6">The Product</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">
+                        Converting your unique market preferences into ruthless, continuous decisions. A seamless bridge between human intuition and machine execution.
+                    </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Feature Card 1 -->
+<div class="bg-surface-gray rounded-3xl p-8 border border-border-glass hover:bg-surface-bright transition-colors duration-500 relative overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
+<div class="w-14 h-14 bg-surface-container-highest rounded-full flex items-center justify-center mb-8 border border-border-glass group-hover:border-primary-fixed-dim transition-colors">
+<span class="material-symbols-outlined text-primary-fixed-dim">psychology</span>
+</div>
+<h3 class="font-headline-lg text-headline-lg text-primary mb-4">Intent Engine</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                            Define your parameters in plain English or precise metrics. The agent understands risk tolerance, sector focus, and temporal horizons natively.
+                        </p>
+</div>
+<!-- Feature Card 2 -->
+<div class="bg-surface-gray rounded-3xl p-8 border border-border-glass hover:bg-surface-bright transition-colors duration-500 relative overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
+<div class="w-14 h-14 bg-surface-container-highest rounded-full flex items-center justify-center mb-8 border border-border-glass group-hover:border-secondary-fixed transition-colors">
+<span class="material-symbols-outlined text-secondary-fixed">model_training</span>
+</div>
+<h3 class="font-headline-lg text-headline-lg text-primary mb-4">Continuous Learning</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                            Your agent evolves. It backtests theoretical strategies against live market data, suggesting optimizations to your core mandate without emotional bias.
+                        </p>
+</div>
+<!-- Feature Card 3 -->
+<div class="bg-surface-gray rounded-3xl p-8 border border-border-glass hover:bg-surface-bright transition-colors duration-500 relative overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
+<div class="w-14 h-14 bg-surface-container-highest rounded-full flex items-center justify-center mb-8 border border-border-glass group-hover:border-primary-fixed-dim transition-colors">
+<span class="material-symbols-outlined text-primary-fixed-dim">speed</span>
+</div>
+<h3 class="font-headline-lg text-headline-lg text-primary mb-4">Micro-second Execution</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                            When conditions align, hesitation is eliminated. Direct exchange connectivity ensures your agent acts instantly on predefined triggers.
+                        </p>
+</div>
+</div>
+</div>
+</section>
+<!-- Customisable Profiles Section -->
+<section class="py-section-gap px-margin-mobile md:px-margin-desktop bg-void-black border-y border-border-glass">
+<div class="max-w-container-max mx-auto">
+<div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
+<div>
+<h2 class="font-headline-xl text-headline-xl text-primary mb-4">Customisable Profiles</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl">
+                            Deploy specialized agents tailored to distinct market environments. Switch profiles with a single command.
+                        </p>
+</div>
+<button class="border border-border-glass text-primary font-body-md px-6 py-2 rounded-full hover:bg-white/5 transition-all">
+                        Compare Strategies
+                    </button>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Conservative -->
+<div class="bg-surface border border-border-glass rounded-2xl overflow-hidden hover:-translate-y-2 transition-transform duration-300">
+<div class="p-8 border-b border-border-glass/50 relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary-fixed-dim/5 rounded-full blur-2xl"></div>
+<span class="font-label-mono text-label-mono text-primary-fixed-dim mb-2 block">PROFILE 01</span>
+<h3 class="font-headline-lg text-headline-lg text-primary mb-2">Conservative</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Capital preservation focus.</p>
+</div>
+<ul class="p-8 space-y-4">
+<li class="flex items-center gap-3 text-on-surface font-body-md border-b border-white/10 pb-4">
+<span class="material-symbols-outlined text-primary-fixed-dim text-sm">check</span>
+                                Low volatility targeting
+                            </li>
+<li class="flex items-center gap-3 text-on-surface font-body-md border-b border-white/10 pb-4">
+<span class="material-symbols-outlined text-primary-fixed-dim text-sm">check</span>
+                                Blue-chip preference
+                            </li>
+<li class="flex items-center gap-3 text-on-surface font-body-md">
+<span class="material-symbols-outlined text-primary-fixed-dim text-sm">check</span>
+                                Strict trailing stop-loss
+                            </li>
+</ul>
+</div>
+<!-- Opportunist -->
+<div class="bg-surface-gray border border-primary-fixed-dim/30 rounded-2xl overflow-hidden relative shadow-[0_0_30px_rgba(0,240,255,0.05)] hover:-translate-y-2 transition-transform duration-300 transform scale-105 z-10">
+<div class="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
+<div class="absolute top-4 right-4 font-label-mono text-label-mono bg-primary-fixed-dim text-void-black px-3 py-1 rounded-full">
+                            POPULAR
+                        </div>
+<div class="p-8 border-b border-border-glass/50">
+<span class="font-label-mono text-label-mono text-secondary-fixed mb-2 block">PROFILE 02</span>
+<h3 class="font-headline-lg text-headline-lg text-primary mb-2">Opportunist</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Agile momentum capture.</p>
+</div>
+<ul class="p-8 space-y-4">
+<li class="flex items-center gap-3 text-on-surface font-body-md border-b border-white/10 pb-4">
+<span class="material-symbols-outlined text-secondary-fixed text-sm">check</span>
+                                Trend identification algorithms
+                            </li>
+<li class="flex items-center gap-3 text-on-surface font-body-md border-b border-white/10 pb-4">
+<span class="material-symbols-outlined text-secondary-fixed text-sm">check</span>
+                                Mid-cap sector rotation
+                            </li>
+<li class="flex items-center gap-3 text-on-surface font-body-md">
+<span class="material-symbols-outlined text-secondary-fixed text-sm">check</span>
+                                Dynamic position sizing
+                            </li>
+</ul>
+</div>
+<!-- Quant -->
+<div class="bg-surface border border-border-glass rounded-2xl overflow-hidden hover:-translate-y-2 transition-transform duration-300">
+<div class="p-8 border-b border-border-glass/50 relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-secondary-fixed/5 rounded-full blur-2xl"></div>
+<span class="font-label-mono text-label-mono text-on-surface-variant mb-2 block">PROFILE 03</span>
+<h3 class="font-headline-lg text-headline-lg text-primary mb-2">Quant</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Statistical arbitrage.</p>
+</div>
+<ul class="p-8 space-y-4">
+<li class="flex items-center gap-3 text-on-surface font-body-md border-b border-white/10 pb-4">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">check</span>
+                                Mean reversion modeling
+                            </li>
+<li class="flex items-center gap-3 text-on-surface font-body-md border-b border-white/10 pb-4">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">check</span>
+                                High-frequency capability
+                            </li>
+<li class="flex items-center gap-3 text-on-surface font-body-md">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">check</span>
+                                Complex multi-leg options
+                            </li>
+</ul>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-void-black text-tertiary-fixed-dim font-label-mono text-label-mono w-full py-16 border-t border-border-glass flat no shadows grid grid-cols-1 md:grid-cols-2 gap-gutter px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
+<div class="flex flex-col gap-4">
+<div class="font-headline-sm text-headline-sm text-primary">
+                O(Alpha)
+            </div>
+<div class="opacity-100 hover:opacity-80">
+                © 2024 O(Alpha) Intelligence. All rights reserved.
+            </div>
+</div>
+<div class="flex flex-wrap gap-6 md:justify-end items-start">
+<a class="text-on-tertiary-fixed-variant hover:text-primary-fixed transition-colors" href="#">Privacy Policy</a>
+<a class="text-on-tertiary-fixed-variant hover:text-primary-fixed transition-colors" href="#">Terms of Service</a>
+<a class="text-on-tertiary-fixed-variant hover:text-primary-fixed transition-colors" href="#">Security</a>
+<a class="text-on-tertiary-fixed-variant hover:text-primary-fixed transition-colors" href="#">Status</a>
+<a class="text-on-tertiary-fixed-variant hover:text-primary-fixed transition-colors" href="#">API Docs</a>
+</div>
+</footer>
+</body></html>

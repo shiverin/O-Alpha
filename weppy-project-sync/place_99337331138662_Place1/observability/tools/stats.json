@@ -1,0 +1,149 @@
+{
+  "schemaVersion": 5,
+  "lastUpdated": "2026-07-05T16:15:58.178Z",
+  "totalSessions": 2,
+  "totalCalls": 7,
+  "totalSuccessCalls": 3,
+  "totalFailedCalls": 1,
+  "totalFallbackCalls": 0,
+  "totalUnsupportedCalls": 3,
+  "totalWarningCalls": 0,
+  "tools": {
+    "manage_studio": {
+      "tool": "manage_studio",
+      "tier": "pro",
+      "commands": {
+        "manage_studio_play_status": {
+          "command": "manage_studio_play_status",
+          "tier": "pro",
+          "totalCalls": 2,
+          "successCount": 0,
+          "failureCount": 0,
+          "fallbackCount": 0,
+          "unsupportedCount": 2,
+          "warningCount": 0,
+          "totalExecutionTimeMs": 31,
+          "avgExecutionTimeMs": 16,
+          "firstUsed": "2026-07-05T14:27:38.247Z",
+          "lastUsed": "2026-07-05T16:15:57.176Z"
+        },
+        "manage_studio_run_test": {
+          "command": "manage_studio_run_test",
+          "tier": "pro",
+          "totalCalls": 1,
+          "successCount": 0,
+          "failureCount": 1,
+          "fallbackCount": 0,
+          "unsupportedCount": 0,
+          "warningCount": 0,
+          "totalExecutionTimeMs": 14,
+          "avgExecutionTimeMs": 14,
+          "firstUsed": "2026-07-05T15:23:35.643Z",
+          "lastUsed": "2026-07-05T15:23:35.643Z"
+        }
+      },
+      "totalCalls": 3,
+      "successCount": 0,
+      "failureCount": 1,
+      "fallbackCount": 0,
+      "unsupportedCount": 2,
+      "warningCount": 0,
+      "totalExecutionTimeMs": 45,
+      "avgExecutionTimeMs": 15,
+      "firstUsed": "2026-07-05T14:27:38.247Z",
+      "lastUsed": "2026-07-05T16:15:57.176Z"
+    },
+    "manage_camera": {
+      "tool": "manage_camera",
+      "tier": "pro",
+      "commands": {
+        "manage_camera_screenshot": {
+          "command": "manage_camera_screenshot",
+          "tier": "pro",
+          "totalCalls": 1,
+          "successCount": 0,
+          "failureCount": 0,
+          "fallbackCount": 0,
+          "unsupportedCount": 1,
+          "warningCount": 0,
+          "totalExecutionTimeMs": 163,
+          "avgExecutionTimeMs": 163,
+          "firstUsed": "2026-07-05T15:20:46.915Z",
+          "lastUsed": "2026-07-05T15:20:46.915Z"
+        }
+      },
+      "totalCalls": 1,
+      "successCount": 0,
+      "failureCount": 0,
+      "fallbackCount": 0,
+      "unsupportedCount": 1,
+      "warningCount": 0,
+      "totalExecutionTimeMs": 163,
+      "avgExecutionTimeMs": 163,
+      "firstUsed": "2026-07-05T15:20:46.915Z",
+      "lastUsed": "2026-07-05T15:20:46.915Z"
+    },
+    "manage_logs": {
+      "tool": "manage_logs",
+      "tier": "basic",
+      "commands": {
+        "manage_logs_clear": {
+          "command": "manage_logs_clear",
+          "tier": "basic",
+          "totalCalls": 1,
+          "successCount": 1,
+          "failureCount": 0,
+          "fallbackCount": 0,
+          "unsupportedCount": 0,
+          "warningCount": 0,
+          "totalExecutionTimeMs": 16,
+          "avgExecutionTimeMs": 16,
+          "firstUsed": "2026-07-05T15:34:34.496Z",
+          "lastUsed": "2026-07-05T15:34:34.496Z"
+        },
+        "manage_logs_errors": {
+          "command": "manage_logs_errors",
+          "tier": "basic",
+          "totalCalls": 2,
+          "successCount": 2,
+          "failureCount": 0,
+          "fallbackCount": 0,
+          "unsupportedCount": 0,
+          "warningCount": 0,
+          "totalExecutionTimeMs": 24,
+          "avgExecutionTimeMs": 12,
+          "firstUsed": "2026-07-05T15:35:08.121Z",
+          "lastUsed": "2026-07-05T15:35:15.137Z"
+        }
+      },
+      "totalCalls": 3,
+      "successCount": 3,
+      "failureCount": 0,
+      "fallbackCount": 0,
+      "unsupportedCount": 0,
+      "warningCount": 0,
+      "totalExecutionTimeMs": 40,
+      "avgExecutionTimeMs": 13,
+      "firstUsed": "2026-07-05T15:34:34.496Z",
+      "lastUsed": "2026-07-05T15:35:15.137Z"
+    }
+  },
+  "tierSummary": {
+    "basic": {
+      "totalCalls": 3,
+      "successCount": 3,
+      "failureCount": 0,
+      "fallbackCount": 0,
+      "unsupportedCount": 0,
+      "warningCount": 0
+    },
+    "pro": {
+      "totalCalls": 4,
+      "successCount": 0,
+      "failureCount": 1,
+      "fallbackCount": 0,
+      "unsupportedCount": 3,
+      "warningCount": 0
+    }
+  }
+}

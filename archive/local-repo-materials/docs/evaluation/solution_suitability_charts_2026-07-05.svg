@@ -1,0 +1,167 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1120" viewBox="0 0 1600 1120" role="img" aria-labelledby="title desc">
+  <title id="title">O(Alpha) solution suitability evaluation data snapshot</title>
+  <desc id="desc">Professional summary charts for a simulated proxy evaluation with ten personas. The chart shows evidence status, average ratings, theme counts, and priority recommendations.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f8fafc; }
+      .panel { fill: #ffffff; stroke: #dbe4ef; stroke-width: 1.5; }
+      .title { fill: #0f172a; font: 700 36px Arial, sans-serif; }
+      .subtitle { fill: #475569; font: 400 17px Arial, sans-serif; }
+      .panel-title { fill: #0f172a; font: 700 22px Arial, sans-serif; }
+      .panel-subtitle { fill: #64748b; font: 400 14px Arial, sans-serif; }
+      .label { fill: #334155; font: 600 15px Arial, sans-serif; }
+      .small { fill: #64748b; font: 400 13px Arial, sans-serif; }
+      .tiny { fill: #64748b; font: 400 12px Arial, sans-serif; }
+      .value { fill: #0f172a; font: 700 16px Arial, sans-serif; }
+      .big-value { fill: #0f172a; font: 800 34px Arial, sans-serif; }
+      .axis { stroke: #cbd5e1; stroke-width: 1; }
+      .grid { stroke: #e2e8f0; stroke-width: 1; }
+      .blue { fill: #2563eb; }
+      .blue-soft { fill: #dbeafe; }
+      .teal { fill: #0f766e; }
+      .teal-soft { fill: #ccfbf1; }
+      .amber { fill: #d97706; }
+      .amber-soft { fill: #fef3c7; }
+      .rose { fill: #e11d48; }
+      .rose-soft { fill: #ffe4e6; }
+      .slate { fill: #64748b; }
+      .slate-soft { fill: #e2e8f0; }
+      .green { fill: #16a34a; }
+      .green-soft { fill: #dcfce7; }
+      .purple { fill: #7c3aed; }
+      .purple-soft { fill: #ede9fe; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1600" height="1120"/>
+
+  <text class="title" x="72" y="72">O(Alpha) Evaluation Data Snapshot</text>
+  <text class="subtitle" x="72" y="104">Source: private expert review, heuristic walkthrough, and 10 simulated proxy personas. Not real survey or actual-user data.</text>
+  <rect x="1210" y="48" width="318" height="44" rx="22" fill="#fff7ed" stroke="#fed7aa"/>
+  <text x="1232" y="76" fill="#9a3412" font-family="Arial, sans-serif" font-size="15" font-weight="700">SIMULATED PROXY DATA - N=10</text>
+
+  <!-- Panel 1: method status -->
+  <rect class="panel" x="64" y="140" width="470" height="300" rx="18"/>
+  <text class="panel-title" x="94" y="180">Evidence Method Status</text>
+  <text class="panel-subtitle" x="94" y="204">Defensible selections today vs. protocols ready to field.</text>
+
+  <text class="label" x="94" y="246">Completed now</text>
+  <rect x="94" y="264" width="360" height="30" rx="15" fill="#e2e8f0"/>
+  <rect class="blue" x="94" y="264" width="154" height="30" rx="15"/>
+  <text class="value" x="466" y="285" text-anchor="end">3 / 7</text>
+
+  <text class="label" x="94" y="330">Ready to field later</text>
+  <rect x="94" y="348" width="360" height="30" rx="15" fill="#e2e8f0"/>
+  <rect class="slate" x="94" y="348" width="206" height="30" rx="15"/>
+  <text class="value" x="466" y="369" text-anchor="end">4 / 7</text>
+
+  <circle class="blue" cx="106" cy="408" r="6"/>
+  <text class="tiny" x="120" y="413">Select: expert/self, heuristic walkthrough, simulated focus group.</text>
+  <circle class="slate" cx="106" cy="428" r="6"/>
+  <text class="tiny" x="120" y="433">Do not select: real users, potential-user survey, low/high-fi testing.</text>
+
+  <!-- Panel 2: ratings -->
+  <rect class="panel" x="64" y="472" width="470" height="300" rx="18"/>
+  <text class="panel-title" x="94" y="512">Average Proxy Ratings</text>
+  <text class="panel-subtitle" x="94" y="536">1 to 5 scale, averaged across 10 simulated personas.</text>
+
+  <line class="grid" x1="190" y1="584" x2="454" y2="584"/>
+  <line class="grid" x1="190" y1="648" x2="454" y2="648"/>
+  <line class="grid" x1="190" y1="712" x2="454" y2="712"/>
+  <line class="axis" x1="190" y1="742" x2="454" y2="742"/>
+  <text class="tiny" x="190" y="760" text-anchor="middle">0</text>
+  <text class="tiny" x="322" y="760" text-anchor="middle">2.5</text>
+  <text class="tiny" x="454" y="760" text-anchor="middle">5</text>
+
+  <text class="label" x="94" y="590">Ease</text>
+  <rect class="green-soft" x="190" y="568" width="264" height="26" rx="13"/>
+  <rect class="green" x="190" y="568" width="180" height="26" rx="13"/>
+  <text class="value" x="388" y="588">3.4</text>
+
+  <text class="label" x="94" y="654">Confidence</text>
+  <rect class="amber-soft" x="190" y="632" width="264" height="26" rx="13"/>
+  <rect class="amber" x="190" y="632" width="153" height="26" rx="13"/>
+  <text class="value" x="361" y="652">2.9</text>
+
+  <text class="label" x="94" y="718">Transparency</text>
+  <rect class="rose-soft" x="190" y="696" width="264" height="26" rx="13"/>
+  <rect class="rose" x="190" y="696" width="132" height="26" rx="13"/>
+  <text class="value" x="340" y="716">2.5</text>
+
+  <!-- Panel 3: theme counts -->
+  <rect class="panel" x="566" y="140" width="970" height="632" rx="18"/>
+  <text class="panel-title" x="596" y="180">What The Proxy Group Repeated Most</text>
+  <text class="panel-subtitle" x="596" y="204">Count of simulated personas who raised each theme.</text>
+
+  <line class="axis" x1="875" y1="246" x2="1450" y2="246"/>
+  <line class="grid" x1="875" y1="246" x2="875" y2="674"/>
+  <line class="grid" x1="990" y1="246" x2="990" y2="674"/>
+  <line class="grid" x1="1105" y1="246" x2="1105" y2="674"/>
+  <line class="grid" x1="1220" y1="246" x2="1220" y2="674"/>
+  <line class="grid" x1="1335" y1="246" x2="1335" y2="674"/>
+  <line class="grid" x1="1450" y1="246" x2="1450" y2="674"/>
+  <text class="tiny" x="875" y="234" text-anchor="middle">0</text>
+  <text class="tiny" x="990" y="234" text-anchor="middle">2</text>
+  <text class="tiny" x="1105" y="234" text-anchor="middle">4</text>
+  <text class="tiny" x="1220" y="234" text-anchor="middle">6</text>
+  <text class="tiny" x="1335" y="234" text-anchor="middle">8</text>
+  <text class="tiny" x="1450" y="234" text-anchor="middle">10</text>
+
+  <text class="label" x="596" y="286">Settings lock felt reassuring</text>
+  <rect class="teal" x="875" y="264" width="575" height="30" rx="15"/>
+  <text class="value" x="1470" y="285">10/10</text>
+
+  <text class="label" x="596" y="356">Clearer paper-only messaging needed</text>
+  <rect class="blue" x="875" y="334" width="575" height="30" rx="15"/>
+  <text class="value" x="1470" y="355">10/10</text>
+
+  <text class="label" x="596" y="426">Validation evidence visible in UI</text>
+  <rect class="purple" x="875" y="404" width="518" height="30" rx="15"/>
+  <text class="value" x="1470" y="425">9/10</text>
+
+  <text class="label" x="596" y="496">Quant terms or strategy names unclear</text>
+  <rect class="amber" x="875" y="474" width="460" height="30" rx="15"/>
+  <text class="value" x="1470" y="495">8/10</text>
+
+  <text class="label" x="596" y="566">Freshness or health indicators needed</text>
+  <rect class="rose" x="875" y="544" width="403" height="30" rx="15"/>
+  <text class="value" x="1470" y="565">7/10</text>
+
+  <text class="label" x="596" y="636">Trade rationale drilldowns needed</text>
+  <rect class="slate" x="875" y="614" width="345" height="30" rx="15"/>
+  <text class="value" x="1470" y="635">6/10</text>
+
+  <text class="small" x="596" y="720">Reading: users can complete the flow, but the product needs stronger proof, safer wording, and fresher operational state.</text>
+
+  <!-- Panel 4: headline stats -->
+  <rect class="panel" x="64" y="804" width="1472" height="240" rx="18"/>
+  <text class="panel-title" x="94" y="844">Executive Takeaways For Product Planning</text>
+  <text class="panel-subtitle" x="94" y="868">Use these as planning signals, not as actual survey statistics.</text>
+
+  <rect x="94" y="902" width="258" height="104" rx="16" fill="#ecfeff" stroke="#99f6e4"/>
+  <text class="big-value" x="122" y="946">100%</text>
+  <text class="label" x="122" y="974">liked the settings lock</text>
+  <text class="tiny" x="122" y="994">Keep fail-closed backend guardrails.</text>
+
+  <rect x="384" y="902" width="258" height="104" rx="16" fill="#eff6ff" stroke="#bfdbfe"/>
+  <text class="big-value" x="412" y="946">100%</text>
+  <text class="label" x="412" y="974">wanted paper-only clarity</text>
+  <text class="tiny" x="412" y="994">Repeat near launch, P&amp;L, and backtest.</text>
+
+  <rect x="674" y="902" width="258" height="104" rx="16" fill="#f5f3ff" stroke="#ddd6fe"/>
+  <text class="big-value" x="702" y="946">90%</text>
+  <text class="label" x="702" y="974">wanted strategy evidence</text>
+  <text class="tiny" x="702" y="994">Expose DSR, PBO, benchmark, report path.</text>
+
+  <rect x="964" y="902" width="258" height="104" rx="16" fill="#fff7ed" stroke="#fed7aa"/>
+  <text class="big-value" x="992" y="946">2.5/5</text>
+  <text class="label" x="992" y="974">average transparency</text>
+  <text class="tiny" x="992" y="994">Lowest rating across proxy personas.</text>
+
+  <rect x="1254" y="902" width="238" height="104" rx="16" fill="#fff1f2" stroke="#fecdd3"/>
+  <text class="big-value" x="1282" y="946">Next</text>
+  <text class="label" x="1282" y="974">private real-user test</text>
+  <text class="tiny" x="1282" y="994">5 seeded-account sessions.</text>
+
+  <text class="tiny" x="72" y="1086">Integrity note: these visuals summarize simulated proxy review data from 2026-07-05. They should not be represented as public survey results or actual user interviews.</text>
+</svg>

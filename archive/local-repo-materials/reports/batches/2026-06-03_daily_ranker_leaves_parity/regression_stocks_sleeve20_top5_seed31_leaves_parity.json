@@ -1,0 +1,11 @@
+{
+  "generated_at": "2026-06-03T13:02:42.913661Z",
+  "status": "passed",
+  "rows_checked": 500,
+  "tolerance": 1e-8,
+  "max_abs_error": 0,
+  "failures": 0,
+  "model": "../reports/batches/2026-06-03_yahoo100_daily_ranker_2023_2026/regression_stocks_sleeve20_top5_seed31/daily_ranker_model.txt",
+  "fixture": "../reports/batches/2026-06-03_daily_ranker_leaves_parity/regression_stocks_sleeve20_top5_seed31_fixture.csv",
+  "output_csv": "../reports/batches/2026-06-03_daily_ranker_leaves_parity/regression_stocks_sleeve20_top5_seed31_go_predictions.csv"
+}

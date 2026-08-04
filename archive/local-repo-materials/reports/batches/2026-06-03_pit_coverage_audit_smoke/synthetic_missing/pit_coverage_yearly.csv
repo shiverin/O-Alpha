@@ -1,0 +1,3 @@
+year,trading_days,mean_active_symbols,mean_covered_symbols,min_active_symbols,min_covered_symbols,coverage_ratio
+2020,253,1.592885375494071,0.0,1,0,0.0
+2021,252,1.492063492063492,0.0,1,0,0.0

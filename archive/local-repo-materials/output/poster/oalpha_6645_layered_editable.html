@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>O(Alpha) Team 6645 Editable Poster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #08131a;
+    --bg2: #0b1821;
+    --panel: #101d2a;
+    --panel2: #132232;
+    --line: rgba(98, 180, 218, 0.24);
+    --line2: rgba(255, 255, 255, 0.10);
+    --cyan: #16d8f6;
+    --cyan2: #67e9ff;
+    --yellow: #ffd22e;
+    --green: #45e1a3;
+    --pink: #ff5ca8;
+    --violet: #9b7cff;
+    --muted: #8ea3b4;
+    --faint: #566b7d;
+    --text: #e8f1f8;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    background: #05090d;
+    font-family: "Sora", system-ui, sans-serif;
+    color: var(--text);
+  }
+
+  .poster {
+    position: relative;
+    width: 1080px;
+    height: 1529px;
+    margin: 0 auto;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 23%, rgba(22, 216, 246, 0.10), transparent 26%),
+      radial-gradient(circle at 78% 88%, rgba(255, 210, 46, 0.08), transparent 28%),
+      linear-gradient(180deg, #081620 0%, #07111a 42%, #050b11 100%);
+  }
+
+  .poster::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px),
+      radial-gradient(circle, rgba(103,233,255,0.09) 1px, transparent 1.4px);
+    background-size: 84px 84px, 84px 84px, 26px 26px;
+    opacity: 0.65;
+    pointer-events: none;
+  }
+
+  .layer { position: absolute; }
+  .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+  .muted { color: var(--muted); }
+  .faint { color: var(--faint); }
+  .cyan { color: var(--cyan); }
+  .yellow { color: var(--yellow); }
+  .green { color: var(--green); }
+  .pink { color: var(--pink); }
+  .violet { color: var(--violet); }
+
+  .top-names {
+    top: 78px;
+    right: 78px;
+    width: 110px;
+    text-align: right;
+    font-size: 8px;
+    letter-spacing: 0.15em;
+    line-height: 1.8;
+    color: #d6e5ef;
+    font-weight: 600;
+  }
+
+  .logo-mark {
+    top: 148px;
+    left: 50%;
+    width: 104px;
+    height: 104px;
+    transform: translateX(-50%);
+  }
+  .logo-mark img { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+  .wordmark {
+    top: 255px;
+    left: 0;
+    width: 1080px;
+    text-align: center;
+    font-size: 54px;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+  }
+  .wordmark .o { color: var(--yellow); }
+  .wordmark .alpha { color: var(--cyan2); }
+  .wordmark .p { color: var(--cyan2); font-weight: 800; }
+  .tagline {
+    top: 322px;
+    left: 0;
+    width: 1080px;
+    text-align: center;
+    font-size: 25px;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+  }
+  .subtitle {
+    top: 372px;
+    left: 290px;
+    width: 500px;
+    text-align: center;
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: var(--muted);
+  }
+
+  .ticker {
+    top: 430px;
+    left: 140px;
+    width: 800px;
+    display: flex;
+    justify-content: space-between;
+    padding: 13px 0;
+    border-top: 1px solid rgba(99, 184, 221, 0.10);
+    border-bottom: 1px solid rgba(99, 184, 221, 0.12);
+    font-size: 8.5px;
+    letter-spacing: 0.10em;
+    color: var(--faint);
+  }
+  .ticker b { color: var(--cyan); font-weight: 700; }
+
+  .card {
+    position: absolute;
+    background: linear-gradient(180deg, rgba(21,36,53,0.92), rgba(14,27,39,0.92));
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: 0 16px 32px rgba(0,0,0,0.25);
+    overflow: hidden;
+  }
+  .card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 25px;
+    width: calc(100% - 50px);
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    opacity: 0.85;
+  }
+  .feature { top: 510px; width: 262px; height: 128px; padding: 23px 18px 16px; }
+  .feature.one { left: 110px; }
+  .feature.two { left: 409px; }
+  .feature.three { left: 708px; }
+  .feature .num {
+    top: 19px;
+    right: 18px;
+    font-size: 8px;
+    letter-spacing: 0.18em;
+  }
+  .iconbox {
+    width: 35px;
+    height: 35px;
+    border: 1px solid rgba(22,216,246,0.52);
+    border-radius: 9px;
+    display: grid;
+    place-items: center;
+    color: var(--cyan);
+    margin-bottom: 12px;
+  }
+  .feature h3 { margin: 0 0 9px; font-size: 13px; line-height: 1.15; }
+  .feature p { margin: 0; font-size: 8.2px; line-height: 1.4; color: #a5b8c7; }
+
+  .metric {
+    top: 657px;
+    width: 185px;
+    height: 58px;
+    padding: 12px 16px;
+    border-radius: 9px;
+    background: rgba(9, 19, 29, 0.76);
+    border: 1px solid rgba(98,180,218,0.16);
+  }
+  .metric.a { left: 246px; }
+  .metric.b { left: 447px; }
+  .metric.c { left: 648px; }
+  .metric .label { font-size: 7px; letter-spacing: 0.15em; text-transform: uppercase; color: #8ba0b1; }
+  .metric .value { margin-top: 7px; font-size: 17px; font-weight: 700; letter-spacing: 0.02em; }
+
+  .window {
+    position: absolute;
+    background: linear-gradient(180deg, rgba(17,31,45,0.96), rgba(13,25,36,0.98));
+    border: 1px solid rgba(98,180,218,0.24);
+    border-radius: 14px;
+    box-shadow: 0 18px 36px rgba(0,0,0,0.35);
+    overflow: hidden;
+  }
+  .window .bar {
+    height: 31px;
+    border-bottom: 1px solid rgba(118,202,239,0.11);
+    display: flex;
+    align-items: center;
+    padding: 0 17px;
+    gap: 8px;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 99px; background: var(--cyan); display: inline-block; }
+  .bar-title { font-size: 8px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--cyan); }
+  .live-pill {
+    margin-left: auto;
+    border: 1px solid rgba(22,216,246,0.44);
+    border-radius: 99px;
+    padding: 2px 8px;
+    color: var(--cyan);
+    font-size: 6px;
+  }
+
+  .regime { top: 804px; left: 74px; width: 168px; height: 118px; padding: 28px 16px 16px; }
+  .regime h4 { margin: 0 0 18px; font-size: 7px; letter-spacing: 0.17em; color: var(--muted); text-transform: uppercase; }
+  .rrow { display: grid; grid-template-columns: 58px 32px 36px; align-items: center; gap: 4px; margin-bottom: 13px; font-size: 6.5px; }
+  .rbar { height: 3px; background: rgba(255,255,255,0.16); border-radius: 10px; overflow: hidden; }
+  .rbar span { display: block; height: 100%; border-radius: 10px; }
+
+  .dash { top: 732px; left: 263px; width: 554px; height: 218px; }
+  .dash-body { position: relative; height: 187px; padding: 30px 28px 20px; }
+  .dash .status { font-size: 8px; letter-spacing: 0.15em; color: #d7e8f2; text-transform: uppercase; }
+  .dash .regime-tag {
+    position: absolute;
+    right: 26px;
+    top: 28px;
+    border: 1px solid rgba(255,210,46,0.42);
+    border-radius: 99px;
+    color: var(--yellow);
+    padding: 4px 11px;
+    font-size: 6px;
+    letter-spacing: 0.14em;
+  }
+  .dash .pnl-label { margin-top: 27px; font-size: 6px; letter-spacing: 0.18em; color: #74879a; text-transform: uppercase; }
+  .dash .pnl { margin-top: 6px; font-size: 35px; font-weight: 300; color: #83eaff; line-height: 1; letter-spacing: -0.04em; }
+  .spark {
+    position: absolute;
+    left: 278px;
+    top: 54px;
+    width: 250px;
+    height: 85px;
+    border-radius: 11px;
+    background: rgba(5, 43, 57, 0.42);
+  }
+  .spark svg { width: 100%; height: 100%; }
+  .slider { position: absolute; top: 161px; height: 24px; }
+  .slider.s1 { left: 28px; width: 132px; }
+  .slider.s2 { left: 193px; width: 132px; }
+  .slider.s3 { left: 358px; width: 160px; }
+  .slider .slabel { font-size: 5.8px; letter-spacing: 0.14em; color: #8297a8; text-transform: uppercase; }
+  .slider .sval { position: absolute; top: 0; right: 0; font-size: 6px; color: var(--cyan); }
+  .track { position: absolute; left: 0; right: 0; bottom: 3px; height: 3px; background: rgba(255,255,255,0.18); border-radius: 8px; }
+  .track span { display: block; height: 100%; border-radius: 8px; background: var(--cyan); }
+  .track i { position: absolute; top: 50%; width: 8px; height: 8px; background: white; border-radius: 99px; transform: translate(-50%,-50%); }
+
+  .perf { top: 746px; left: 774px; width: 230px; height: 168px; }
+  .perf-body { padding: 16px 18px; }
+  .perf .small { font-size: 6px; letter-spacing: 0.14em; color: #74879a; text-transform: uppercase; }
+  .perf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 14px 0 9px; }
+  .perf .num { font-size: 18px; font-weight: 300; margin-top: 6px; }
+  .mini-chart { height: 58px; margin-top: 8px; }
+  .mini-chart svg { width: 100%; height: 100%; }
+
+  .info { top: 958px; height: 345px; padding: 20px 21px; }
+  .info.left { left: 73px; width: 240px; }
+  .info.mid { left: 335px; width: 382px; }
+  .info.right { left: 738px; width: 270px; }
+  .section-title {
+    font-size: 8px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 15px;
+  }
+  .section-title .dot { margin-right: 8px; vertical-align: 1px; }
+  .info h3 { margin: 0 0 6px; font-size: 9.4px; color: var(--text); }
+  .info h3.problem { color: var(--pink); }
+  .info h3.solution { color: var(--green); }
+  .info p { margin: 0 0 10px; color: #a6bac8; font-size: 7px; line-height: 1.38; }
+  .story {
+    display: grid;
+    grid-template-columns: 58px 1fr;
+    gap: 7px;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 6.2px;
+  }
+  .badge {
+    border: 1px solid rgba(22,216,246,0.28);
+    border-radius: 99px;
+    color: var(--cyan);
+    text-align: center;
+    padding: 3px 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 5.5px;
+  }
+  .feature-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px 10px;
+  }
+  .feature-item {
+    min-height: 39px;
+    border-left: 3px solid var(--cyan);
+    background: rgba(255,255,255,0.025);
+    border-radius: 4px;
+    padding: 8px 8px;
+  }
+  .feature-item h4 { margin:0 0 4px; font-size: 7.2px; color: var(--cyan); }
+  .feature-item p { margin:0; font-size: 5.7px; line-height: 1.28; }
+  .mini-metrics { display: grid; grid-template-columns: repeat(3,1fr); gap: 9px; margin-top: 14px; }
+  .mini-metric {
+    border: 1px solid rgba(22,216,246,0.50);
+    border-radius: 8px;
+    height: 41px;
+    text-align: center;
+    padding-top: 7px;
+  }
+  .mini-metric .k { font-size: 5.5px; letter-spacing: 0.12em; color: var(--cyan); text-transform: uppercase; }
+  .mini-metric .v { margin-top: 4px; font-size: 14px; font-weight: 700; }
+  .tech { margin-top: 11px; border-top: 1px solid rgba(255,255,255,0.11); padding-top: 10px; display:grid; grid-template-columns: repeat(3,1fr); gap:10px; }
+  .tech h4 { margin:0 0 5px; font-size:6.5px; color:var(--cyan); text-transform: uppercase; letter-spacing:.1em; }
+  .tech p { margin:0; font-size:6px; line-height:1.3; }
+
+  .practice {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 11px;
+    min-height: 31px;
+    align-items: center;
+    padding: 5px 8px;
+    background: rgba(255,255,255,0.025);
+    margin-bottom: 5px;
+    border-radius: 4px;
+    border-left: 3px solid var(--cyan);
+  }
+  .practice .k { font-size: 6px; letter-spacing: 0.10em; color: var(--cyan); text-transform: uppercase; }
+  .practice .v { font-size: 5.8px; color: #a3b6c5; line-height: 1.25; }
+  .milestone {
+    margin-top: 7px;
+    border-top: 1px solid rgba(255,255,255,0.11);
+    padding-top: 9px;
+  }
+  .mile {
+    background: rgba(255,255,255,0.025);
+    border-left: 3px solid var(--yellow);
+    border-radius: 4px;
+    padding: 6px 8px;
+    margin-bottom: 5px;
+  }
+  .mile h4 { margin: 0 0 4px; font-size: 6.6px; color: var(--yellow); }
+  .mile p { margin: 0; font-size: 5.6px; line-height: 1.2; }
+  .arch-title {
+    left: 72px;
+    top: 1324px;
+    width: 650px;
+    font-size: 8.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--cyan);
+  }
+  .arch-line { top: 1347px; left: 72px; width: 936px; height: 1px; background: rgba(118,202,239,0.13); }
+  .node {
+    top: 1363px;
+    width: 48px;
+    height: 48px;
+    border: 1.4px solid var(--cyan);
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    background: rgba(17,31,45,0.85);
+  }
+  .node .inner { width: 16px; height: 16px; border-radius: 99px; border: 3px solid currentColor; }
+  .node-label {
+    top: 1419px;
+    width: 120px;
+    text-align: center;
+    transform: translateX(-36px);
+  }
+  .node-label h4 { margin:0 0 5px; font-size: 8px; color: var(--text); }
+  .node-label p { margin:0; font-size: 6px; color: #71889a; line-height: 1.25; }
+  .flow { top: 1386px; height: 1px; background: rgba(22,216,246,0.48); }
+
+  .powered {
+    bottom: 31px;
+    left: 300px;
+    width: 480px;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+  .chip {
+    border-radius: 99px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.04);
+    padding: 5px 10px;
+    color: #91a6b7;
+    font-size: 7px;
+  }
+  .footer-name {
+    bottom: 18px;
+    left: 90px;
+    font-size: 7.5px;
+    color: var(--muted);
+  }
+  .footer-meta {
+    bottom: 18px;
+    right: 84px;
+    font-size: 7.5px;
+    letter-spacing: 0.14em;
+    color: var(--green);
+  }
+</style>
+</head>
+<body>
+  <main class="poster">
+    <div class="layer mono top-names">TAN JIA JUN<br />ZHAO SHI ZHEN</div>
+
+    <div class="layer logo-mark"><img src="brand-mark.png" alt="O(Alpha) brand mark" /></div>
+    <div class="layer wordmark"><span class="o">O</span><span class="p">(</span><span class="alpha">Alpha</span><span class="p">)</span></div>
+    <div class="layer tagline">Quant in your pocket.</div>
+    <div class="layer subtitle">An automated quantitative trading platform that turns risk appetite into systematic, emotion-free execution.</div>
+    <div class="layer mono ticker">
+      <span>NVDA <b>+2.8%</b></span><span>AAPL <b>+0.9%</b></span><span>BTC <b>+1.4%</b></span><span>SPY <b>+0.6%</b></span><span>MSFT <b>+1.0%</b></span><span>ETH <b>+2.1%</b></span><span>QQQ <b>+1.1%</b></span><span>AVGO <b>+1.8%</b></span>
+    </div>
+
+    <section class="card feature one">
+      <span class="layer mono num faint">01</span>
+      <div class="iconbox"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2.3"/><circle cx="15" cy="17" r="2.3"/></svg></div>
+      <h3>Configure your agent</h3>
+      <p>Set a risk profile: the agent maps it to leverage, stop-loss and rebalance parameters.</p>
+    </section>
+    <section class="card feature two">
+      <span class="layer mono num faint">02</span>
+      <div class="iconbox"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 18V5M4 18h17"/><path d="M7 15l4-7 3 4 4-6"/></svg></div>
+      <h3>Systematic strategies</h3>
+      <p>Run rigorously tested strategies from research to cost-stress gates, including HMM regime routing.</p>
+    </section>
+    <section class="card feature three">
+      <span class="layer mono num faint">03</span>
+      <div class="iconbox"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="7"/><path d="M4 12h16M7 8c3 2 7 2 10 0M7 16c3-2 7-2 10 0"/></svg></div>
+      <h3>Track everything</h3>
+      <p>Monitor P&amp;L, risk controls, positions and the complete execution audit trail.</p>
+    </section>
+
+    <div class="layer metric a"><div class="mono label">Sharpe Ratio</div><div class="value cyan mono">2.34</div></div>
+    <div class="layer metric b"><div class="mono label">Max Drawdown</div><div class="value pink mono">-12.3%</div></div>
+    <div class="layer metric c"><div class="mono label">Annual Return</div><div class="value yellow mono">18.7%</div></div>
+
+    <section class="window regime">
+      <h4 class="mono">Market Regime</h4>
+      <div class="rrow mono"><span><span class="dot"></span> Bull</span><span class="rbar"><span style="width:74%;background:var(--cyan)"></span></span><b class="cyan">74%</b></div>
+      <div class="rrow mono"><span><span class="dot" style="background:var(--yellow)"></span> Volatile</span><span class="rbar"><span style="width:50%;background:var(--yellow)"></span></span><b class="yellow">50%</b></div>
+      <div class="rrow mono"><span><span class="dot" style="background:#8090a0"></span> Bear</span><span class="rbar"><span style="width:24%;background:#8090a0"></span></span><b class="muted">24%</b></div>
+    </section>
+
+    <section class="window dash">
+      <div class="bar"><span class="dot"></span><span class="mono bar-title">O(Alpha) / Overview</span><span class="mono live-pill">LIVE</span></div>
+      <div class="dash-body">
+        <div class="mono status"><span class="dot"></span> Agent Status &nbsp; + &nbsp; Optimising</div>
+        <div class="mono regime-tag">REGIME · VOLATILE</div>
+        <div class="mono pnl-label">Current P&amp;L (24h)</div>
+        <div class="pnl">+$12,450<span style="font-size:20px">.89</span></div>
+        <div class="mono" style="position:absolute;left:28px;top:132px;font-size:6px;color:#7890a3;letter-spacing:.12em;">ILLUSTRATIVE · NOT INVESTMENT ADVICE</div>
+        <div class="spark">
+          <svg viewBox="0 0 250 85" fill="none" preserveAspectRatio="none">
+            <polyline points="12,23 40,35 58,20 80,48 102,31 124,60 146,43 168,68 190,56 210,74 235,71" stroke="#16d8f6" stroke-width="3" fill="none"/>
+          </svg>
+        </div>
+        <div class="slider s1"><div class="mono slabel">Risk Tolerance</div><div class="mono sval">High</div><div class="track"><span style="width:82%"></span><i style="left:82%"></i></div></div>
+        <div class="slider s2"><div class="mono slabel">Volatility Cap</div><div class="mono sval">30%</div><div class="track"><span style="width:55%"></span><i style="left:55%"></i></div></div>
+        <div class="slider s3"><div class="mono slabel">Leverage</div><div class="mono sval yellow">3.0x</div><div class="track"><span style="width:50%;background:var(--yellow)"></span><i style="left:50%"></i></div></div>
+      </div>
+    </section>
+
+    <section class="window perf">
+      <div class="bar"><span class="dot"></span><span class="mono bar-title">Performance</span><span class="mono faint" style="margin-left:auto;font-size:6px;letter-spacing:.16em;">AAPL · 1D</span></div>
+      <div class="perf-body">
+        <div class="perf-grid">
+          <div><div class="mono small">Sharpe</div><div class="num cyan">1.84</div></div>
+          <div><div class="mono small">Max DD</div><div class="num">-8.4%</div></div>
+        </div>
+        <div class="mono" style="position:absolute;right:18px;top:65px;border:1px solid rgba(22,216,246,.38);border-radius:99px;padding:2px 7px;color:var(--cyan);font-size:5.5px;">KALMAN</div>
+        <div class="mini-chart"><svg viewBox="0 0 190 58" preserveAspectRatio="none"><polygon points="0,56 18,42 35,47 54,32 74,38 94,22 113,26 134,13 153,5 171,16 190,0 190,58 0,58" fill="rgba(22,216,246,.15)"/><polyline points="0,56 18,42 35,47 54,32 74,38 94,22 113,26 134,13 153,5 171,16 190,0" fill="none" stroke="#16d8f6" stroke-width="2.5"/></svg></div>
+      </div>
+    </section>
+
+    <section class="card info left">
+      <div class="section-title mono"><span class="dot"></span>Motivation</div>
+      <p>Retail investors need quant-grade automation without deep infrastructure work. O(Alpha) turns strategy research into accessible, systematic execution.</p>
+      <h3 class="problem">The problem</h3>
+      <p>Research, execution and account state can drift apart when validation, background workers and persistence are loosely connected.</p>
+      <h3 class="solution">Our solution</h3>
+      <p>A gated research-to-execution pipeline with explicit lifecycle states, normalized data and a reconstructable audit trail.</p>
+      <div class="section-title mono" style="margin:12px 0 9px"><span class="dot"></span>User Stories</div>
+      <div class="story"><div class="badge mono">Beginner</div><div>Choose a strategy that matches a saved risk profile.</div></div>
+      <div class="story"><div class="badge mono" style="border-color:var(--violet);color:var(--violet)">Researcher</div><div>Inspect repeatable validation evidence before launch.</div></div>
+      <div class="story"><div class="badge mono" style="border-color:var(--yellow);color:var(--yellow)">Portfolio</div><div>Start, observe and stop one strategy agent safely.</div></div>
+      <div class="story"><div class="badge mono" style="border-color:var(--green);color:var(--green)">Maintainer</div><div>Trace each run from target weights to persisted fills.</div></div>
+    </section>
+
+    <section class="card info mid">
+      <div class="section-title mono"><span class="dot"></span>Engineered Features <span style="float:right;border:1px solid rgba(69,225,163,.45);color:var(--green);border-radius:99px;padding:2px 8px;">VERIFIABLE</span></div>
+      <div class="feature-list">
+        <div class="feature-item"><h4 class="mono">Onboarding &amp; Catalog</h4><p>Risk profile, compatible strategy and accepted backtest stay aligned.</p></div>
+        <div class="feature-item" style="border-left-color:var(--violet)"><h4 class="mono">Validation Gate</h4><p>No-lookahead, walk-forward, DSR/PBO and cost stress; missing evidence fails closed.</p></div>
+        <div class="feature-item" style="border-left-color:var(--pink)"><h4 class="mono">Execution Router</h4><p>Deterministic order keys; reductions are processed before buys.</p></div>
+        <div class="feature-item" style="border-left-color:var(--green)"><h4 class="mono">Atomic Ledger</h4><p>Orders, fills, cash and positions update inside DB transactions.</p></div>
+        <div class="feature-item" style="border-left-color:var(--yellow)"><h4 class="mono">Lifecycle Resume</h4><p>Run state, heartbeat and runtime HMM state survive restarts.</p></div>
+        <div class="feature-item"><h4 class="mono">Observable Dashboard</h4><p>Snapshots, positions, fills and alerts come from persisted state.</p></div>
+      </div>
+      <div class="mini-metrics">
+        <div class="mini-metric"><div class="mono k">Backend Tests</div><div class="v cyan mono">50</div></div>
+        <div class="mini-metric" style="border-color:rgba(155,124,255,.55)"><div class="mono k violet">Frontend Tests</div><div class="v violet mono">3</div></div>
+        <div class="mini-metric" style="border-color:rgba(69,225,163,.55)"><div class="mono k green">CI Workflows</div><div class="v green mono">3</div></div>
+      </div>
+      <div class="tech">
+        <div><h4 class="mono">Backend</h4><p>Go API, Gin, gorm, secure auth and Alpaca SDK.</p></div>
+        <div><h4 class="mono">Data</h4><p>PostgreSQL, TimescaleDB, Redis pub/sub and Alpaca API.</p></div>
+        <div><h4 class="mono">Frontend</h4><p>Next.js, TypeScript, Recharts and Vercel.</p></div>
+      </div>
+    </section>
+
+    <section class="card info right">
+      <div class="section-title mono"><span class="dot"></span>Software Engineering</div>
+      <div class="practice"><div class="mono k">Arch</div><div class="v">Layered UI, API, domain and data boundaries with normalized account and ledger records.</div></div>
+      <div class="practice" style="border-left-color:#67e9ff"><div class="mono k">Safety</div><div class="v">Invalid risk, missing artifacts and unknown promotion evidence fail closed.</div></div>
+      <div class="practice" style="border-left-color:var(--yellow)"><div class="mono k">Life</div><div class="v">One active run per user, explicit states, heartbeats and restart recovery.</div></div>
+      <div class="practice" style="border-left-color:var(--pink)"><div class="mono k">Proof</div><div class="v">Claims trace to tests, CI gates and committed research artifacts.</div></div>
+      <div class="milestone">
+        <div class="section-title mono" style="margin-bottom:10px;color:var(--yellow)"><span class="dot" style="background:var(--yellow)"></span>Test Pyramid</div>
+        <div class="mile"><h4 class="mono">UNIT + VALIDATION</h4><p>50 Go test files cover APIs, agents, backtests, ML parity and promotion gates.</p></div>
+        <div class="mile" style="border-left-color:var(--green)"><h4 class="mono green">INTEGRATION + UI</h4><p>DB agent repository integration and Playwright settings-lock smoke coverage.</p></div>
+      </div>
+    </section>
+
+    <div class="layer arch-title mono"><span class="dot"></span> System Architecture</div>
+    <div class="layer arch-line"></div>
+    <div class="layer node" style="left:50px;color:var(--cyan)"><span class="inner"></span></div>
+    <div class="layer node-label" style="left:50px"><h4>Next.js Client</h4><p>Onboarding, control<br />portfolio views</p></div>
+    <div class="layer flow" style="left:112px;width:170px"></div>
+    <div class="layer node" style="left:283px;color:var(--green);border-color:var(--green)"><span class="inner" style="border-radius:2px"></span></div>
+    <div class="layer node-label" style="left:283px"><h4>Go API Server</h4><p>Auth, validation<br />lifecycle commands</p></div>
+    <div class="layer flow" style="left:345px;width:170px"></div>
+    <div class="layer node" style="left:516px;color:var(--violet);border-color:var(--violet)"><span class="inner"></span></div>
+    <div class="layer node-label" style="left:516px"><h4>Domain Engine</h4><p>Catalog, backtest<br />portfolio orchestrator</p></div>
+    <div class="layer flow" style="left:578px;width:170px"></div>
+    <div class="layer node" style="left:749px;color:var(--yellow);border-color:var(--yellow)"><span class="inner" style="border-radius:2px"></span></div>
+    <div class="layer node-label" style="left:749px"><h4>PostgreSQL</h4><p>Orders, fills, ledger<br />runs, bars, alerts</p></div>
+    <div class="layer flow" style="left:811px;width:170px"></div>
+    <div class="layer node" style="left:982px;color:var(--pink);border-color:var(--pink)"><span class="inner"></span></div>
+    <div class="layer node-label" style="left:982px"><h4>Alpaca Markets</h4><p>REST + WebSocket<br />market integration</p></div>
+
+    <div class="layer powered mono">
+      <span class="chip">Go</span><span class="chip">Gin</span><span class="chip">Next.js</span><span class="chip">React</span><span class="chip">TypeScript</span><span class="chip">PostgreSQL</span><span class="chip">TimescaleDB</span><span class="chip">Redis</span><span class="chip">Docker</span><span class="chip">Vercel</span><span class="chip">Alpaca</span><span class="chip">Tailwind</span>
+    </div>
+    <div class="layer footer-name">Built by <b>Zhao Shizhen</b> &amp; <b>Tan Jia Jun</b></div>
+    <div class="layer mono footer-meta">Milestone 3</div>
+  </main>
+</body>
+</html>

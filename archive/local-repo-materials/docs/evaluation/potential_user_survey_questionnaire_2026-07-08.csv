@@ -1,0 +1,12 @@
+module,question,response_type,notes
+screener,"How would you describe your investing or trading experience?","Beginner / intermediate / advanced / none","Segment results by experience level."
+screener,"Have you used a paper-trading, investing, or backtesting tool before?","Yes / no","Separates familiar users from first-time users."
+concept_clarity,"I understand that O(Alpha) is for paper trading only.","1-5 agreement","Checks whether safety scope is understood."
+trust,"I would want to see validation evidence before launching an automated strategy.","1-5 agreement","Tests demand for report-backed proof."
+reverse_coded_trust,"A five-year backtest alone is enough for me to trust a strategy.","1-5 agreement","Reverse-coded item; flags over-trust in simple backtests."
+safety_concern,"I am concerned about accidentally placing real trades.","1-5 agreement","Measures need for stronger no-live-orders messaging."
+evidence,"I would find DSR, PBO, benchmark, and report links useful on strategy cards.","1-5 agreement","Validates evidence-card roadmap."
+education,"I would use short explanations for terms like Sharpe, drawdown, PBO, and DSR.","1-5 agreement","Validates beginner education features."
+dashboard_value,"Rank the most important dashboard information: P&L, positions, trades, alerts, strategy proof, data freshness.","Ranking","Prioritizes dashboard work."
+open_response,"What would make you trust this product more?","Open text","Captures unmet trust requirements."
+open_response,"What would make you stop using this product?","Open text","Captures blockers and safety concerns."

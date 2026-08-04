@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>QUANTA.VOID | Live Terminal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#0e0e0e",
+                        "on-primary-fixed-variant": "#004f54",
+                        "surface-dim": "#131313",
+                        "on-surface": "#e5e2e1",
+                        "surface-container-high": "#2a2a2a",
+                        "tertiary-fixed": "#e2e2e2",
+                        "outline-variant": "#3b494b",
+                        "surface-container-highest": "#353535",
+                        "secondary-fixed-dim": "#e9c400",
+                        "tertiary-fixed-dim": "#c6c6c7",
+                        "on-error": "#690005",
+                        "error-container": "#93000a",
+                        "surface-variant": "#353535",
+                        "glow-gold": "rgba(255, 215, 0, 0.3)",
+                        "glow-cyan": "rgba(0, 240, 255, 0.4)",
+                        "primary-fixed": "#7df4ff",
+                        "secondary-container": "#ffdb3c",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "outline": "#849495",
+                        "on-tertiary-container": "#5d5f5f",
+                        "surface-tint": "#00dbe9",
+                        "on-tertiary": "#2f3131",
+                        "surface-bright": "#393939",
+                        "void-black": "#0A0A0A",
+                        "tertiary-container": "#d9d9d9",
+                        "surface": "#131313",
+                        "error": "#ffb4ab",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-container": "#725f00",
+                        "inverse-on-surface": "#313030",
+                        "primary-fixed-dim": "#00dbe9",
+                        "surface-container": "#20201f",
+                        "tertiary": "#f5f5f5",
+                        "on-background": "#e5e2e1",
+                        "on-primary": "#00363a",
+                        "on-secondary": "#3a3000",
+                        "on-secondary-fixed": "#221b00",
+                        "on-surface-variant": "#b9cacb",
+                        "on-secondary-fixed-variant": "#544600",
+                        "inverse-surface": "#e5e2e1",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "on-primary-fixed": "#002022",
+                        "surface-container-low": "#1c1b1b",
+                        "border-glass": "rgba(255, 255, 255, 0.12)",
+                        "background": "#131313",
+                        "secondary-fixed": "#ffe16d",
+                        "on-primary-container": "#006970",
+                        "primary": "#dbfcff",
+                        "surface-gray": "#1E1E1E",
+                        "inverse-primary": "#006970",
+                        "primary-container": "#00f0ff",
+                        "secondary": "#fff9ef"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "64px",
+                        "container-max": "1280px",
+                        "section-gap": "120px",
+                        "gutter": "24px",
+                        "margin-mobile": "24px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Inter"],
+                        "label-mono": ["JetBrains Mono"],
+                        "headline-xl": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "display-lg-mobile": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["80px", {"lineHeight": "88px", "letterSpacing": "-0.04em", "fontWeight": "700"}],
+                        "label-mono": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "headline-xl": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "28px", "letterSpacing": "0em", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "display-lg-mobile": ["48px", {"lineHeight": "52px", "letterSpacing": "-0.03em", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "32px", "letterSpacing": "0em", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00f0ff; }
+        
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+        .scanline {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.2), transparent);
+            animation: scanline 8s linear infinite;
+            pointer-events: none;
+        }
+        .glow-cyan-text { text-shadow: 0 0 10px rgba(0, 240, 255, 0.6); }
+    </style>
+</head>
+<body class="bg-void-black text-on-surface selection:bg-primary-container selection:text-on-primary antialiased overflow-hidden h-screen flex">
+<!-- SideNavBar Anchor -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-surface-dim border-r border-border-glass flex flex-col py-8 px-4 gap-6 z-50">
+<div class="flex flex-col gap-1 px-2">
+<span class="font-headline-xl text-headline-xl text-primary-fixed tracking-tighter">TERMINAL_v4.2</span>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-primary-container animate-pulse"></div>
+<span class="font-label-mono text-label-mono text-on-surface-variant">Status: Synchronized</span>
+</div>
+</div>
+<nav class="flex-1 flex flex-col gap-2 mt-4">
+<a class="flex items-center gap-3 py-3 px-4 rounded-lg bg-primary-container/10 text-primary-container border-l-4 border-primary-container transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="grid_view">grid_view</span>
+<span class="font-label-mono text-label-mono uppercase">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 py-3 px-4 rounded-lg text-outline hover:text-primary-fixed-dim hover:glow-cyan transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="show_chart">show_chart</span>
+<span class="font-label-mono text-label-mono uppercase">Markets</span>
+</a>
+<a class="flex items-center gap-3 py-3 px-4 rounded-lg text-outline hover:text-primary-fixed-dim hover:glow-cyan transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="memory">memory</span>
+<span class="font-label-mono text-label-mono uppercase">Algorithms</span>
+</a>
+<a class="flex items-center gap-3 py-3 px-4 rounded-lg text-outline hover:text-primary-fixed-dim hover:glow-cyan transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="security">security</span>
+<span class="font-label-mono text-label-mono uppercase">Risk Management</span>
+</a>
+<a class="flex items-center gap-3 py-3 px-4 rounded-lg text-outline hover:text-primary-fixed-dim hover:glow-cyan transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="vpn_key">vpn_key</span>
+<span class="font-label-mono text-label-mono uppercase">API Keys</span>
+</a>
+</nav>
+<button class="mt-auto mx-2 py-3 bg-primary-container text-on-primary font-label-mono text-label-mono rounded-lg hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary-container/20">
+            NEW STRATEGY
+        </button>
+<div class="flex flex-col gap-2 border-t border-border-glass pt-6 px-2">
+<a class="flex items-center gap-3 text-outline hover:text-primary-fixed transition-colors font-label-mono text-label-mono" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="description">description</span> DOCUMENTATION
+            </a>
+<a class="flex items-center gap-3 text-outline hover:text-primary-fixed transition-colors font-label-mono text-label-mono" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="help">help</span> SUPPORT
+            </a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 ml-64 flex flex-col h-screen relative">
+<div class="scanline"></div>
+<!-- TopNavBar Anchor -->
+<header class="w-full sticky top-0 z-50 bg-void-black/80 backdrop-blur-xl border-b border-border-glass shadow-[0_0_20px_rgba(0,240,255,0.1)]">
+<div class="flex justify-between items-center px-margin-desktop h-20 max-w-container-max mx-auto">
+<div class="flex items-center gap-8">
+<span class="font-display-lg text-[24px] tracking-tighter text-primary-container">QUANTA.VOID</span>
+<nav class="hidden md:flex gap-6">
+<a class="font-label-mono text-label-mono text-on-surface-variant hover:text-primary-fixed transition-colors" href="#">Backtest</a>
+<a class="font-label-mono text-label-mono text-primary-container border-b-2 border-primary-container pb-1" href="#">Terminal</a>
+<a class="font-label-mono text-label-mono text-on-surface-variant hover:text-primary-fixed transition-colors" href="#">Logs</a>
+<a class="font-label-mono text-label-mono text-on-surface-variant hover:text-primary-fixed transition-colors" href="#">Strategies</a>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative group">
+<input class="bg-surface-variant/30 border-none text-label-mono font-label-mono rounded-full py-2 px-6 w-64 focus:ring-1 focus:ring-primary-container transition-all" placeholder="Search parameters..." type="text"/>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline text-sm" data-icon="search">search</span>
+</div>
+<div class="flex gap-4">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors" data-icon="settings">settings</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors" data-icon="notifications">notifications</button>
+</div>
+<button class="bg-primary-container text-on-primary font-label-mono text-label-mono px-6 py-2 rounded-full hover:bg-primary-fixed transition-all active:scale-95">EXECUTE</button>
+<div class="w-10 h-10 rounded-full border border-border-glass overflow-hidden">
+<img alt="User portfolio profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuALOWINtsiYX_FuTrS2xecxu13B385Oj-lgtWcuXGRKE-FJIsZ60lDB8FAox9qhq3FV7CTRQtmuok3UP7knUNQNqlKl3vVgEmkTs12AJUURcW4uU3485jjJsRxoYReUxxGsTUbA65CydrMN4h_m9HFj-SmBkq6iqKLOZOlAdQM-Qu0GXOt6ZIl8S133tBCi-CAAagIDE-ChpbOqggD9QjLYqxD1WTnIGUuc6IE0d2E9u9GevKIntTvQJBFZhvwZkk9Nn60i2OtONwmN"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Dynamic Terminal Grid -->
+<div class="flex-1 p-gutter overflow-hidden grid grid-cols-12 grid-rows-6 gap-gutter">
+<!-- Live Market Pulse (Main Chart) -->
+<section class="col-span-8 row-span-4 bg-surface-gray rounded-3xl border border-border-glass relative overflow-hidden flex flex-col p-6 group">
+<div class="absolute inset-0 bg-gradient-to-b from-white/[0.05] to-transparent pointer-events-none"></div>
+<div class="flex justify-between items-center mb-4 z-10">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-primary-fixed tracking-tight">Live Market Pulse</h2>
+<p class="font-label-mono text-label-mono text-outline">BTC/USD | 500ms Aggregation</p>
+</div>
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-primary-container/10 border border-primary-container/20 rounded-full text-[10px] font-label-mono text-primary-container">KALMAN_ACTIVE</span>
+<span class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-label-mono text-on-surface-variant">REALTIME_STREAM</span>
+</div>
+</div>
+<div class="flex-1 relative mt-4 border-l border-b border-border-glass flex items-end">
+<!-- SVG Chart Background Pattern -->
+<div class="absolute inset-0 opacity-5" style="background-image: radial-gradient(#ffffff 0.5px, transparent 0.5px); background-size: 20px 20px;"></div>
+<!-- Simulated Data Lines -->
+<svg class="w-full h-full preserve-3d" viewbox="0 0 800 300">
+<!-- Raw Price (Jittery) -->
+<path d="M0,150 L50,140 L100,165 L150,130 L200,145 L250,170 L300,120 L350,140 L400,110 L450,135 L500,120 L550,145 L600,100 L650,110 L700,90 L750,105 L800,85" fill="none" stroke="rgba(255,255,255,0.2)" stroke-dasharray="4" stroke-width="1.5"></path>
+<!-- Kalman True Price (Smooth & Glowing) -->
+<path class="drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]" d="M0,155 C50,145 100,160 150,135 C200,140 250,165 300,125 C350,135 400,115 450,130 C500,125 550,140 600,105 C650,115 700,95 750,100 L800,90" fill="none" id="kalman-line" stroke="#00f0ff" stroke-width="3"></path>
+<!-- Floating Data Points -->
+<circle class="animate-pulse" cx="800" cy="90" fill="#00f0ff" r="4"></circle>
+</svg>
+<!-- Vertical Legend -->
+<div class="absolute right-0 top-0 h-full flex flex-col justify-between text-[10px] font-label-mono text-outline py-4 pl-4 border-l border-border-glass">
+<span>$68,432.00</span>
+<span>$68,200.00</span>
+<span>$68,000.00</span>
+<span>$67,800.00</span>
+<span>$67,600.00</span>
+</div>
+</div>
+<div class="flex justify-between items-center mt-6 pt-6 border-t border-border-glass z-10">
+<div class="flex gap-8">
+<div>
+<span class="block text-[10px] font-label-mono text-outline uppercase">Volatility Index</span>
+<span class="font-label-mono text-body-md text-secondary-fixed">0.142%</span>
+</div>
+<div>
+<span class="block text-[10px] font-label-mono text-outline uppercase">Signal Strength</span>
+<span class="font-label-mono text-body-md text-primary-container">88.4 / 100</span>
+</div>
+<div>
+<span class="block text-[10px] font-label-mono text-outline uppercase">Order Imbalance</span>
+<span class="font-label-mono text-body-md text-error">-2.1M</span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="w-8 h-8 flex items-center justify-center rounded-lg border border-border-glass hover:bg-surface-variant transition-colors"><span class="material-symbols-outlined text-sm">zoom_in</span></button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg border border-border-glass hover:bg-surface-variant transition-colors"><span class="material-symbols-outlined text-sm">fullscreen</span></button>
+</div>
+</div>
+</section>
+<!-- Sidebar Portfolio Metrics -->
+<section class="col-span-4 row-span-4 flex flex-col gap-gutter">
+<!-- Metrics Card -->
+<div class="flex-1 bg-surface-gray rounded-3xl border border-border-glass p-6 relative overflow-hidden flex flex-col">
+<div class="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent"></div>
+<h3 class="font-label-mono text-label-mono text-outline uppercase mb-6 tracking-widest flex items-center gap-2">
+<span class="material-symbols-outlined text-xs">analytics</span> Portfolio_Core
+                    </h3>
+<div class="space-y-6">
+<div class="flex flex-col">
+<span class="text-[10px] font-label-mono text-outline uppercase">Total Liquidity</span>
+<span class="font-headline-lg text-headline-lg text-on-surface">$1,242,980.50</span>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="p-4 bg-void-black/40 rounded-2xl border border-border-glass">
+<span class="text-[10px] font-label-mono text-outline uppercase block mb-1">24H P&amp;L</span>
+<span class="font-label-mono text-body-lg text-primary-fixed-dim">+$12,440.21</span>
+</div>
+<div class="p-4 bg-void-black/40 rounded-2xl border border-border-glass">
+<span class="text-[10px] font-label-mono text-outline uppercase block mb-1">Sharpe Ratio</span>
+<span class="font-label-mono text-body-lg text-secondary-fixed">3.82</span>
+</div>
+</div>
+<div class="space-y-4 pt-4 border-t border-border-glass">
+<div class="flex justify-between items-center">
+<span class="text-label-mono font-label-mono text-outline">Risk Exposure</span>
+<span class="text-label-mono font-label-mono text-on-surface">14.2%</span>
+</div>
+<div class="h-1 w-full bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-primary-container w-[14.2%] shadow-[0_0_8px_#00f0ff]"></div>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-label-mono font-label-mono text-outline">Buffer Utilization</span>
+<span class="text-label-mono font-label-mono text-on-surface">62.8%</span>
+</div>
+<div class="h-1 w-full bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-secondary-container w-[62.8%] shadow-[0_0_8px_#ffdb3c]"></div>
+</div>
+</div>
+</div>
+<button class="mt-auto w-full py-4 border border-border-glass rounded-xl font-label-mono text-label-mono hover:bg-white/5 transition-all flex items-center justify-center gap-2 group">
+                        VIEW DETAILED BREAKDOWN
+                        <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</div>
+<!-- Status Monitor -->
+<div class="h-32 bg-surface-gray rounded-3xl border border-border-glass p-4 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-primary-container/10 flex items-center justify-center border border-primary-container/20">
+<span class="material-symbols-outlined text-primary-container" data-icon="hub">hub</span>
+</div>
+<div>
+<span class="block font-label-mono text-label-mono text-on-surface uppercase">Global Node Grid</span>
+<span class="text-[10px] font-label-mono text-outline uppercase">124 active clusters</span>
+</div>
+</div>
+<div class="flex -space-x-2">
+<div class="w-2 h-8 bg-primary-container rounded-full opacity-30"></div>
+<div class="w-2 h-8 bg-primary-container rounded-full opacity-60 ml-1"></div>
+<div class="w-2 h-8 bg-primary-container rounded-full opacity-100 ml-1 shadow-[0_0_8px_#00f0ff]"></div>
+</div>
+</div>
+</section>
+<!-- Real-time Terminal Activity Feed -->
+<section class="col-span-12 row-span-2 bg-void-black rounded-3xl border border-border-glass p-6 flex flex-col relative">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-4">
+<h3 class="font-label-mono text-label-mono text-primary-container uppercase tracking-widest">System_Logs // Live_Feed</h3>
+<div class="h-[1px] w-48 bg-border-glass"></div>
+</div>
+<div class="flex gap-4">
+<span class="font-label-mono text-[10px] text-outline">AUTO_SCROLL: ON</span>
+<span class="font-label-mono text-[10px] text-outline">LATENCY: 12ms</span>
+</div>
+</div>
+<div class="flex-1 font-label-mono text-[11px] space-y-2 overflow-y-auto pr-4" id="log-container">
+<div class="flex gap-4 opacity-50">
+<span class="text-outline shrink-0">[16:01:05]</span>
+<span class="text-on-surface-variant">INITIATING SECURE HANDSHAKE WITH L3 LIQUIDITY PROVIDER...</span>
+</div>
+<div class="flex gap-4">
+<span class="text-outline shrink-0">[16:01:07]</span>
+<span class="text-on-surface-variant">ORDER_ROUTER: SEARCHING FOR OPTIMAL FRAGMENTATION PATHS</span>
+</div>
+<div class="flex gap-4 text-primary-container">
+<span class="text-primary-container shrink-0">[16:01:10]</span>
+<span class="glow-cyan-text">EXECUTION: BOUGHT 4.2 BTC @ $68,142.30 [TWAP_STRATEGY]</span>
+</div>
+<div class="flex gap-4 text-secondary-fixed">
+<span class="text-secondary-fixed shrink-0">[16:01:12]</span>
+<span>WARNING: STATISTICAL ANOMALY DETECTED IN DERIVATIVE VOLATILITY SKEW</span>
+</div>
+<div class="flex gap-4">
+<span class="text-outline shrink-0">[16:01:15]</span>
+<span class="text-on-surface-variant">RISK_ENGINE: RECALCULATING VAR (VALUE AT RISK) PARAMETERS</span>
+</div>
+<div class="flex gap-4">
+<span class="text-outline shrink-0">[16:01:18]</span>
+<span class="text-on-surface-variant">API_GATEWAY: DATA PACKET SYNCHRONIZATION COMPLETE</span>
+</div>
+<div class="flex gap-4 text-error">
+<span class="text-error shrink-0">[16:01:21]</span>
+<span>ALERT: LATENCY SPIKE DETECTED FROM NEW YORK CLUSTER NODE B-12</span>
+</div>
+</div>
+</section>
+</div>
+<!-- Footer Anchor -->
+<footer class="w-full py-6 bg-void-black border-t border-border-glass mt-auto">
+<div class="max-w-container-max mx-auto px-margin-desktop flex flex-col md:flex-row justify-between items-center gap-gutter">
+<span class="font-label-mono text-label-mono text-secondary-fixed">© 2024 QUANTA_LABS. ALL RIGHTS RESERVED. ENCRYPTED_CONNECTION_SECURED.</span>
+<div class="flex gap-8">
+<a class="font-label-mono text-label-mono text-on-surface-variant hover:text-glow-gold transition-colors" href="#">Terms of Service</a>
+<a class="font-label-mono text-label-mono text-on-surface-variant hover:text-glow-gold transition-colors" href="#">Risk Disclosure</a>
+<a class="font-label-mono text-label-mono text-on-surface-variant hover:text-glow-gold transition-colors" href="#">Privacy Protocol</a>
+<a class="font-label-mono text-label-mono text-on-surface-variant hover:text-glow-gold transition-colors" href="#">Institutional Access</a>
+</div>
+</div>
+</footer>
+</main>
+<script>
+        // Micro-interactions and live data simulation
+        const logContainer = document.getElementById('log-container');
+        const logs = [
+            { time: '16:02:01', msg: 'HEARTBEAT_ACK: ALL SYSTEMS OPERATIONAL', type: 'normal' },
+            { time: '16:02:05', msg: 'SIGNAL: CROSS-EXCHANGE ARBITRAGE OPPORTUNITY DETECTED', type: 'primary' },
+            { time: '16:02:10', msg: 'REBALANCING: ADJUSTING DELTA NEUTRALITY FOR PORTFOLIO_CORE', type: 'normal' },
+            { time: '16:02:14', msg: 'THREAT_INTEL: UNUSUAL VOLUME DETECTED IN DEEP OTM CALLS', type: 'warning' }
+        ];
+
+        let logIndex = 0;
+        setInterval(() => {
+            const log = logs[logIndex];
+            const div = document.createElement('div');
+            div.className = `flex gap-4 transition-all duration-500 transform translate-y-2 opacity-0`;
+            
+            let colorClass = 'text-on-surface-variant';
+            if(log.type === 'primary') colorClass = 'text-primary-container glow-cyan-text';
+            if(log.type === 'warning') colorClass = 'text-secondary-fixed';
+
+            div.innerHTML = `
+                <span class="text-outline shrink-0">[${log.time}]</span>
+                <span class="${colorClass}">${log.msg}</span>
+            `;
+
+            logContainer.appendChild(div);
+            setTimeout(() => {
+                div.classList.remove('translate-y-2', 'opacity-0');
+            }, 50);
+
+            if (logContainer.children.length > 15) {
+                logContainer.removeChild(logContainer.firstChild);
+            }
+            
+            logContainer.scrollTop = logContainer.scrollHeight;
+            logIndex = (logIndex + 1) % logs.length;
+        }, 4000);
+
+        // Simulated Chart Movement
+        const kalmanLine = document.getElementById('kalman-line');
+        let phase = 0;
+        function animateChart() {
+            phase += 0.02;
+            const drift = Math.sin(phase) * 5;
+            kalmanLine.style.transform = `translateY(${drift}px)`;
+            requestAnimationFrame(animateChart);
+        }
+        animateChart();
+    </script>
+</body></html>

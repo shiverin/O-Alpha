@@ -1,0 +1,623 @@
+{
+  "date_range": {
+    "end": "2026-06-01",
+    "start": "2015-01-01"
+  },
+  "generated_at": "2026-06-03T14:18:06.197107+00:00",
+  "interval_count": 100,
+  "intervals": [
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "AAPL"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "ABBV"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "ABT"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "ACN"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "ADBE"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "ADP"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "AMAT"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "AMD"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "AMGN"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "AMT"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "AMZN"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "AVGO"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "AXP"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "BA"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "BAC"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "BKNG"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "BLK"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "BMY"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "C"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "CAT"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "CI"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "CMCSA"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "COP"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "COST"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "CRM"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "CSCO"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "CVS"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "CVX"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "DE"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "DIA"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "DIS"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "ELV"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "GE"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "GILD"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "GOOGL"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "GS"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "HD"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "HON"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "IBM"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "INTC"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "INTU"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "ISRG"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "IWM"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "JNJ"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "JPM"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "KO"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "LIN"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "LLY"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "LOW"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "LRCX"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "MA"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "MCD"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "MDLZ"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "MDT"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "META"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "MO"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "MRK"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "MSFT"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "NEE"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "NFLX"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "NKE"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "NOW"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "NVDA"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "ORCL"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "PEP"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "PFE"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "PG"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "PLD"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "PM"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "QCOM"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "QQQ"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "RTX"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "SBUX"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "SCHW"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "SMH"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "SO"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "SPY"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "SYK"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "T"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "TMO"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "TSLA"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "TXN"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "UNH"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "UPS"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "USB"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "V"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "VOO"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "VTI"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "VZ"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "WMT"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "XLB"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "XLE"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "XLF"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "XLI"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "XLK"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "XLP"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "XLU"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "XLV"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "XLY"
+    },
+    {
+      "end": "2026-06-01",
+      "start": "2015-01-01",
+      "symbol": "XOM"
+    }
+  ],
+  "source": {
+    "command": "/Users/shizhen/Documents/O-Alpha/research/ml/.venv/bin/python research/ml/build_pit_universe.py --input reports/batches/2026-06-03_pit_coverage_audit_smoke/static_yahoo100/static_yahoo100_intervals.csv --format interval --source-name static_yahoo100_smoke --out reports/batches/2026-06-03_pit_coverage_audit_smoke/static_yahoo100/static_yahoo100_manifest.json",
+    "format": "interval",
+    "git_sha": "95297ef020ff5a266d098dfacb9bb23934b0dda5",
+    "input": "reports/batches/2026-06-03_pit_coverage_audit_smoke/static_yahoo100/static_yahoo100_intervals.csv",
+    "input_sha256": "05df5f8c41c86e94f4ac71251cef3deaed403293465bc2a74af32fc2ed2b7216",
+    "name": "static_yahoo100_smoke",
+    "url": ""
+  },
+  "symbol_count": 100,
+  "symbols": [
+    "AAPL",
+    "ABBV",
+    "ABT",
+    "ACN",
+    "ADBE",
+    "ADP",
+    "AMAT",
+    "AMD",
+    "AMGN",
+    "AMT",
+    "AMZN",
+    "AVGO",
+    "AXP",
+    "BA",
+    "BAC",
+    "BKNG",
+    "BLK",
+    "BMY",
+    "C",
+    "CAT",
+    "CI",
+    "CMCSA",
+    "COP",
+    "COST",
+    "CRM",
+    "CSCO",
+    "CVS",
+    "CVX",
+    "DE",
+    "DIA",
+    "DIS",
+    "ELV",
+    "GE",
+    "GILD",
+    "GOOGL",
+    "GS",
+    "HD",
+    "HON",
+    "IBM",
+    "INTC",
+    "INTU",
+    "ISRG",
+    "IWM",
+    "JNJ",
+    "JPM",
+    "KO",
+    "LIN",
+    "LLY",
+    "LOW",
+    "LRCX",
+    "MA",
+    "MCD",
+    "MDLZ",
+    "MDT",
+    "META",
+    "MO",
+    "MRK",
+    "MSFT",
+    "NEE",
+    "NFLX",
+    "NKE",
+    "NOW",
+    "NVDA",
+    "ORCL",
+    "PEP",
+    "PFE",
+    "PG",
+    "PLD",
+    "PM",
+    "QCOM",
+    "QQQ",
+    "RTX",
+    "SBUX",
+    "SCHW",
+    "SMH",
+    "SO",
+    "SPY",
+    "SYK",
+    "T",
+    "TMO",
+    "TSLA",
+    "TXN",
+    "UNH",
+    "UPS",
+    "USB",
+    "V",
+    "VOO",
+    "VTI",
+    "VZ",
+    "WMT",
+    "XLB",
+    "XLE",
+    "XLF",
+    "XLI",
+    "XLK",
+    "XLP",
+    "XLU",
+    "XLV",
+    "XLY",
+    "XOM"
+  ],
+  "version": "pit_constituents_v1"
+}

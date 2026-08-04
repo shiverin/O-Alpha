@@ -1,0 +1,238 @@
+---
+title: Entity-Relationship Diagram
+---
+erDiagram
+    direction TB
+
+    users:::identity {
+        bigint id PK
+        text username UK "case-insensitive unique index"
+        text role
+        text subscription_tier
+        boolean is_onboarded
+    }
+
+    sessions:::identity {
+        bigint id PK
+        bigint user_id FK
+        text token_hash UK
+        timestamptz expires_at
+        timestamptz revoked_at
+    }
+
+    accounts:::identity {
+        bigint id PK
+        bigint user_id FK
+        text account_type
+        text provider
+        numeric cash_balance
+        text status
+    }
+
+    agent_settings:::identity {
+        bigint user_id PK,FK
+        text risk_profile
+        int leverage
+        int max_positions
+    }
+
+    strategy_configs:::trading {
+        bigint id PK
+        bigint user_id FK "nullable"
+        text name
+        text strategy_type
+        int version
+        boolean is_active
+    }
+
+    agent_runs:::trading {
+        bigint id PK
+        bigint user_id FK "composite account FK"
+        bigint account_id FK "composite account FK"
+        bigint strategy_config_id FK "nullable"
+        text symbol FK
+        text mode
+        text status
+    }
+
+    orders:::trading {
+        bigint id PK
+        bigint user_id FK "composite account FK"
+        bigint account_id FK "composite account FK"
+        bigint agent_run_id FK "nullable"
+        bigint strategy_config_id FK "nullable"
+        text symbol FK
+        text side
+        text status
+    }
+
+    fills:::trading {
+        bigint id PK
+        bigint order_id FK
+        bigint user_id FK "composite account FK"
+        bigint account_id FK "composite account FK"
+        text symbol FK
+        numeric price
+        numeric qty
+    }
+
+    positions:::trading {
+        bigint account_id PK,FK
+        text symbol PK,FK
+        text position_side PK
+        bigint user_id FK "composite account FK"
+        numeric qty
+        numeric avg_entry_price
+    }
+
+    cash_ledger:::trading {
+        bigint id PK
+        bigint user_id FK "composite account FK"
+        bigint account_id FK "composite account FK"
+        bigint related_order_id FK "nullable"
+        bigint related_fill_id FK "nullable"
+        text event_type
+        numeric amount
+    }
+
+    system_alerts:::trading {
+        bigint id PK
+        bigint user_id FK
+        bigint account_id FK "nullable composite FK"
+        text alert_type
+    }
+
+    portfolio_snapshots:::trading {
+        bigint id PK
+        bigint user_id FK "composite account FK"
+        bigint account_id FK "composite account FK"
+        timestamptz timestamp
+        numeric total_asset_value
+    }
+
+    backtest_runs:::research {
+        bigint id PK
+        bigint user_id FK
+        bigint strategy_config_id FK "nullable"
+        text symbol FK
+        numeric sharpe_ratio
+        text status
+    }
+
+    backtest_trades:::research {
+        bigint id PK
+        bigint backtest_run_id FK
+        text symbol FK
+        text action
+    }
+
+    portfolio_backtest_runs:::research {
+        bigint id PK
+        bigint user_id FK "nullable"
+        text strategy_type
+        double final_equity
+    }
+
+    sleeve_returns:::research {
+        bigint id PK
+        bigint run_id FK
+        text sleeve
+        double return_value
+    }
+
+    ml_model_artifacts:::research {
+        bigint id PK
+        text model_name
+        text model_type
+        text status
+    }
+
+    pair_candidates:::research {
+        bigint id PK
+        text symbol_y FK "leg Y"
+        text symbol_x FK "leg X"
+        boolean approved
+    }
+
+    strategy_trials:::research {
+        bigint id PK
+        text family
+        text config_hash
+        double sharpe
+    }
+
+    assets:::market {
+        text symbol PK
+        text asset_class
+        text exchange
+        text sector
+    }
+
+    bars:::market {
+        timestamptz time PK
+        text symbol PK,FK
+        text timeframe PK
+        text feed PK
+        text adjustment PK
+        text source PK
+        double close
+        bigint volume
+    }
+
+    universes:::market {
+        bigint id PK
+        bigint user_id FK "nullable"
+        text name
+    }
+
+    universe_members:::market {
+        bigint universe_id PK,FK
+        text symbol PK,FK
+        double weight_cap
+        boolean active
+    }
+
+    users ||..o{ sessions : has
+    users ||..o{ accounts : owns
+    users ||--o| agent_settings : configures
+    users o|..o{ strategy_configs : owns
+    users ||..o{ backtest_runs : runs
+    users ||..o{ system_alerts : receives
+    users o|..o{ universes : owns
+    users o|..o{ portfolio_backtest_runs : runs
+
+    accounts ||..o{ agent_runs : executes
+    accounts ||..o{ orders : places
+    accounts ||..o{ fills : receives
+    accounts ||--o{ positions : holds
+    accounts ||..o{ cash_ledger : records
+    accounts o|..o{ system_alerts : concerns
+    accounts ||..o{ portfolio_snapshots : captures
+
+    strategy_configs o|..o{ agent_runs : configures
+    strategy_configs o|..o{ orders : configures
+    strategy_configs o|..o{ backtest_runs : configures
+
+    assets ||..o{ orders : ordered_as
+    assets ||..o{ fills : filled_as
+    assets ||--o{ positions : held_as
+    assets ||..o{ bars : priced_by
+    assets ||..o{ backtest_runs : tested_by
+    assets ||..o{ backtest_trades : traded_in
+    assets ||..o{ agent_runs : traded_by
+    assets ||..o{ pair_candidates : leg_y
+    assets ||..o{ pair_candidates : leg_x
+    assets ||--o{ universe_members : included_as
+
+    agent_runs o|..o{ orders : creates
+    orders ||..o{ fills : produces
+    orders o|..o{ cash_ledger : relates_to
+    fills o|..o{ cash_ledger : relates_to
+    backtest_runs ||..o{ backtest_trades : contains
+    universes ||--o{ universe_members : contains
+    portfolio_backtest_runs ||..o{ sleeve_returns : contains
+
+    classDef identity fill:#eef2ff,stroke:#4f46e5,stroke-width:2px,color:#312e81
+    classDef trading fill:#ecfeff,stroke:#0891b2,stroke-width:2px,color:#164e63
+    classDef research fill:#f5f3ff,stroke:#9333ea,stroke-width:2px,color:#581c87
+    classDef market fill:#fffbeb,stroke:#d97706,stroke-width:2px,color:#78350f

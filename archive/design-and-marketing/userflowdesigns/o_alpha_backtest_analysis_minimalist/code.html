@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>O(Alpha) - Backtest Results</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#fff9ef",
+                        "on-tertiary-container": "#51596b",
+                        "on-secondary-fixed": "#221b00",
+                        "secondary-container": "#ffdb3c",
+                        "surface-container": "#122131",
+                        "surface-container-high": "#1c2b3c",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-fixed-variant": "#544600",
+                        "tertiary-fixed-dim": "#bec6dc",
+                        "on-surface": "#d4e4fa",
+                        "on-secondary": "#3a3000",
+                        "primary": "#c3f5ff",
+                        "surface-container-low": "#0d1c2d",
+                        "on-error": "#690005",
+                        "surface-tint": "#00daf3",
+                        "primary-fixed": "#9cf0ff",
+                        "surface": "#051424",
+                        "error-container": "#93000a",
+                        "surface-container-lowest": "#010f1f",
+                        "secondary-fixed-dim": "#e9c400",
+                        "on-tertiary-fixed-variant": "#3f4758",
+                        "error": "#ffb4ab",
+                        "background": "#051424",
+                        "surface-dim": "#051424",
+                        "inverse-surface": "#d4e4fa",
+                        "inverse-on-surface": "#233143",
+                        "tertiary-container": "#c8d0e6",
+                        "on-primary-container": "#00626e",
+                        "tertiary-fixed": "#dbe2f8",
+                        "on-surface-variant": "#bac9cc",
+                        "primary-container": "#00e5ff",
+                        "tertiary": "#e6ecff",
+                        "surface-variant": "#273647",
+                        "on-secondary-container": "#725f00",
+                        "on-primary-fixed": "#001f24",
+                        "surface-container-highest": "#273647",
+                        "on-primary-fixed-variant": "#004f58",
+                        "primary-fixed-dim": "#00daf3",
+                        "outline": "#849396",
+                        "on-tertiary-fixed": "#131c2b",
+                        "on-primary": "#00363d",
+                        "on-background": "#d4e4fa",
+                        "on-tertiary": "#283041",
+                        "surface-bright": "#2c3a4c",
+                        "secondary-fixed": "#ffe16d",
+                        "outline-variant": "#3b494c",
+                        "inverse-primary": "#006875"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "base": "8px",
+                        "margin-mobile": "16px",
+                        "grid-size": "32px",
+                        "margin-desktop": "64px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Inter"],
+                        "data-sm": ["JetBrains Mono"],
+                        "headline-lg-mobile": ["Inter"],
+                        "data-lg": ["JetBrains Mono"],
+                        "label-caps": ["Inter"],
+                        "headline-xl": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "data-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "data-lg": ["20px", { "lineHeight": "28px", "fontWeight": "500" }],
+                        "label-caps": ["11px", { "lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "700" }],
+                        "headline-xl": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    },
+                    "backgroundImage": {
+                        'grid-pattern': "url(\"data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 31.5L32 31.5M31.5 0L31.5 32' stroke='%2300E5FF' stroke-opacity='0.05' stroke-width='1' fill='none'/%3E%3C/svg%3E\")"
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #051424;
+            color: #d4e4fa;
+        }
+        .glass-card {
+            background: rgba(18, 33, 49, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-card:hover {
+            border-color: rgba(0, 229, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.1);
+        }
+        .neon-line {
+            filter: drop-shadow(0 0 4px rgba(0, 229, 255, 0.6));
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen bg-background bg-grid-pattern relative flex flex-col">
+<!-- TopNavBar (Web) -->
+<nav class="hidden md:flex fixed top-0 w-full z-50 items-center justify-between px-margin-desktop h-[44px] bg-surface-container-lowest border-b border-outline-variant/30">
+<div class="flex items-center gap-8">
+<div class="font-headline-lg text-headline-lg font-bold text-on-surface flex items-center gap-2">
+<span class="text-primary-container">α</span> O(Alpha)
+            </div>
+<div class="flex gap-6">
+<a class="font-body-md text-body-md text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">Onboarding</a>
+<a class="font-body-md text-body-md text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">Strategies</a>
+<a class="font-body-md text-body-md text-primary font-bold border-b-2 border-primary pb-1" href="#">Backtest</a>
+<a class="font-body-md text-body-md text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">Terminal</a>
+</div>
+</div>
+<div class="flex items-center">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</nav>
+<!-- SideNavBar (Mobile / Responsive Context - Subnav alternative) -->
+<!-- In this specific request, it asks for a "Slim global nav and frosted sub-nav", we'll implement the frosted sub-nav below the top bar -->
+<div class="md:hidden fixed top-0 w-full z-50 h-[44px] bg-surface-container-lowest border-b border-outline-variant/30 flex items-center justify-between px-margin-mobile">
+<div class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-on-surface flex items-center gap-1">
+<span class="text-primary-container">α</span> O(Alpha)
+        </div>
+<button class="text-on-surface-variant">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+<!-- Frosted Sub-Nav -->
+<div class="sticky top-[44px] z-40 w-full bg-surface-container/80 backdrop-blur-xl border-b border-outline-variant/20 py-2 px-margin-mobile md:px-margin-desktop flex justify-between items-center mt-[44px]">
+<h1 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">Backtest Results</h1>
+<button class="bg-primary-container text-on-primary-fixed px-4 py-1.5 rounded text-sm font-semibold hover:bg-primary transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">rocket_launch</span>
+            Deploy Live Agent
+        </button>
+</div>
+<!-- Main Content Canvas -->
+<main class="flex-grow w-full max-w-[1440px] mx-auto px-margin-mobile md:px-margin-desktop py-grid-size flex flex-col gap-grid-size">
+<!-- Utility Cards Row -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<!-- Sharpe Ratio -->
+<div class="glass-card rounded-lg p-6 flex flex-col justify-between">
+<div class="flex justify-between items-start mb-4">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Sharpe Ratio</span>
+<span class="material-symbols-outlined text-primary-container">trending_up</span>
+</div>
+<div>
+<div class="font-headline-xl text-headline-xl text-on-surface">2.84</div>
+<div class="font-data-sm text-data-sm text-primary mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span>
+                        +0.42 vs Benchmark
+                    </div>
+</div>
+</div>
+<!-- Total Return -->
+<div class="glass-card rounded-lg p-6 flex flex-col justify-between">
+<div class="flex justify-between items-start mb-4">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Total Return (Ann.)</span>
+<span class="material-symbols-outlined text-secondary-container">monitoring</span>
+</div>
+<div>
+<div class="font-headline-xl text-headline-xl text-on-surface">34.2%</div>
+<div class="font-data-sm text-data-sm text-secondary-container mt-2 flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-secondary-container animate-pulse"></span>
+                        Alpha Generated
+                    </div>
+</div>
+</div>
+<!-- Max Drawdown -->
+<div class="glass-card rounded-lg p-6 flex flex-col justify-between">
+<div class="flex justify-between items-start mb-4">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Max Drawdown</span>
+<span class="material-symbols-outlined text-outline">water_drop</span>
+</div>
+<div>
+<div class="font-headline-xl text-headline-xl text-on-surface">-8.4%</div>
+<div class="font-data-sm text-data-sm text-outline mt-2 flex items-center gap-1">
+                        Within risk tolerance threshold
+                    </div>
+</div>
+</div>
+</section>
+<!-- Equity Curve Chart Section -->
+<section class="glass-card rounded-lg overflow-hidden flex flex-col">
+<div class="p-4 md:p-6 border-b border-outline-variant/20 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<h2 class="font-data-lg text-data-lg text-on-surface">Equity Curve Comparison</h2>
+<div class="flex gap-4 font-data-sm text-data-sm">
+<div class="flex items-center gap-2">
+<span class="w-3 h-0.5 bg-primary-container"></span>
+<span class="text-on-surface">Strategy O(Alpha)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-0.5 bg-outline-variant"></span>
+<span class="text-on-surface-variant">B&amp;H Benchmark</span>
+</div>
+</div>
+</div>
+<div class="p-6 relative h-[400px] w-full bg-surface-container-low flex items-end justify-between px-12 pb-8">
+<!-- Decorative Chart Background Grid -->
+<div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGcgc3Ryb2tlPSIjMjczNjQ3IiBzdHJva2Utb3BhY2l0eT0iMC40IiBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0wIDQwaDQwTTAgMGg0MHY0MEgwem00MCAwSDB2NDBoNDBWMHoiLz48L2c+PC9zdmc+')] opacity-20"></div>
+<!-- Y-Axis Labels -->
+<div class="absolute left-4 top-8 bottom-8 flex flex-col justify-between font-data-sm text-data-sm text-outline-variant">
+<span>150%</span>
+<span>125%</span>
+<span>100%</span>
+<span>75%</span>
+<span>50%</span>
+</div>
+<!-- X-Axis Labels -->
+<div class="absolute bottom-2 left-12 right-12 flex justify-between font-data-sm text-data-sm text-outline-variant">
+<span>Q1</span>
+<span>Q2</span>
+<span>Q3</span>
+<span>Q4</span>
+</div>
+<!-- SVG Chart Lines -->
+<svg class="w-full h-full absolute inset-0 px-12 py-8 z-10" preserveaspectratio="none" viewbox="0 0 1000 300">
+<!-- Benchmark Line -->
+<path d="M0,250 C100,240 200,260 300,210 C400,160 500,190 600,140 C700,90 800,120 900,80 L1000,60" fill="none" stroke="#3b494c" stroke-dasharray="4 4" stroke-width="2"></path>
+<!-- O(Alpha) Line with Area Gradient -->
+<defs>
+<lineargradient id="alphaGradient" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="#00E5FF" stop-opacity="0.2"></stop>
+<stop offset="100%" stop-color="#00E5FF" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<path d="M0,250 C100,220 200,200 300,150 C400,100 500,140 600,80 C700,20 800,50 900,10 L1000,0 L1000,300 L0,300 Z" fill="url(#alphaGradient)"></path>
+<path class="neon-line" d="M0,250 C100,220 200,200 300,150 C400,100 500,140 600,80 C700,20 800,50 900,10 L1000,0" fill="none" stroke="#00E5FF" stroke-width="3"></path>
+</svg>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full py-grid-size px-margin-desktop grid grid-cols-2 md:grid-cols-4 gap-gutter bg-surface-container-low border-t border-outline-variant/10 mt-auto">
+<div class="col-span-2 md:col-span-1 flex flex-col gap-4">
+<div class="font-label-caps text-label-caps text-on-secondary-fixed flex items-center gap-1">
+<span class="text-primary-container text-lg">α</span> O(Alpha)
+            </div>
+<p class="font-data-sm text-data-sm text-on-secondary-fixed-variant opacity-80">
+                © 2024 O(Alpha) Institutional Trading. All rights reserved.
+            </p>
+</div>
+<div class="flex flex-col gap-2 font-data-sm text-data-sm text-on-secondary-fixed-variant">
+<a class="hover:underline hover:opacity-100 opacity-80 transition-opacity" href="#">Terms of Service</a>
+<a class="hover:underline hover:opacity-100 opacity-80 transition-opacity" href="#">Privacy Policy</a>
+</div>
+<div class="flex flex-col gap-2 font-data-sm text-data-sm text-on-secondary-fixed-variant">
+<a class="hover:underline hover:opacity-100 opacity-80 transition-opacity" href="#">Regulatory Disclosures</a>
+<a class="hover:underline hover:opacity-100 opacity-80 transition-opacity" href="#">Documentation</a>
+</div>
+<div class="flex flex-col gap-2 font-data-sm text-data-sm text-on-secondary-fixed-variant">
+<a class="hover:underline hover:opacity-100 opacity-80 transition-opacity" href="#">API Reference</a>
+<a class="hover:underline hover:opacity-100 opacity-80 transition-opacity" href="#">Support</a>
+</div>
+</footer>
+</body></html>

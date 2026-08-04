@@ -1,0 +1,5 @@
+symbol,target_weight,role,alpha_score,confidence,side,engine
+VOO,0.8500000000,benchmark_core,1.0000000000,1.0000000000,long,daily_lgbm_ranker_sleeve
+AMAT,0.0500000000,active_sleeve,0.0500000000,1.0000000000,long,daily_lgbm_ranker_sleeve
+INTC,0.0500000000,active_sleeve,0.0500000000,1.0000000000,long,daily_lgbm_ranker_sleeve
+LRCX,0.0500000000,active_sleeve,0.0500000000,1.0000000000,long,daily_lgbm_ranker_sleeve

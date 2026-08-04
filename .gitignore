@@ -43,7 +43,7 @@ backend/scripts/__pycache__/
 .idea/
 .vscode/
 *.swp
-
+q
 backend/ROADMAP.md
 progress.md
 .claude/
@@ -57,6 +57,15 @@ repomix-output.xml
 /*prompt*.md
 /*prompts*.md
 
-/docs
+/docs/*
+!/docs/entity-relationship-diagram.md
+!/docs/entity-relationship-diagram.mmd
+!/docs/entity-relationship-diagram.svg
+!/docs/entity-relationship-diagram.png
+!/docs/entity-relationship-diagram.pdf
+!/docs/chen-entity-relationship-diagram.mmd
+!/docs/chen-entity-relationship-diagram.svg
+!/docs/chen-entity-relationship-diagram.png
+!/docs/chen-entity-relationship-diagram.pdf
 
 /output

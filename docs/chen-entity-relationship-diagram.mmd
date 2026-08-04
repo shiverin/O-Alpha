@@ -1,0 +1,97 @@
+---
+title: Entity-Relationship Diagram — Chen Notation
+---
+flowchart TB
+    classDef entity fill:#eef2ff,stroke:#4f46e5,stroke-width:2px,color:#312e81
+    classDef relationship fill:#fff7ed,stroke:#d97706,stroke-width:2px,color:#78350f
+
+    users[users]:::entity
+    sessions[sessions]:::entity
+    accounts[accounts]:::entity
+    settings[agent_settings]:::entity
+    configs[strategy_configs]:::entity
+    runs[agent_runs]:::entity
+    orders[orders]:::entity
+    fills[fills]:::entity
+    positions[positions]:::entity
+    ledger[cash_ledger]:::entity
+    alerts[system_alerts]:::entity
+    snapshots[portfolio_snapshots]:::entity
+    assets[assets]:::entity
+    bars[bars]:::entity
+    backtests[backtest_runs]:::entity
+    trades[backtest_trades]:::entity
+    portfolio_runs[portfolio_backtest_runs]:::entity
+    sleeves[sleeve_returns]:::entity
+    artifacts[ml_model_artifacts]:::entity
+    pairs[pair_candidates]:::entity
+    trials[strategy_trials]:::entity
+    universes[universes]:::entity
+    members[universe_members]:::entity
+
+    r_sessions{has}:::relationship
+    r_accounts{owns}:::relationship
+    r_settings{configures}:::relationship
+    r_configs{owns}:::relationship
+    r_runs{executes}:::relationship
+    r_orders{places}:::relationship
+    r_fills{receives}:::relationship
+    r_positions{holds}:::relationship
+    r_ledger{records}:::relationship
+    r_alerts{receives}:::relationship
+    r_snapshots{captures}:::relationship
+    r_backtests{runs}:::relationship
+    r_portfolio_runs{runs}:::relationship
+    r_assets{trades}:::relationship
+    r_bars{has_prices}:::relationship
+    r_trades{contains}:::relationship
+    r_sleeves{contains}:::relationship
+    r_y{leg_Y}:::relationship
+    r_x{leg_X}:::relationship
+    r_members{contains}:::relationship
+    r_strategy_run{configures}:::relationship
+    r_strategy_order{configures}:::relationship
+    r_strategy_backtest{configures}:::relationship
+    r_run_order{creates}:::relationship
+    r_order_fill{produces}:::relationship
+    r_order_ledger{relates_to}:::relationship
+    r_fill_ledger{relates_to}:::relationship
+    r_universes{owns}:::relationship
+
+    users ---|1| r_sessions ---|0..*| sessions
+    users ---|1| r_accounts ---|0..*| accounts
+    users ---|1| r_settings ---|0..1| settings
+    users ---|0..1| r_configs ---|0..*| configs
+    users ---|1| r_backtests ---|0..*| backtests
+    users ---|1| r_alerts ---|0..*| alerts
+    users ---|0..1| r_universes ---|0..*| universes
+    users ---|0..1| r_portfolio_runs ---|0..*| portfolio_runs
+
+    accounts ---|1| r_runs ---|0..*| runs
+    accounts ---|1| r_orders ---|0..*| orders
+    accounts ---|1| r_fills ---|0..*| fills
+    accounts ---|1| r_positions ---|0..*| positions
+    accounts ---|1| r_ledger ---|0..*| ledger
+    accounts ---|0..1| r_alerts
+    accounts ---|1| r_snapshots ---|0..*| snapshots
+
+    configs ---|0..1| r_strategy_run ---|0..*| runs
+    configs ---|0..1| r_strategy_order ---|0..*| orders
+    configs ---|0..1| r_strategy_backtest ---|0..*| backtests
+    runs ---|0..1| r_run_order ---|0..*| orders
+    orders ---|1| r_order_fill ---|0..*| fills
+    orders ---|0..1| r_order_ledger ---|0..*| ledger
+    fills ---|0..1| r_fill_ledger ---|0..*| ledger
+
+    assets ---|1| r_assets ---|0..*| orders
+    assets ---|1| r_bars ---|0..*| bars
+    assets ---|1| r_trades ---|0..*| trades
+    backtests ---|1| r_trades
+    portfolio_runs ---|1| r_sleeves ---|0..*| sleeves
+    assets ---|1| r_y ---|0..*| pairs
+    assets ---|1| r_x ---|0..*| pairs
+    universes ---|1| r_members ---|0..*| members
+    assets ---|1| r_members
+
+    artifacts
+    trials

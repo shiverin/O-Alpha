@@ -1,0 +1,16 @@
+{
+  "uiStudio": {
+    "cleanup": {
+      "mode": "off",
+      "cascadeSnapshots": true,
+      "lastRunAt": "2026-07-05T15:18:08.774Z",
+      "lastRunStats": {
+        "removedRequests": 0,
+        "removedMutations": 0,
+        "removedSnapshots": 0,
+        "freedBytes": 0,
+        "errors": 0
+      }
+    }
+  }
+}

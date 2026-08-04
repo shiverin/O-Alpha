@@ -1,0 +1,9 @@
+{
+  "name": "fja05680_sp500",
+  "url": "https://github.com/fja05680/sp500/blob/master/sp500_ticker_start_end.csv",
+  "input": "reports/batches/2026-06-03_sp500_constituent_source_probe/free_sources/fja05680_sp500_ticker_start_end.csv",
+  "input_sha256": "d9218948c88c60ff7134471b06165d787bd5a79268dfb22eb7bf754137d30381",
+  "format": "interval",
+  "command": "/Users/shizhen/Documents/O-Alpha/research/ml/.venv/bin/python research/ml/build_pit_universe.py --input reports/batches/2026-06-03_sp500_constituent_source_probe/free_sources/fja05680_sp500_ticker_start_end.csv --format interval --source-name fja05680_sp500 --source-url https://github.com/fja05680/sp500/blob/master/sp500_ticker_start_end.csv --min-date 2015-01-01 --max-date 2026-06-01 --out reports/batches/2026-06-03_sp500_constituent_source_probe/free_sources/fja05680_pit_universe_2015_2026.json",
+  "git_sha": "95297ef020ff5a266d098dfacb9bb23934b0dda5"
+}

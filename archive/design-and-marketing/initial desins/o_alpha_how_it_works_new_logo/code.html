@@ -1,0 +1,345 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>O(Alpha) - How it Works</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-background": "#d4e4fa",
+                        "primary-container": "#00e5ff",
+                        "on-secondary-container": "#725f00",
+                        "on-primary-container": "#00626e",
+                        "surface-container-high": "#1c2b3c",
+                        "outline-variant": "#3b494c",
+                        "on-primary-fixed": "#001f24",
+                        "surface-container-lowest": "#010f1f",
+                        "secondary-fixed": "#ffe16d",
+                        "error": "#ffb4ab",
+                        "on-error": "#690005",
+                        "on-secondary-fixed-variant": "#544600",
+                        "on-secondary-fixed": "#221b00",
+                        "surface": "#051424",
+                        "background": "#051424",
+                        "tertiary-fixed": "#dbe2f8",
+                        "tertiary-container": "#c8d0e6",
+                        "on-surface-variant": "#bac9cc",
+                        "secondary-fixed-dim": "#e9c400",
+                        "on-primary-fixed-variant": "#004f58",
+                        "on-surface": "#d4e4fa",
+                        "on-tertiary-fixed-variant": "#3f4758",
+                        "surface-bright": "#2c3a4c",
+                        "surface-dim": "#051424",
+                        "on-primary": "#00363d",
+                        "primary-fixed": "#9cf0ff",
+                        "secondary-container": "#ffdb3c",
+                        "on-error-container": "#ffdad6",
+                        "tertiary": "#e6ecff",
+                        "outline": "#849396",
+                        "on-tertiary": "#283041",
+                        "surface-container": "#122131",
+                        "primary-fixed-dim": "#00daf3",
+                        "on-secondary": "#3a3000",
+                        "inverse-on-surface": "#233143",
+                        "on-tertiary-container": "#51596b",
+                        "surface-tint": "#00daf3",
+                        "surface-container-highest": "#273647",
+                        "surface-container-low": "#0d1c2d",
+                        "tertiary-fixed-dim": "#bec6dc",
+                        "secondary": "#fff9ef",
+                        "inverse-primary": "#006875",
+                        "inverse-surface": "#d4e4fa",
+                        "on-tertiary-fixed": "#131c2b",
+                        "surface-variant": "#273647",
+                        "primary": "#c3f5ff",
+                        "error-container": "#93000a"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    spacing: {
+                        "margin-desktop": "64px",
+                        "gutter": "24px",
+                        "base": "8px",
+                        "margin-mobile": "16px",
+                        "grid-size": "32px"
+                    },
+                    fontFamily: {
+                        "headline-lg-mobile": ["Inter"],
+                        "data-sm": ["JetBrains Mono"],
+                        "body-md": ["Inter"],
+                        "data-lg": ["JetBrains Mono"],
+                        "label-caps": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-xl": ["Inter"]
+                    },
+                    fontSize: {
+                        "headline-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "600" }],
+                        "data-sm": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "400" }],
+                        "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "data-lg": ["20px", { lineHeight: "28px", fontWeight: "500" }],
+                        "label-caps": ["11px", { lineHeight: "16px", letterSpacing: "0.1em", fontWeight: "700" }],
+                        "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "600" }],
+                        "headline-xl": ["48px", { lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Quant-Minimalism Background Grid */
+        body {
+            background-color: theme('colors.background');
+            background-image: 
+                radial-gradient(circle at top right, rgba(0, 229, 255, 0.08), transparent 40%),
+                radial-gradient(circle at bottom left, rgba(255, 219, 60, 0.05), transparent 40%),
+                linear-gradient(to right, rgba(0, 229, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+            background-position: center center, center center, center top, center top;
+            background-attachment: fixed;
+        }
+        
+        /* Subtle glowing elements */
+        .glow-cyan {
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.25);
+        }
+        .text-glow-gold {
+            text-shadow: 0 0 12px rgba(255, 219, 60, 0.6);
+        }
+
+        /* Connecting lines animation */
+        @keyframes pulse-line {
+            0% { opacity: 0.2; }
+            50% { opacity: 0.9; box-shadow: 0 0 10px theme('colors.primary-container'); }
+            100% { opacity: 0.2; }
+        }
+        .data-stream {
+            animation: pulse-line 3s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="text-on-background min-h-screen flex flex-col relative overflow-x-hidden bg-background">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-xl border-b border-outline-variant/30">
+<div class="flex justify-between items-center px-margin-desktop py-4 max-w-[1440px] mx-auto">
+<div class="flex items-center gap-12">
+<a class="flex items-center gap-3" href="#"><img alt="O(Alpha) Brand Mark" class="h-10 w-auto" src="https://lh3.googleusercontent.com/aida/ADBb0uiLcVGEmFIldOXt-b8Aw8wcEKHbR2dL9OpZyqR_nRl52WinVpztI50GXzZVQeuO4-zboFLhA-5Ho6PMnvokDCTFMsjixlVK4YCDHFjdSvGVCir5NZKVGiusSGvv9NcX8Cu97Sno2kjvdwxIFvJnNmO4_UAfkgts9MACekYch70mSHYxLMTB9yVJJlgjox1LDGfkljNIkP8INxZq0VDXBSZ8tV2Mx5geHlBMe7bbMfM3Q0uff9feqwcHNK4"><span class="font-headline-lg text-headline-lg font-bold text-secondary-container tracking-tight">O(Alpha)</span></a>
+<div class="hidden md:flex gap-8 items-center pt-1">
+<a class="font-body-md text-body-md text-primary-container border-b-2 border-primary-container pb-1 transition-colors duration-300" href="#">Product</a>
+<a class="font-body-md text-body-md text-on-surface hover:text-primary-container transition-colors duration-300" href="#">Performance</a>
+<a class="font-body-md text-body-md text-on-surface hover:text-primary-container transition-colors duration-300" href="#">Pricing</a>
+<a class="font-body-md text-body-md text-on-surface hover:text-primary-container transition-colors duration-300" href="#">Mission</a>
+</div>
+</div>
+<div class="hidden md:block">
+<button class="bg-primary-container text-on-primary-container px-6 py-2 rounded font-body-md text-body-md font-medium scale-95 active:scale-90 transition-transform hover:bg-primary-fixed">
+                    Launch App
+                </button>
+</div>
+</div>
+</nav>
+<!-- Main Canvas -->
+<main class="flex-grow pt-32 pb-24 flex flex-col gap-24 relative z-10">
+<!-- Hero Section -->
+<section class="px-margin-desktop max-w-[1440px] mx-auto w-full relative">
+<!-- Background decorative orbital glow -->
+<div class="absolute top-0 right-1/4 w-96 h-96 bg-primary-container/10 rounded-full blur-[120px] -z-10"></div>
+<div class="max-w-3xl">
+<div class="flex items-center gap-2 mb-4">
+<span class="font-data-sm text-data-sm text-primary-container border border-primary-container/40 bg-primary-container/15 px-2 py-0.5 rounded">SYSTEM ARCHITECTURE</span>
+<span class="font-data-sm text-data-sm text-outline-variant">/// V.2.0.4</span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-on-background mb-6">The Intelligence Behind the Alpha.</h1>
+<p class="font-body-md text-body-md text-on-surface-variant text-lg max-w-2xl">
+                    O(Alpha) converts investor preferences into automated, risk-aware trading decisions that run continuously. Explore the quantitative mechanisms driving systematic execution.
+                </p>
+</div>
+</section>
+<!-- Agent Behaviour Logic (Bento Grid) -->
+<section class="px-margin-desktop max-w-[1440px] mx-auto w-full">
+<div class="mb-8 border-b border-outline-variant/40 pb-2">
+<h2 class="font-label-caps text-label-caps text-secondary-container tracking-widest">AGENT BEHAVIOUR LOGIC</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<!-- Card 1: Filtering -->
+<div class="bg-surface-container/60 backdrop-blur-md border border-outline-variant/40 p-8 rounded relative overflow-hidden group hover:border-primary-container/60 transition-colors duration-500 hover:bg-surface-container/80">
+<div class="absolute top-0 right-0 p-4 opacity-15 group-hover:opacity-25 transition-opacity">
+<span class="material-symbols-outlined text-[120px] text-primary-container">filter_alt</span>
+</div>
+<span class="material-symbols-outlined text-primary-container mb-4 block">timeline</span>
+<h3 class="font-headline-lg text-headline-lg text-on-background mb-3 text-2xl">Kalman Filtering</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6">
+                        Continuous state estimation algorithm that extracts true underlying asset trends from noisy market micro-structure, enabling precise entry and exit timing.
+                    </p>
+<div class="flex flex-col gap-2 font-data-sm text-data-sm">
+<div class="flex justify-between border-b border-outline-variant/30 pb-1">
+<span class="text-outline">INPUT</span>
+<span class="text-primary-container">NOISY_TICK_DATA</span>
+</div>
+<div class="flex justify-between border-b border-outline-variant/30 pb-1">
+<span class="text-outline">OUTPUT</span>
+<span class="text-secondary-container">SMOOTHED_STATE_VECTOR</span>
+</div>
+</div>
+</div>
+<!-- Card 2: Regime Detection -->
+<div class="bg-surface-container/60 backdrop-blur-md border border-outline-variant/40 p-8 rounded relative overflow-hidden group hover:border-secondary-container/60 transition-colors duration-500 hover:bg-surface-container/80">
+<div class="absolute top-0 right-0 p-4 opacity-15 group-hover:opacity-25 transition-opacity">
+<span class="material-symbols-outlined text-[120px] text-secondary-container">multiline_chart</span>
+</div>
+<span class="material-symbols-outlined text-secondary-container mb-4 block">donut_large</span>
+<h3 class="font-headline-lg text-headline-lg text-on-background mb-3 text-2xl">HMM Regime Overlays</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6">
+                        Hidden Markov Models continuously classify current market states (e.g., Bull Volatile, Bear Stable) to dynamically adjust the agent's risk posture and strategy selection.
+                    </p>
+<div class="flex flex-col gap-2 font-data-sm text-data-sm">
+<div class="flex justify-between border-b border-outline-variant/30 pb-1">
+<span class="text-outline">STATE_1</span>
+<span class="text-primary-container">RISK_ON_TRENDING</span>
+</div>
+<div class="flex justify-between border-b border-outline-variant/30 pb-1">
+<span class="text-outline">STATE_2</span>
+<span class="text-error">CAPITAL_PRESERVATION</span>
+</div>
+</div>
+</div>
+<!-- Card 3: Optimization -->
+<div class="bg-surface-container/60 backdrop-blur-md border border-outline-variant/40 p-8 rounded relative overflow-hidden group hover:border-primary-container/60 transition-colors duration-500 hover:bg-surface-container/80">
+<div class="absolute top-0 right-0 p-4 opacity-15 group-hover:opacity-25 transition-opacity">
+<span class="material-symbols-outlined text-[120px] text-primary-container">functions</span>
+</div>
+<span class="material-symbols-outlined text-primary-container mb-4 block">calculate</span>
+<h3 class="font-headline-lg text-headline-lg text-on-background mb-3 text-2xl">Convex Optimization</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6">
+                        Solves multi-variable portfolio construction problems in real-time, maximizing expected Sharpe ratio while strictly adhering to user-defined constraints.
+                    </p>
+<div class="flex flex-col gap-2 font-data-sm text-data-sm">
+<div class="flex justify-between border-b border-outline-variant/30 pb-1">
+<span class="text-outline">OBJECTIVE</span>
+<span class="text-primary-container">MAX(SHARPE)</span>
+</div>
+<div class="flex justify-between border-b border-outline-variant/30 pb-1">
+<span class="text-outline">CONSTRAINT</span>
+<span class="text-secondary-container">USER_RISK_LIMITS</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Systematic Execution Process Diagram -->
+<section class="px-margin-desktop max-w-[1440px] mx-auto w-full relative">
+<div class="mb-12 border-b border-outline-variant/40 pb-2">
+<h2 class="font-label-caps text-label-caps text-primary-container tracking-widest">SYSTEMATIC EXECUTION FLOW</h2>
+</div>
+<!-- Flow Diagram Container -->
+<div class="flex flex-col lg:flex-row items-center justify-between bg-surface-container/40 border border-outline-variant/30 rounded-xl p-8 relative overflow-hidden backdrop-blur-sm">
+<!-- Background visual elements -->
+<div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary-container/10 via-background to-background pointer-events-none"></div>
+<!-- Step 1: Configuration -->
+<div class="flex flex-col items-start w-full lg:w-1/4 z-10">
+<h4 class="font-label-caps text-label-caps text-secondary-container mb-6">YOU CONFIGURE</h4>
+<ul class="flex flex-col gap-4 w-full font-body-md text-body-md">
+<li class="flex items-center gap-3 bg-surface-container-high border border-outline-variant/40 p-3 rounded">
+<span class="material-symbols-outlined text-primary-container text-sm">tune</span>
+                            Risk Profile
+                        </li>
+<li class="flex items-center gap-3 bg-surface-container-high border border-outline-variant/40 p-3 rounded">
+<span class="material-symbols-outlined text-primary-container text-sm">track_changes</span>
+                            Return Target
+                        </li>
+<li class="flex items-center gap-3 bg-surface-container-high border border-outline-variant/40 p-3 rounded">
+<span class="material-symbols-outlined text-primary-container text-sm">layers</span>
+                            Asset Universe
+                        </li>
+</ul>
+</div>
+<!-- Connecting Line 1 -->
+<div class="hidden lg:flex w-1/6 items-center justify-center relative h-32 z-10">
+<div class="w-full h-px bg-outline-variant/60 relative">
+<div class="absolute top-1/2 left-0 w-2 h-2 bg-primary-container rounded-full -translate-y-1/2 -translate-x-1/2 glow-cyan"></div>
+<div class="absolute top-1/2 right-0 w-2 h-2 bg-primary-container rounded-full -translate-y-1/2 translate-x-1/2 glow-cyan"></div>
+<div class="h-px bg-primary-container data-stream w-full absolute top-0 left-0"></div>
+</div>
+</div>
+<!-- Step 2: The Core Engine -->
+<div class="flex flex-col items-center justify-center w-full lg:w-1/3 py-12 lg:py-0 z-10 relative">
+<!-- Concentric circles for radar effect -->
+<div class="absolute w-64 h-64 border border-outline-variant/30 rounded-full flex items-center justify-center bg-surface-container-low/20">
+<div class="w-48 h-48 border border-primary-container/30 rounded-full flex items-center justify-center bg-primary-container/5">
+<div class="w-32 h-32 border border-secondary-container/40 rounded-full absolute bg-secondary-container/5"></div>
+</div>
+</div>
+<div class="w-24 h-24 bg-surface-container-highest border-2 border-primary-container rounded-full flex items-center justify-center z-20 glow-cyan shadow-xl">
+<span class="font-headline-xl text-headline-xl text-secondary-container text-glow-gold">α</span>
+</div>
+<div class="text-center mt-6 z-20">
+<h3 class="font-headline-lg text-headline-lg text-on-background">O(Alpha)</h3>
+<p class="font-data-sm text-data-sm text-on-surface-variant mt-2 max-w-[200px] text-center">Continuous Logic Processing</p>
+</div>
+</div>
+<!-- Connecting Line 2 -->
+<div class="hidden lg:flex w-1/6 items-center justify-center relative h-32 z-10">
+<div class="w-full h-px bg-outline-variant/60 relative">
+<div class="absolute top-1/2 left-0 w-2 h-2 bg-primary-container rounded-full -translate-y-1/2 -translate-x-1/2 glow-cyan"></div>
+<div class="absolute top-1/2 right-0 w-2 h-2 bg-primary-container rounded-full -translate-y-1/2 translate-x-1/2 glow-cyan"></div>
+<div class="h-px bg-primary-container data-stream w-full absolute top-0 left-0" style="animation-delay: 1.5s;"></div>
+</div>
+</div>
+<!-- Step 3: Execution -->
+<div class="flex flex-col items-end w-full lg:w-1/4 z-10">
+<h4 class="font-label-caps text-label-caps text-secondary-container mb-6">AGENT EXECUTES</h4>
+<ul class="flex flex-col gap-4 w-full font-body-md text-body-md">
+<li class="flex items-center justify-end gap-3 bg-surface-container-high border border-outline-variant/40 p-3 rounded">
+                            Portfolio Rebalancing
+                            <span class="material-symbols-outlined text-primary-container text-sm">sync</span>
+</li>
+<li class="flex items-center justify-end gap-3 bg-surface-container-high border border-outline-variant/40 p-3 rounded">
+                            Risk-Adjusted Orders
+                            <span class="material-symbols-outlined text-primary-container text-sm">gavel</span>
+</li>
+<li class="flex items-center justify-end gap-3 bg-surface-container-high border border-outline-variant/40 p-3 rounded">
+                            Live P&amp;L Reporting
+                            <span class="material-symbols-outlined text-primary-container text-sm">monitoring</span>
+</li>
+</ul>
+</div>
+</div>
+<div class="text-center mt-8">
+<p class="font-data-sm text-data-sm text-secondary-container">No trading experience required. Just preferences — converted into alpha-seeking execution.</p>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full py-16 bg-surface-container-lowest border-t border-outline-variant/40 relative z-10">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter px-margin-desktop max-w-[1440px] mx-auto">
+<div class="col-span-1 md:col-span-1">
+<a class="flex items-center gap-4 mb-4" href="#"><img alt="O(Alpha) Brand Mark" class="h-12 w-auto" src="https://lh3.googleusercontent.com/aida/ADBb0uiLcVGEmFIldOXt-b8Aw8wcEKHbR2dL9OpZyqR_nRl52WinVpztI50GXzZVQeuO4-zboFLhA-5Ho6PMnvokDCTFMsjixlVK4YCDHFjdSvGVCir5NZKVGiusSGvv9NcX8Cu97Sno2kjvdwxIFvJnNmO4_UAfkgts9MACekYch70mSHYxLMTB9yVJJlgjox1LDGfkljNIkP8INxZq0VDXBSZ8tV2Mx5geHlBMe7bbMfM3Q0uff9feqwcHNK4"><span class="font-headline-lg text-headline-lg text-secondary-fixed font-bold tracking-tight">O(Alpha)</span></a>
+<span class="font-data-sm text-data-sm text-on-surface-variant block mt-8">© 2026 Orbital. All rights reserved.</span>
+</div>
+<div class="col-span-1 md:col-span-3 flex flex-col md:flex-row justify-end gap-8 md:gap-16 pt-2">
+<a class="font-data-sm text-data-sm text-on-surface-variant hover:text-secondary-fixed transition-colors opacity-80 hover:opacity-100" href="#">Privacy Policy</a>
+<a class="font-data-sm text-data-sm text-on-surface-variant hover:text-secondary-fixed transition-colors opacity-80 hover:opacity-100" href="#">Terms of Service</a>
+<a class="font-data-sm text-data-sm text-on-surface-variant hover:text-secondary-fixed transition-colors opacity-80 hover:opacity-100" href="#">Security</a>
+<a class="font-data-sm text-data-sm text-on-surface-variant hover:text-secondary-fixed transition-colors opacity-80 hover:opacity-100" href="#">API Documentation</a>
+</div>
+</div>
+</footer>
+
+
+</body></html>

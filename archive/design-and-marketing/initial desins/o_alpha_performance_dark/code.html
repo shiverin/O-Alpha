@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>O(Alpha) - Performance</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        body {
+            background-color: #051424;
+            background-image: 
+                linear-gradient(to right, rgba(0, 229, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 229, 255, 0.05) 1px, transparent 1px);
+            background-size: 32px 32px;
+            color: #d4e4fa;
+        }
+        
+        .glass-card {
+            background: rgba(18, 33, 49, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 229, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.5), transparent);
+        }
+
+        .neon-text {
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+        }
+
+        .gold-glow {
+            text-shadow: 0 0 10px rgba(255, 219, 60, 0.5);
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #00e5ff;
+            box-shadow: 0 0 8px #00e5ff;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(0, 229, 255, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); }
+        }
+
+        .chart-line {
+            stroke: #00e5ff;
+            stroke-width: 2;
+            fill: none;
+            filter: drop-shadow(0 0 4px rgba(0, 229, 255, 0.8));
+        }
+
+        .chart-area {
+            fill: url(#chart-gradient);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#c8d0e6",
+                        "surface-tint": "#00daf3",
+                        "on-secondary": "#3a3000",
+                        "on-error": "#690005",
+                        "on-surface-variant": "#bac9cc",
+                        "surface-container-lowest": "#010f1f",
+                        "primary": "#c3f5ff",
+                        "surface-container": "#122131",
+                        "on-tertiary": "#283041",
+                        "on-primary-container": "#00626e",
+                        "inverse-primary": "#006875",
+                        "on-primary": "#00363d",
+                        "on-tertiary-fixed": "#131c2b",
+                        "on-surface": "#d4e4fa",
+                        "surface-container-high": "#1c2b3c",
+                        "on-tertiary-fixed-variant": "#3f4758",
+                        "primary-fixed": "#9cf0ff",
+                        "error-container": "#93000a",
+                        "on-background": "#d4e4fa",
+                        "surface-container-highest": "#273647",
+                        "secondary": "#fff9ef",
+                        "outline": "#849396",
+                        "on-primary-fixed-variant": "#004f58",
+                        "secondary-fixed-dim": "#e9c400",
+                        "secondary-fixed": "#ffe16d",
+                        "tertiary-fixed-dim": "#bec6dc",
+                        "primary-fixed-dim": "#00daf3",
+                        "primary-container": "#00e5ff",
+                        "on-secondary-container": "#725f00",
+                        "on-error-container": "#ffdad6",
+                        "secondary-container": "#ffdb3c",
+                        "background": "#051424",
+                        "on-tertiary-container": "#51596b",
+                        "surface-bright": "#2c3a4c",
+                        "outline-variant": "#3b494c",
+                        "on-primary-fixed": "#001f24",
+                        "error": "#ffb4ab",
+                        "surface-variant": "#273647",
+                        "on-secondary-fixed": "#221b00",
+                        "surface-dim": "#051424",
+                        "surface-container-low": "#0d1c2d",
+                        "inverse-surface": "#d4e4fa",
+                        "inverse-on-surface": "#233143",
+                        "on-secondary-fixed-variant": "#544600",
+                        "tertiary": "#e6ecff",
+                        "surface": "#051424",
+                        "tertiary-fixed": "#dbe2f8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "margin-desktop": "64px",
+                        "margin-mobile": "16px",
+                        "grid-size": "32px",
+                        "base": "8px"
+                    },
+                    "fontFamily": {
+                        "headline-xl": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "data-sm": ["JetBrains Mono"],
+                        "data-lg": ["JetBrains Mono"],
+                        "body-md": ["Inter"],
+                        "label-caps": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-xl": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "data-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "400" }],
+                        "data-lg": ["20px", { "lineHeight": "28px", "fontWeight": "500" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-caps": ["11px", { "lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen antialiased selection:bg-primary-container selection:text-on-primary-container pb-24 md:pb-0">
+<!-- Top Navigation (Shared Component) -->
+<nav class="bg-background/80 backdrop-blur-xl font-body-md text-body-md fixed top-0 w-full z-50 border-b border-outline-variant/20">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4 max-w-[1440px] mx-auto">
+<div class="flex items-center gap-4">
+<img alt="O(Alpha) Logo" class="h-8 w-8 rounded-sm object-cover" src="https://lh3.googleusercontent.com/aida/ADBb0uiClwJwLMLhy5QurRqbM8WGQAbM1qzeqxE9Yf9vGyp0QWDvWUs10OcgbeI2lG3qaSUkeYsxpnAPmErwDbXdquaGXwV0yGNcqnsgayPkfkkcouBcl3pcbAhLtISK2uJPq_tZxAFAX08AobxPcnd4da2Nw5vVICYRV9YpH6EQzFE_fm1Gl4eLZQIbF-N_VWSKXAeqp570bhBDT2LPEIzmYJzJV42TvX1dWavXIPWEPg6lWXEyLc5nnMikAHwf"/>
+<span class="font-headline-lg text-headline-lg-mobile md:text-headline-lg font-bold text-secondary-container tracking-tight">O(Alpha)</span>
+</div>
+<div class="hidden md:flex items-center gap-8">
+<a class="text-on-surface-variant hover:text-primary-container transition-colors duration-300" href="#">Product</a>
+<a class="text-primary-container border-b-2 border-primary-container pb-1" href="#">Performance</a>
+<a class="text-on-surface-variant hover:text-primary-container transition-colors duration-300" href="#">Pricing</a>
+<a class="text-on-surface-variant hover:text-primary-container transition-colors duration-300" href="#">Mission</a>
+</div>
+<div class="hidden md:block">
+<button class="bg-primary-container text-on-primary-container px-6 py-2 rounded font-label-caps text-label-caps uppercase tracking-widest hover:bg-primary transition-colors duration-300 scale-95 active:scale-90">
+                    Launch App
+                </button>
+</div>
+<!-- Mobile Menu Toggle (Decorative for prompt) -->
+<button class="md:hidden text-primary-container">
+<span class="material-symbols-outlined text-2xl">menu</span>
+</button>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="pt-32 px-margin-mobile md:px-margin-desktop max-w-[1440px] mx-auto flex flex-col gap-16 md:gap-24">
+<!-- Hero Section -->
+<section class="flex flex-col items-start max-w-4xl">
+<div class="flex items-center gap-3 mb-6">
+<div class="pulse-dot"></div>
+<span class="font-label-caps text-label-caps text-primary-container uppercase tracking-widest">Live Alpha Generation</span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface mb-6">
+                Institutional-Grade <br class="hidden md:block"/> <span class="text-secondary-container gold-glow">Performance.</span>
+</h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
+                Continuous market scanning. Convex optimization. Regime-aware execution. O(Alpha) translates your risk appetite into systematic, absolute returns without emotional bias.
+            </p>
+</section>
+<!-- Real-Time Metrics (Bento Grid) -->
+<section>
+<h2 class="font-label-caps text-label-caps text-surface-tint uppercase mb-6 flex items-center gap-2 border-b border-outline-variant/30 pb-2 inline-flex">
+<span class="material-symbols-outlined text-sm">monitoring</span> Real-Time Metrics
+            </h2>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Main P&L Chart -->
+<div class="md:col-span-8 glass-card rounded p-6 flex flex-col justify-between h-[400px]">
+<div class="flex justify-between items-start mb-6">
+<div>
+<span class="font-data-sm text-data-sm text-on-surface-variant block mb-1">CUMULATIVE P&amp;L (YTD)</span>
+<span class="font-data-lg text-[32px] font-medium text-primary-container neon-text">+24.8%</span>
+</div>
+<div class="flex gap-2">
+<span class="font-data-sm text-data-sm bg-primary-container/10 border border-primary-container/30 text-primary-container px-2 py-1 rounded">1W</span>
+<span class="font-data-sm text-data-sm text-on-surface-variant px-2 py-1">1M</span>
+<span class="font-data-sm text-data-sm text-on-surface-variant px-2 py-1">YTD</span>
+</div>
+</div>
+<!-- SVG Chart Placeholder -->
+<div class="w-full flex-grow relative mt-4">
+<svg class="absolute inset-0 w-full h-full" preserveaspectratio="none" viewbox="0 0 100 50">
+<defs>
+<lineargradient id="chart-gradient" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="rgba(0, 229, 255, 0.2)"></stop>
+<stop offset="100%" stop-color="rgba(0, 229, 255, 0)"></stop>
+</lineargradient>
+</defs>
+<!-- Grid lines -->
+<line stroke="rgba(255,255,255,0.05)" stroke-dasharray="1 2" stroke-width="0.5" x1="0" x2="100" y1="25" y2="25"></line>
+<!-- Chart Area -->
+<path class="chart-area" d="M0,40 C10,38 20,45 30,30 C40,15 50,25 60,10 C70,-5 80,15 90,5 L100,0 L100,50 L0,50 Z"></path>
+<!-- Chart Line -->
+<path class="chart-line" d="M0,40 C10,38 20,45 30,30 C40,15 50,25 60,10 C70,-5 80,15 90,5 L100,0"></path>
+</svg>
+</div>
+</div>
+<!-- Stats Sidebar -->
+<div class="md:col-span-4 flex flex-col gap-gutter">
+<!-- Sharpe Ratio -->
+<div class="glass-card rounded p-6 flex-1 flex flex-col justify-center">
+<span class="font-data-sm text-data-sm text-on-surface-variant mb-2">SHARPE RATIO</span>
+<div class="flex items-baseline gap-2">
+<span class="font-data-lg text-[40px] text-on-surface">2.4</span>
+<span class="font-data-sm text-data-sm text-surface-tint">Top Decile</span>
+</div>
+</div>
+<!-- Drawdown -->
+<div class="glass-card rounded p-6 flex-1 flex flex-col justify-center">
+<span class="font-data-sm text-data-sm text-on-surface-variant mb-2">MAX DRAWDOWN (CONTROLLED)</span>
+<div class="flex items-baseline gap-2">
+<span class="font-data-lg text-[40px] text-error">-4.2%</span>
+</div>
+<div class="mt-4 w-full bg-surface-container-highest h-1 rounded-full overflow-hidden">
+<div class="bg-error h-full w-1/4"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Regime Tracking & Risk Management -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Regime Visualization -->
+<div>
+<h2 class="font-label-caps text-label-caps text-surface-tint uppercase mb-6 flex items-center gap-2 border-b border-outline-variant/30 pb-2 inline-flex">
+<span class="material-symbols-outlined text-sm">radar</span> Regime Detection
+                </h2>
+<div class="glass-card rounded p-6 h-[300px] flex flex-col">
+<p class="font-body-md text-body-md text-on-surface-variant mb-6">
+                        Hidden Markov Models continuously classify market states, dynamically shifting agent posture.
+                    </p>
+<div class="flex-grow flex flex-col justify-around">
+<!-- Bull -->
+<div class="flex items-center justify-between">
+<span class="font-data-sm text-data-sm text-on-surface w-24">BULL</span>
+<div class="flex-grow mx-4 bg-surface-container-highest h-[2px] relative">
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-3/4 h-[2px] bg-secondary-container"></div>
+</div>
+<span class="font-data-sm text-data-sm text-secondary-container">SCALING</span>
+</div>
+<!-- Volatile -->
+<div class="flex items-center justify-between">
+<span class="font-data-sm text-data-sm text-on-surface w-24">VOLATILE</span>
+<div class="flex-grow mx-4 bg-surface-container-highest h-[2px] relative">
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-1/2 h-[2px] bg-surface-tint"></div>
+</div>
+<span class="font-data-sm text-data-sm text-surface-tint">ACTIVE</span>
+</div>
+<!-- Bear -->
+<div class="flex items-center justify-between opacity-50">
+<span class="font-data-sm text-data-sm text-on-surface w-24">BEAR</span>
+<div class="flex-grow mx-4 bg-surface-container-highest h-[2px] relative"></div>
+<span class="font-data-sm text-data-sm text-on-surface-variant">HEDGED</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Risk Management Details -->
+<div>
+<h2 class="font-label-caps text-label-caps text-surface-tint uppercase mb-6 flex items-center gap-2 border-b border-outline-variant/30 pb-2 inline-flex">
+<span class="material-symbols-outlined text-sm">shield</span> Risk Architecture
+                </h2>
+<div class="glass-card rounded p-6 h-[300px] flex flex-col gap-4">
+<div class="border-b border-outline-variant/20 pb-4">
+<h3 class="font-data-lg text-data-lg text-on-surface mb-2">Kalman Filtering</h3>
+<p class="font-body-md text-sm text-on-surface-variant">
+                            Extracts true signal from market noise, enabling precise entry points even in low-liquidity environments.
+                        </p>
+</div>
+<div class="pt-2">
+<h3 class="font-data-lg text-data-lg text-on-surface mb-2">Convex Optimization</h3>
+<p class="font-body-md text-sm text-on-surface-variant">
+                            Portfolio weights are solved continuously to maximize expected return subject to strict variance constraints.
+                        </p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer (Shared Component) -->
+<footer class="bg-surface-container-lowest font-data-sm text-data-sm w-full py-16 border-t border-outline-variant/30 mt-24">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter px-margin-mobile md:px-margin-desktop max-w-[1440px] mx-auto">
+<div class="col-span-1 md:col-span-2 flex flex-col gap-4">
+<span class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-secondary-fixed font-bold tracking-tight">O(Alpha)</span>
+<span class="text-on-surface-variant">© 2026 Orbital. All rights reserved.</span>
+</div>
+<div class="col-span-1 flex flex-col gap-3">
+<a class="text-on-surface-variant hover:text-secondary-fixed transition-colors opacity-80 hover:opacity-100" href="#">Privacy Policy</a>
+<a class="text-on-surface-variant hover:text-secondary-fixed transition-colors opacity-80 hover:opacity-100" href="#">Terms of Service</a>
+</div>
+<div class="col-span-1 flex flex-col gap-3">
+<a class="text-on-surface-variant hover:text-secondary-fixed transition-colors opacity-80 hover:opacity-100" href="#">Security</a>
+<a class="text-on-surface-variant hover:text-secondary-fixed transition-colors opacity-80 hover:opacity-100" href="#">API Documentation</a>
+</div>
+</div>
+</footer>
+</body></html>

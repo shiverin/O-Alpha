@@ -1,0 +1,9 @@
+{
+  "name": "hanshof_sp500_constituents",
+  "url": "https://github.com/hanshof/sp500_constituents/blob/main/sp_500_historical_components.csv",
+  "input": "reports/batches/2026-06-03_sp500_constituent_source_probe/free_sources/hanshof_sp_500_historical_components.csv",
+  "input_sha256": "02f37a12c11f82218fce422ecf7d95fae1074bd96e664c262a5ea42c120d5fe9",
+  "format": "snapshot",
+  "command": "/Users/shizhen/Documents/O-Alpha/research/ml/.venv/bin/python research/ml/build_pit_universe.py --input reports/batches/2026-06-03_sp500_constituent_source_probe/free_sources/hanshof_sp_500_historical_components.csv --format snapshot --source-name hanshof_sp500_constituents --source-url https://github.com/hanshof/sp500_constituents/blob/main/sp_500_historical_components.csv --min-date 2015-01-01 --max-date 2026-06-01 --out reports/batches/2026-06-03_sp500_constituent_source_probe/free_sources/hanshof_pit_universe_2015_2026.json",
+  "git_sha": "95297ef020ff5a266d098dfacb9bb23934b0dda5"
+}

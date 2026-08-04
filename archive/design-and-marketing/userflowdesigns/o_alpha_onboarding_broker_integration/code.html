@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glow-cyan-hover:hover {
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+        }
+        .glow-gold-text {
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0A0A0A;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #353535;
+            border-radius: 10px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-lowest": "#0e0e0e",
+                      "on-primary-fixed-variant": "#004f54",
+                      "surface-dim": "#131313",
+                      "on-surface": "#e5e2e1",
+                      "surface-container-high": "#2a2a2a",
+                      "tertiary-fixed": "#e2e2e2",
+                      "outline-variant": "#3b494b",
+                      "surface-container-highest": "#353535",
+                      "secondary-fixed-dim": "#e9c400",
+                      "tertiary-fixed-dim": "#c6c6c7",
+                      "on-error": "#690005",
+                      "error-container": "#93000a",
+                      "surface-variant": "#353535",
+                      "glow-gold": "rgba(255, 215, 0, 0.3)",
+                      "glow-cyan": "rgba(0, 240, 255, 0.4)",
+                      "primary-fixed": "#7df4ff",
+                      "secondary-container": "#ffdb3c",
+                      "on-tertiary-fixed": "#1a1c1c",
+                      "outline": "#849495",
+                      "on-tertiary-container": "#5d5f5f",
+                      "surface-tint": "#00dbe9",
+                      "on-tertiary": "#2f3131",
+                      "surface-bright": "#393939",
+                      "void-black": "#0A0A0A",
+                      "tertiary-container": "#d9d9d9",
+                      "surface": "#131313",
+                      "error": "#ffb4ab",
+                      "on-error-container": "#ffdad6",
+                      "on-secondary-container": "#725f00",
+                      "inverse-on-surface": "#313030",
+                      "primary-fixed-dim": "#00dbe9",
+                      "surface-container": "#20201f",
+                      "tertiary": "#f5f5f5",
+                      "on-background": "#e5e2e1",
+                      "on-primary": "#00363a",
+                      "on-secondary": "#3a3000",
+                      "on-secondary-fixed": "#221b00",
+                      "on-surface-variant": "#b9cacb",
+                      "on-secondary-fixed-variant": "#544600",
+                      "inverse-surface": "#e5e2e1",
+                      "on-tertiary-fixed-variant": "#454747",
+                      "on-primary-fixed": "#002022",
+                      "surface-container-low": "#1c1b1b",
+                      "border-glass": "rgba(255, 255, 255, 0.12)",
+                      "background": "#131313",
+                      "secondary-fixed": "#ffe16d",
+                      "on-primary-container": "#006970",
+                      "primary": "#dbfcff",
+                      "surface-gray": "#1E1E1E",
+                      "inverse-primary": "#006970",
+                      "primary-container": "#00f0ff",
+                      "secondary": "#fff9ef"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-desktop": "64px",
+                      "container-max": "1280px",
+                      "section-gap": "120px",
+                      "gutter": "24px",
+                      "margin-mobile": "24px"
+              },
+              "fontFamily": {
+                      "display-lg": ["Inter"],
+                      "label-mono": ["JetBrains Mono"],
+                      "headline-xl": ["Inter"],
+                      "body-md": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "display-lg-mobile": ["Inter"],
+                      "body-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "display-lg": ["80px", {"lineHeight": "88px", "letterSpacing": "-0.04em", "fontWeight": "700"}],
+                      "label-mono": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "headline-xl": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "28px", "letterSpacing": "0em", "fontWeight": "400"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                      "display-lg-mobile": ["48px", {"lineHeight": "52px", "letterSpacing": "-0.03em", "fontWeight": "700"}],
+                      "body-lg": ["18px", {"lineHeight": "32px", "letterSpacing": "0em", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-void-black text-on-surface font-body-md overflow-x-hidden">
+<!-- TopNavBar -->
+<nav class="bg-void-black/80 backdrop-blur-xl w-full sticky top-0 z-50 border-b border-border-glass shadow-[0_0_20px_rgba(0,240,255,0.1)]">
+<div class="flex justify-between items-center px-margin-desktop h-20 max-w-container-max mx-auto">
+<div class="font-display-lg text-headline-lg tracking-tighter text-primary-container">QUANTA.VOID</div>
+<div class="hidden md:flex items-center gap-8">
+<a class="font-label-mono text-label-mono text-on-surface-variant hover:text-primary-fixed transition-colors" href="#">Backtest</a>
+<a class="font-label-mono text-label-mono text-on-surface-variant hover:text-primary-fixed transition-colors" href="#">Terminal</a>
+<a class="font-label-mono text-label-mono text-on-surface-variant hover:text-primary-fixed transition-colors" href="#">Logs</a>
+<a class="font-label-mono text-label-mono text-on-surface-variant hover:text-primary-fixed transition-colors" href="#">Strategies</a>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative group hidden lg:block">
+<input class="bg-surface-variant/20 border-b border-border-glass font-label-mono text-label-mono py-2 px-4 focus:outline-none focus:border-primary-container transition-all" placeholder="SEARCH_HUB..." type="text"/>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-variant/30 p-2 rounded-full transition-colors active:scale-95">settings</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-variant/30 p-2 rounded-full transition-colors active:scale-95">notifications</button>
+<div class="h-8 w-8 rounded-full border border-primary-container overflow-hidden">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A professional headshot of a futuristic data analyst in a dark tech-focused environment. The lighting is low-key with sharp cyan rim lighting. The style is ultra-modern and editorial, emphasizing structural clarity and high-tech sophistication within a dark mode interface aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC25mIykJhhi0hPej0LzF3Irl9IuKWWOFGL8EHtBVoC1d6iyZtPkSrKbKNKHI2oTZFJFdjO7K5UkaehIREU1iYFNMWj8Rua9ZgAncU1RsUGtGKw2155MObTNWK5J7Ozx5eXkM_bXJqryI-9gmNbqGp1VLCUWJedVrtDGwphtTUEDRTopGrItJB_vxgigDx6tTT07wwz1Om24R0LU1IhYcpwlDwgztLWvxlE0h1UR8L8Cp3klkEg6awn4o6jO0yM3_poR7_-OI75OX29"/>
+</div>
+</div>
+</div>
+</nav>
+<!-- SideNavBar -->
+<aside class="hidden lg:flex flex-col py-8 px-4 gap-6 bg-surface-dim h-screen w-64 fixed left-0 top-0 border-r border-border-glass mt-20">
+<div class="flex items-center gap-3 px-2">
+<div class="w-2 h-2 rounded-full bg-primary-container animate-pulse shadow-[0_0_8px_#00f0ff]"></div>
+<div>
+<p class="font-label-mono text-label-mono text-primary-fixed">TERMINAL_v4.2</p>
+<p class="text-[10px] font-label-mono text-outline uppercase tracking-widest">Status: Synchronized</p>
+</div>
+</div>
+<nav class="flex flex-col gap-2 mt-4">
+<a class="flex items-center gap-3 px-4 py-3 font-label-mono text-label-mono text-outline hover:text-primary-fixed-dim hover:glow-cyan transition-all duration-300" href="#">
+<span class="material-symbols-outlined">grid_view</span> Dashboard
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 font-label-mono text-label-mono text-outline hover:text-primary-fixed-dim hover:glow-cyan transition-all duration-300" href="#">
+<span class="material-symbols-outlined">show_chart</span> Markets
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 font-label-mono text-label-mono text-outline hover:text-primary-fixed-dim hover:glow-cyan transition-all duration-300" href="#">
+<span class="material-symbols-outlined">memory</span> Algorithms
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 font-label-mono text-label-mono text-outline hover:text-primary-fixed-dim hover:glow-cyan transition-all duration-300" href="#">
+<span class="material-symbols-outlined">security</span> Risk Management
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 font-label-mono text-label-mono bg-primary-container/10 text-primary-container border-l-4 border-primary-container transition-all duration-300" href="#">
+<span class="material-symbols-outlined">vpn_key</span> API Keys
+            </a>
+</nav>
+<button class="mt-auto mx-2 bg-primary-container text-on-primary font-label-mono text-label-mono py-4 rounded-lg flex items-center justify-center gap-2 active:scale-95 transition-all">
+<span class="material-symbols-outlined">add</span> New Strategy
+        </button>
+<div class="flex flex-col gap-1 mt-4 border-t border-border-glass pt-4">
+<a class="flex items-center gap-3 px-4 py-2 font-label-mono text-[11px] text-outline hover:text-primary-fixed-dim transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">description</span> Documentation
+            </a>
+<a class="flex items-center gap-3 px-4 py-2 font-label-mono text-[11px] text-outline hover:text-primary-fixed-dim transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">help</span> Support
+            </a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="lg:pl-64 min-h-screen">
+<div class="max-w-4xl mx-auto px-margin-mobile md:px-margin-desktop py-12">
+<!-- Header Section -->
+<header class="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div>
+<h1 class="font-headline-xl text-headline-xl text-primary-fixed mb-2 uppercase tracking-tight">Broker Integration</h1>
+<p class="font-label-mono text-label-mono text-outline uppercase">O(Alpha) System Configuration // Hub 2.2</p>
+</div>
+<!-- Status Indicator -->
+<div class="bg-secondary-fixed/10 border border-secondary-fixed/30 px-6 py-3 rounded-full flex items-center gap-3 shadow-[0_0_15px_rgba(255,225,109,0.1)]">
+<span class="relative flex h-3 w-3">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary-fixed opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-secondary-fixed"></span>
+</span>
+<span class="font-label-mono text-label-mono text-secondary-fixed font-bold tracking-widest glow-gold-text">[PAPER TRADING MODE ACTIVE]</span>
+</div>
+</header>
+<div class="grid grid-cols-1 gap-10">
+<!-- Broker Selection Grid -->
+<section>
+<h2 class="font-label-mono text-label-mono text-on-surface-variant mb-6 uppercase tracking-widest">Supported Protocols</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Alpaca Paper Card -->
+<div class="glass-panel border border-primary-container p-6 rounded-2xl relative overflow-hidden group cursor-pointer hover:bg-primary-container/5 transition-all">
+<div class="absolute top-0 right-0 p-2">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="mb-4 opacity-80 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-4xl text-primary-fixed">cloud_queue</span>
+</div>
+<h3 class="font-headline-lg text-xl text-primary-fixed mb-1">Alpaca Paper</h3>
+<p class="font-label-mono text-[10px] text-outline uppercase tracking-tighter">Sandbox / Simulation</p>
+</div>
+<!-- Alpaca Live Card -->
+<div class="glass-panel border border-border-glass p-6 rounded-2xl relative overflow-hidden group cursor-pointer hover:border-primary-container/50 transition-all">
+<div class="mb-4 opacity-40 group-hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined text-4xl text-on-surface">account_balance_wallet</span>
+</div>
+<h3 class="font-headline-lg text-xl text-on-surface mb-1">Alpaca Live</h3>
+<p class="font-label-mono text-[10px] text-outline uppercase tracking-tighter">Production / Real Money</p>
+</div>
+<!-- IBKR Card -->
+<div class="glass-panel border border-border-glass p-6 rounded-2xl relative overflow-hidden group cursor-pointer hover:border-primary-container/50 transition-all">
+<div class="mb-4 opacity-40 group-hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined text-4xl text-on-surface">hub</span>
+</div>
+<h3 class="font-headline-lg text-xl text-on-surface mb-1">IBKR</h3>
+<p class="font-label-mono text-[10px] text-outline uppercase tracking-tighter">Institutional Gateway</p>
+</div>
+</div>
+</section>
+<!-- Configuration Form -->
+<section class="glass-panel border border-border-glass rounded-3xl p-8 md:p-12 relative overflow-hidden">
+<!-- Subtle lighting effect -->
+<div class="absolute -top-24 -left-24 w-64 h-64 bg-primary-container/10 blur-[100px] rounded-full"></div>
+<div class="relative z-10 max-w-2xl">
+<div class="flex items-center gap-4 mb-8">
+<span class="material-symbols-outlined text-primary-container">settings_input_component</span>
+<h2 class="font-headline-lg text-2xl text-on-surface">Auth Credentials</h2>
+</div>
+<form class="space-y-8" onsubmit="event.preventDefault();">
+<div class="space-y-2">
+<label class="font-label-mono text-label-mono text-outline uppercase tracking-widest block" for="api-key">API Key ID</label>
+<input class="w-full bg-void-black border-0 border-b border-border-glass py-4 px-0 text-primary-container font-label-mono focus:ring-0 focus:border-primary-container transition-all placeholder:text-surface-variant" id="api-key" placeholder="PK_LIVE_XXXXXXXXXXXXXXXX" type="text"/>
+</div>
+<div class="space-y-2">
+<label class="font-label-mono text-label-mono text-outline uppercase tracking-widest block" for="api-secret">API Secret Key</label>
+<div class="relative">
+<input class="w-full bg-void-black border-0 border-b border-border-glass py-4 px-0 text-primary-container font-label-mono focus:ring-0 focus:border-primary-container transition-all placeholder:text-surface-variant" id="api-secret" placeholder="••••••••••••••••••••••••••••" type="password"/>
+<button class="absolute right-0 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline hover:text-primary-container transition-colors" type="button">visibility</button>
+</div>
+</div>
+<div class="pt-6 flex flex-col sm:flex-row items-center gap-6">
+<button class="w-full sm:w-auto px-10 py-4 bg-primary-container text-on-primary font-label-mono text-label-mono uppercase tracking-widest rounded-full hover:shadow-[0_0_30px_rgba(0,240,255,0.3)] transition-all active:scale-95">
+                                    Authenticate Gateway
+                                </button>
+<p class="font-label-mono text-[10px] text-outline max-w-[200px] leading-relaxed">
+                                    Credentials are encrypted and stored locally in your Quanta.Void secure enclave.
+                                </p>
+</div>
+</form>
+</div>
+</section>
+<!-- Additional Security Info / Micro Bento -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="bg-surface-container-low border border-border-glass p-6 rounded-2xl flex items-start gap-4">
+<span class="material-symbols-outlined text-secondary-fixed">verified_user</span>
+<div>
+<h4 class="font-label-mono text-label-mono text-on-surface mb-1">Encrypted Tunnel</h4>
+<p class="text-xs text-outline leading-normal">AES-256 hardware-level encryption is active for all outgoing API requests to Alpaca servers.</p>
+</div>
+</div>
+<div class="bg-surface-container-low border border-border-glass p-6 rounded-2xl flex items-start gap-4">
+<span class="material-symbols-outlined text-primary-container">speed</span>
+<div>
+<h4 class="font-label-mono text-label-mono text-on-surface mb-1">Latency: 14ms</h4>
+<p class="text-xs text-outline leading-normal">Connection detected via New York (Equinix NY4) data center hub for sub-millisecond execution.</p>
+</div>
+</div>
+</section>
+</div>
+</div>
+<!-- Footer -->
+<footer class="mt-section-gap bg-void-black border-t border-border-glass py-12">
+<div class="max-w-container-max mx-auto px-margin-desktop flex flex-col md:flex-row justify-between items-center gap-gutter">
+<div class="font-label-mono text-label-mono text-secondary-fixed uppercase tracking-[0.2em]">© 2024 QUANTA_LABS. ALL RIGHTS RESERVED.</div>
+<div class="flex gap-8">
+<a class="font-label-mono text-label-mono text-on-surface-variant hover:text-glow-gold transition-colors" href="#">Terms of Service</a>
+<a class="font-label-mono text-label-mono text-on-surface-variant hover:text-glow-gold transition-colors" href="#">Risk Disclosure</a>
+<a class="font-label-mono text-label-mono text-on-surface-variant hover:text-glow-gold transition-colors" href="#">Privacy Protocol</a>
+</div>
+<div class="font-label-mono text-[10px] text-outline uppercase">ENCRYPTED_CONNECTION_SECURED.</div>
+</div>
+</footer>
+</main>
+<!-- Mobile Navigation (BottomNavBar) -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 bg-void-black/90 backdrop-blur-xl border-t border-border-glass z-50 flex justify-around items-center h-20 px-6">
+<button class="flex flex-col items-center gap-1 text-outline">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="text-[9px] font-label-mono">DASH</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-outline">
+<span class="material-symbols-outlined">show_chart</span>
+<span class="text-[9px] font-label-mono">MARKETS</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-primary-container">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">vpn_key</span>
+<span class="text-[9px] font-label-mono">API</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-outline">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[9px] font-label-mono">CONFIG</span>
+</button>
+</nav>
+<script>
+        // Simple micro-interaction for the input focus
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.addEventListener('focus', () => {
+                input.parentElement.querySelector('label').classList.replace('text-outline', 'text-primary-container');
+            });
+            input.addEventListener('blur', () => {
+                input.parentElement.querySelector('label').classList.replace('text-primary-container', 'text-outline');
+            });
+        });
+
+        // Pulsing background effect logic
+        document.addEventListener('mousemove', (e) => {
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+            
+            // Apply slight tilt to cards on mouse move
+            const cards = document.querySelectorAll('.glass-panel');
+            cards.forEach(card => {
+                const rect = card.getBoundingClientRect();
+                const dx = e.clientX - (rect.left + rect.width / 2);
+                const dy = e.clientY - (rect.top + rect.height / 2);
+                const angleX = dy / 50;
+                const angleY = -dx / 50;
+                card.style.transform = `perspective(1000px) rotateX(${angleX}deg) rotateY(${angleY}deg)`;
+            });
+        });
+    </script>
+</body></html>

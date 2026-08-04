@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Login - O(Alpha) Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-surface-variant": "#b9cacb",
+                    "tertiary-container": "#d9d9d9",
+                    "on-primary-container": "#006970",
+                    "surface-dim": "#131313",
+                    "inverse-primary": "#006970",
+                    "on-tertiary": "#2f3131",
+                    "on-tertiary-fixed": "#1a1c1c",
+                    "on-primary": "#00363a",
+                    "on-background": "#e5e2e1",
+                    "primary-fixed-dim": "#00dbe9",
+                    "outline": "#849495",
+                    "surface-container-highest": "#353535",
+                    "on-secondary-container": "#725f00",
+                    "on-primary-fixed": "#002022",
+                    "on-secondary": "#3a3000",
+                    "surface-container": "#20201f",
+                    "on-secondary-fixed": "#221b00",
+                    "on-tertiary-container": "#5d5f5f",
+                    "error": "#ffb4ab",
+                    "primary-fixed": "#7df4ff",
+                    "surface-gray": "#1E1E1E",
+                    "surface-container-low": "#1c1b1b",
+                    "primary-container": "#00f0ff",
+                    "tertiary-fixed": "#e2e2e2",
+                    "glow-gold": "rgba(255, 215, 0, 0.3)",
+                    "void-black": "#0A0A0A",
+                    "inverse-on-surface": "#313030",
+                    "inverse-surface": "#e5e2e1",
+                    "background": "#131313",
+                    "surface-bright": "#393939",
+                    "secondary-fixed": "#ffe16d",
+                    "outline-variant": "#3b494b",
+                    "on-primary-fixed-variant": "#004f54",
+                    "surface-variant": "#353535",
+                    "tertiary": "#f5f5f5",
+                    "on-surface": "#e5e2e1",
+                    "tertiary-fixed-dim": "#c6c6c7",
+                    "on-secondary-fixed-variant": "#544600",
+                    "on-error-container": "#ffdad6",
+                    "surface-container-high": "#2a2a2a",
+                    "secondary-container": "#ffdb3c",
+                    "glow-cyan": "rgba(0, 240, 255, 0.4)",
+                    "secondary": "#fff9ef",
+                    "on-tertiary-fixed-variant": "#454747",
+                    "surface-container-lowest": "#0e0e0e",
+                    "secondary-fixed-dim": "#e9c400",
+                    "error-container": "#93000a",
+                    "surface": "#131313",
+                    "surface-tint": "#00dbe9",
+                    "on-error": "#690005",
+                    "border-glass": "rgba(255, 255, 255, 0.12)",
+                    "primary": "#dbfcff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-mobile": "24px",
+                    "gutter": "24px",
+                    "container-max": "1280px",
+                    "section-gap": "120px",
+                    "margin-desktop": "64px"
+            },
+            "fontFamily": {
+                    "body-md": ["Inter"],
+                    "headline-xl": ["Inter"],
+                    "display-lg-mobile": ["Inter"],
+                    "label-mono": ["JetBrains Mono"],
+                    "display-lg": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "body-md": ["16px", {"lineHeight": "28px", "letterSpacing": "0em", "fontWeight": "400"}],
+                    "headline-xl": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "display-lg-mobile": ["48px", {"lineHeight": "52px", "letterSpacing": "-0.03em", "fontWeight": "700"}],
+                    "label-mono": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "display-lg": ["80px", {"lineHeight": "88px", "letterSpacing": "-0.04em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "32px", "letterSpacing": "0em", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .bg-pattern {
+            background-image: radial-gradient(circle at center, rgba(0, 240, 255, 0.05) 0%, transparent 70%);
+            background-size: 100vw 100vh;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        .glow-input:focus {
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-void-black text-on-surface font-body-md min-h-screen flex flex-col antialiased bg-pattern relative overflow-hidden">
+<!-- Background Ethereal 'Alpha' -->
+<div class="absolute inset-0 z-0 flex items-center justify-center pointer-events-none opacity-5">
+<span class="font-display-lg text-[40vw] text-primary-fixed font-bold leading-none select-none mix-blend-screen" style="letter-spacing: -0.1em;">α</span>
+</div>
+<!-- Main Content -->
+<main class="flex-grow flex items-center justify-center p-margin-mobile md:p-margin-desktop relative z-10 w-full max-w-container-max mx-auto">
+<!-- Authentication Card -->
+<div class="bg-surface-gray w-full max-w-md rounded-[24px] border border-border-glass shadow-2xl relative overflow-hidden flex flex-col backdrop-blur-xl bg-opacity-80">
+<!-- Overhead lighting gradient -->
+<div class="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-white/[0.05] to-transparent pointer-events-none"></div>
+<div class="p-8 sm:p-10 flex flex-col items-center relative z-10">
+<!-- Logo / Header -->
+<div class="mb-8 text-center flex flex-col items-center">
+<div class="w-16 h-16 rounded-xl bg-surface-container-highest border border-border-glass flex items-center justify-center mb-6 shadow-glow-cyan/10">
+<span class="material-symbols-outlined text-primary-fixed text-3xl" style="font-variation-settings: 'FILL' 1;">
+                            security
+                        </span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface mb-2">Access Neural Core</h1>
+<p class="font-label-mono text-label-mono text-on-surface-variant">O(Alpha) Intelligence Systems</p>
+</div>
+<!-- Form -->
+<form class="w-full space-y-6" onsubmit="event.preventDefault(); window.location.href='#';">
+<div class="space-y-4">
+<!-- ID Input -->
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary-fixed transition-colors">
+                                badge
+                            </span>
+<input class="w-full bg-surface-container-low border-b border-border-glass border-x-0 border-t-0 py-4 pl-12 pr-4 text-on-surface font-body-md focus:border-primary-fixed focus:ring-0 focus:bg-surface-container-highest transition-all duration-300 rounded-t-lg glow-input" placeholder="Operative ID" required="" type="text"/>
+</div>
+<!-- Access Key Input -->
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary-fixed transition-colors">
+                                key
+                            </span>
+<input class="w-full bg-surface-container-low border-b border-border-glass border-x-0 border-t-0 py-4 pl-12 pr-4 text-on-surface font-body-md focus:border-primary-fixed focus:ring-0 focus:bg-surface-container-highest transition-all duration-300 rounded-t-lg glow-input" placeholder="Access Key" required="" type="password"/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary-fixed transition-colors" type="button">
+<span class="material-symbols-outlined text-sm">visibility_off</span>
+</button>
+</div>
+</div>
+<!-- Options -->
+<div class="flex items-center justify-between mt-4">
+<label class="flex items-center space-x-2 cursor-pointer group">
+<div class="relative flex items-center justify-center">
+<input class="peer appearance-none w-4 h-4 rounded-sm border border-outline-variant bg-surface-container-lowest checked:bg-primary-fixed checked:border-primary-fixed focus:ring-0 focus:ring-offset-0 transition-colors" type="checkbox"/>
+<span class="material-symbols-outlined text-on-primary-fixed text-[12px] absolute pointer-events-none opacity-0 peer-checked:opacity-100 font-bold">check</span>
+</div>
+<span class="font-label-mono text-label-mono text-on-surface-variant group-hover:text-on-surface transition-colors">Preserve Link</span>
+</label>
+<a class="font-label-mono text-label-mono text-primary-fixed hover:text-primary-fixed-dim transition-colors" href="#">Reset Key</a>
+</div>
+<!-- Actions -->
+<div class="pt-6 space-y-4">
+<button class="w-full bg-primary-fixed text-on-primary-fixed font-body-md font-semibold py-4 rounded-full hover:bg-primary-fixed-dim transition-colors duration-300 shadow-[0_0_15px_rgba(0,240,255,0.2)] hover:shadow-[0_0_25px_rgba(0,240,255,0.4)] flex items-center justify-center space-x-2 group" type="submit">
+<span>Initialize</span>
+<span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+<div class="relative flex items-center justify-center py-2">
+<div class="absolute inset-0 flex items-center">
+<div class="w-full border-t border-border-glass"></div>
+</div>
+<span class="relative bg-surface-gray px-4 font-label-mono text-label-mono text-on-surface-variant">OR</span>
+</div>
+<button class="w-full bg-transparent border border-border-glass text-on-surface font-body-md py-4 rounded-full hover:bg-white/[0.02] hover:border-outline-variant transition-all duration-300 flex items-center justify-center space-x-2" type="button">
+<span class="material-symbols-outlined text-primary-fixed" style="font-variation-settings: 'FILL' 1;">fingerprint</span>
+<span>Secure Biometric</span>
+</button>
+</div>
+</form>
+</div>
+<!-- Bottom decorative line -->
+<div class="h-1 w-full bg-gradient-to-r from-transparent via-primary-fixed to-transparent opacity-20"></div>
+</div>
+</main>
+<!-- Footer Component -->
+<footer class="w-full py-6 mt-auto bg-void-black dark:bg-void-black border-t border-border-glass z-20">
+<div class="flex flex-col sm:flex-row justify-between items-center px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto space-y-4 sm:space-y-0 font-label-mono text-label-mono text-secondary-fixed">
+<div class="text-on-tertiary-fixed-variant">
+                © 2024 O(Alpha) Systems
+            </div>
+<nav class="flex items-center space-x-6 opacity-80 hover:opacity-100 transition-opacity">
+<a class="text-on-tertiary-fixed-variant hover:text-secondary-fixed-dim transition-colors" href="#">Documentation</a>
+<a class="text-on-tertiary-fixed-variant hover:text-secondary-fixed-dim transition-colors" href="#">System Status</a>
+<a class="text-on-tertiary-fixed-variant hover:text-secondary-fixed-dim transition-colors" href="#">API Reference</a>
+</nav>
+</div>
+</footer>
+</body></html>

@@ -1,0 +1,5 @@
+segment,n,concept_clarity,paper_only_understanding,trust_after_safety_guardrails,desire_for_validation_evidence,interest_in_beginner_education,likelihood_to_try_private_demo,notes
+Beginner/intermediate investing users,20,4.1,4.4,4.2,4.6,4.5,3.9,"Simulated proxy responses, not real user research."
+Risk-aware technical users,15,4.1,4.5,4.3,4.8,3.7,4.0,"Simulated proxy responses, not real user research."
+Evaluator compliance finance-student users,15,4.1,4.4,3.9,4.7,4.3,3.8,"Simulated proxy responses, not real user research."
+Weighted aggregate,50,4.1,4.4,4.1,4.7,4.2,3.9,"Weighted by segment size. Simulated proxy data only."

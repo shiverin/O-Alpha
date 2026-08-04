@@ -1,0 +1,16 @@
+fmp_demo_error,fmp_demo_status,stooq_note,stooq_rows,stooq_status,symbol,yahoo_error,yahoo_rows,yahoo_status
+HTTP Error 401: Unauthorized,error,endpoint asks for apikey,0,requires_api_key_or_empty,A,,2869,ok
+HTTP Error 401: Unauthorized,error,endpoint asks for apikey,0,requires_api_key_or_empty,AAL,,2869,ok
+HTTP Error 401: Unauthorized,error,endpoint asks for apikey,0,requires_api_key_or_empty,AABA,HTTP Error 404: Not Found,,error
+HTTP Error 401: Unauthorized,error,endpoint asks for apikey,0,requires_api_key_or_empty,ABC,HTTP Error 404: Not Found,,error
+HTTP Error 401: Unauthorized,error,endpoint asks for apikey,0,requires_api_key_or_empty,ABMD,HTTP Error 404: Not Found,,error
+HTTP Error 401: Unauthorized,error,endpoint asks for apikey,0,requires_api_key_or_empty,AGN,HTTP Error 404: Not Found,,error
+HTTP Error 401: Unauthorized,error,endpoint asks for apikey,0,requires_api_key_or_empty,ALTR,HTTP Error 404: Not Found,,error
+HTTP Error 401: Unauthorized,error,endpoint asks for apikey,0,requires_api_key_or_empty,EMC,,763,ok
+HTTP Error 401: Unauthorized,error,endpoint asks for apikey,0,requires_api_key_or_empty,MON,HTTP Error 404: Not Found,,error
+HTTP Error 401: Unauthorized,error,endpoint asks for apikey,0,requires_api_key_or_empty,PX,HTTP Error 404: Not Found,,error
+HTTP Error 401: Unauthorized,error,endpoint asks for apikey,0,requires_api_key_or_empty,RTN,HTTP Error 404: Not Found,,error
+HTTP Error 401: Unauthorized,error,endpoint asks for apikey,0,requires_api_key_or_empty,YHOO,HTTP Error 404: Not Found,,error
+HTTP Error 401: Unauthorized,error,endpoint asks for apikey,0,requires_api_key_or_empty,BRK-B,,2869,ok
+HTTP Error 401: Unauthorized,error,endpoint asks for apikey,0,requires_api_key_or_empty,BF-B,,2869,ok
+HTTP Error 401: Unauthorized,error,endpoint asks for apikey,0,requires_api_key_or_empty,AAPL,,2869,ok

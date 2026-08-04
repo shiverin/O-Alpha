@@ -1,0 +1,315 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>O(Alpha) - Mission</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-background": "#d4e4fa",
+                      "primary-container": "#00e5ff",
+                      "on-secondary-container": "#725f00",
+                      "on-primary-container": "#00626e",
+                      "surface-container-high": "#1c2b3c",
+                      "outline-variant": "#3b494c",
+                      "on-primary-fixed": "#001f24",
+                      "surface-container-lowest": "#010f1f",
+                      "secondary-fixed": "#ffe16d",
+                      "error": "#ffb4ab",
+                      "on-error": "#690005",
+                      "on-secondary-fixed-variant": "#544600",
+                      "on-secondary-fixed": "#221b00",
+                      "surface": "#051424",
+                      "background": "#051424",
+                      "tertiary-fixed": "#dbe2f8",
+                      "tertiary-container": "#c8d0e6",
+                      "on-surface-variant": "#bac9cc",
+                      "secondary-fixed-dim": "#e9c400",
+                      "on-primary-fixed-variant": "#004f58",
+                      "on-surface": "#d4e4fa",
+                      "on-tertiary-fixed-variant": "#3f4758",
+                      "surface-bright": "#2c3a4c",
+                      "surface-dim": "#051424",
+                      "on-primary": "#00363d",
+                      "primary-fixed": "#9cf0ff",
+                      "secondary-container": "#ffdb3c",
+                      "on-error-container": "#ffdad6",
+                      "tertiary": "#e6ecff",
+                      "outline": "#849396",
+                      "on-tertiary": "#283041",
+                      "surface-container": "#122131",
+                      "primary-fixed-dim": "#00daf3",
+                      "on-secondary": "#3a3000",
+                      "inverse-on-surface": "#233143",
+                      "on-tertiary-container": "#51596b",
+                      "surface-tint": "#00daf3",
+                      "surface-container-highest": "#273647",
+                      "surface-container-low": "#0d1c2d",
+                      "tertiary-fixed-dim": "#bec6dc",
+                      "secondary": "#fff9ef",
+                      "inverse-primary": "#006875",
+                      "inverse-surface": "#d4e4fa",
+                      "on-tertiary-fixed": "#131c2b",
+                      "surface-variant": "#273647",
+                      "primary": "#c3f5ff",
+                      "error-container": "#93000a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "margin-desktop": "64px",
+                      "gutter": "24px",
+                      "base": "8px",
+                      "margin-mobile": "16px",
+                      "grid-size": "32px"
+              },
+              "fontFamily": {
+                      "headline-lg-mobile": ["Inter"],
+                      "data-sm": ["JetBrains Mono"],
+                      "body-md": ["Inter"],
+                      "data-lg": ["JetBrains Mono"],
+                      "label-caps": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "headline-xl": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "data-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "400"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "data-lg": ["20px", {"lineHeight": "28px", "fontWeight": "500"}],
+                      "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "headline-xl": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            background-image: 
+                linear-gradient(to right, rgba(0, 229, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
+            background-size: theme('spacing.grid-size') theme('spacing.grid-size');
+            background-attachment: fixed;
+        }
+        
+        /* Subtle radial glow matching the design language */
+        .ambient-glow {
+            position: fixed;
+            top: 20%;
+            right: 10%;
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(0, 229, 255, 0.05) 0%, rgba(5, 20, 36, 0) 70%);
+            pointer-events: none;
+            z-index: -1;
+        }
+        .ambient-glow-secondary {
+            position: fixed;
+            bottom: 10%;
+            left: 5%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(255, 219, 60, 0.03) 0%, rgba(5, 20, 36, 0) 70%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .glass-panel {
+            background-color: rgba(18, 33, 49, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(59, 73, 76, 0.3);
+        }
+
+        .data-line {
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, theme('colors.outline-variant') 50%, transparent 100%);
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased overflow-x-hidden">
+<div class="ambient-glow"></div>
+<div class="ambient-glow-secondary"></div>
+<header class="fixed top-0 w-full z-50 bg-surface-container-low/80 backdrop-blur-xl border-b border-outline-variant/20">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4 max-w-[1440px] mx-auto">
+<div class="font-headline-lg text-headline-lg font-bold text-secondary-container"><img alt="O(Alpha) Logo" class="h-8 w-auto h-10" src="https://lh3.googleusercontent.com/aida/ADBb0uiLcVGEmFIldOXt-b8Aw8wcEKHbR2dL9OpZyqR_nRl52WinVpztI50GXzZVQeuO4-zboFLhA-5Ho6PMnvokDCTFMsjixlVK4YCDHFjdSvGVCir5NZKVGiusSGvv9NcX8Cu97Sno2kjvdwxIFvJnNmO4_UAfkgts9MACekYch70mSHYxLMTB9yVJJlgjox1LDGfkljNIkP8INxZq0VDXBSZ8tV2Mx5geHlBMe7bbMfM3Q0uff9feqwcHNK4"></div>
+<nav class="hidden md:flex gap-8 items-center">
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary-container transition-colors duration-300" href="#">Product</a>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary-container transition-colors duration-300" href="#">Performance</a>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary-container transition-colors duration-300" href="#">Pricing</a>
+<a class="font-body-md text-body-md text-primary-container border-b-2 border-primary-container pb-1 hover:text-primary-container transition-colors duration-300" href="#">Mission</a>
+</nav>
+<button class="font-body-md text-body-md bg-primary-container text-on-primary-container px-6 py-2 rounded scale-95 active:scale-90 transition-transform font-medium">
+                Launch App
+            </button>
+</div>
+</header>
+<main class="pt-32 pb-24">
+<section class="max-w-[1440px] mx-auto px-margin-mobile md:px-margin-desktop mb-32 relative">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter items-center min-h-[614px]">
+<div class="flex flex-col gap-6 z-10">
+<div class="font-label-caps text-label-caps text-primary-container uppercase tracking-widest">
+                        Orbital 2026 Pitch
+                    </div>
+<h1 class="font-headline-xl text-headline-xl text-on-background leading-tight">
+                        Eliminating Emotion <br>
+<span class="text-primary-container">from Execution.</span>
+</h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-xl mt-4">
+                        O(Alpha) was born from a simple thesis: human emotion is the primary drag on retail trading performance. We are building a future where sophisticated, quant-level systematic trading is accessible to anyone capable of defining their preferences.
+                    </p>
+<div class="flex items-center gap-4 mt-8 font-data-sm text-data-sm text-outline">
+<span class="">VERSION: 1.0.0-ALPHA</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="">STATUS: <span class="text-secondary-container">LIVE DEVELOPMENT</span></span>
+</div>
+</div>
+<div class="relative h-[400px] flex justify-center items-center lg:justify-end opacity-80 z-0">
+<div class="absolute w-64 h-64 border border-outline-variant rounded-full flex items-center justify-center">
+<div class="absolute w-48 h-48 border border-primary-container/30 rounded-full"></div>
+<div class="w-32 h-32 bg-surface-container-lowest border border-primary-container rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(0,229,255,0.2)]">
+<span class="font-headline-xl text-headline-xl text-secondary-container">α</span>
+</div>
+<div class="absolute top-10 right-0 h-[1px] w-32 bg-outline-variant/50">
+<div class="absolute right-0 -top-4 font-data-sm text-data-sm text-on-surface-variant text-[10px]">SYSTEM ACTIVE</div>
+<div class="absolute left-0 -top-[2px] w-8 h-[2px] bg-primary-container"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="max-w-[1440px] mx-auto px-margin-mobile md:px-margin-desktop mb-32">
+<div class="mb-16">
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background">
+                    The Orbital Vision
+                </h2>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl mt-4">
+                    A seamless translation layer between human intent and algorithmic precision. No trading experience required. Just preferences — converted into alpha-seeking execution.
+                </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-0 relative">
+<div class="hidden md:block absolute top-1/2 left-0 w-full h-[1px] bg-outline-variant/30 -z-10"></div>
+<div class="glass-panel p-8 md:mr-gutter relative">
+<div class="font-label-caps text-label-caps text-secondary-container mb-8">YOU CONFIGURE</div>
+<ul class="flex flex-col gap-6 font-data-lg text-data-lg text-on-background">
+<li class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary-container text-xl">tune</span>
+                            Risk profile
+                        </li>
+<li class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary-container text-xl">my_location</span>
+                            Return target
+                        </li>
+<li class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary-container text-xl">layers</span>
+                            Asset universe
+                        </li>
+</ul>
+</div>
+<div class="flex flex-col justify-center items-center py-12 md:py-0 relative">
+<div class="absolute h-full w-[1px] bg-outline-variant/30 hidden md:block"></div>
+<div class="bg-surface-container-lowest border border-outline-variant/50 rounded px-6 py-4 flex flex-col items-center gap-2 z-10 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+<span class="font-headline-lg text-headline-lg text-secondary-container">α</span>
+<span class="font-data-sm text-data-sm text-on-surface-variant tracking-widest uppercase">Translation Layer</span>
+</div>
+</div>
+<div class="glass-panel p-8 md:ml-gutter relative">
+<div class="font-label-caps text-label-caps text-secondary-container mb-8">AGENT EXECUTES</div>
+<ul class="flex flex-col gap-6 font-data-lg text-data-lg text-on-background">
+<li class="flex items-center gap-4">
+<span class="material-symbols-outlined text-outline text-xl">sync</span>
+                            Portfolio rebalancing
+                        </li>
+<li class="flex items-center gap-4">
+<span class="material-symbols-outlined text-outline text-xl">monitoring</span>
+                            Regime detection
+                        </li>
+<li class="flex items-center gap-4">
+<span class="material-symbols-outlined text-outline text-xl">data_exploration</span>
+                            Risk-adjusted orders
+                        </li>
+</ul>
+</div>
+</div>
+</section>
+<section class="max-w-[1440px] mx-auto px-margin-mobile md:px-margin-desktop">
+<div class="mb-12">
+<div class="font-label-caps text-label-caps text-primary-container mb-2">SYSTEM ARCHITECTS</div>
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background">
+                    The Team
+                </h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<div class="glass-panel p-8 border-l-2 border-l-primary-container hover:bg-surface-container-high/50 transition-colors duration-300">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h3 class="font-headline-lg-mobile text-headline-lg-mobile text-on-background mb-1">Shizhen</h3>
+<div class="font-data-sm text-data-sm text-secondary-container">QUANTITATIVE RESEARCH</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">terminal</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                        Focusing on statistical arbitrage models, regime detection algorithms, and translating complex market dynamics into executable, risk-managed logic streams.
+                    </p>
+<div class="mt-8 flex gap-2">
+<span class="px-2 py-1 border border-outline-variant/50 rounded font-data-sm text-data-sm text-on-surface-variant">Python</span>
+<span class="px-2 py-1 border border-outline-variant/50 rounded font-data-sm text-data-sm text-on-surface-variant">Data Science</span>
+</div>
+</div>
+<div class="glass-panel p-8 border-l-2 border-l-secondary-container hover:bg-surface-container-high/50 transition-colors duration-300">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h3 class="font-headline-lg-mobile text-headline-lg-mobile text-on-background mb-1">Jia Jun</h3>
+<div class="font-data-sm text-data-sm text-primary-container">SYSTEMS ENGINEERING</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">dns</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                        Architecting the low-latency execution environment, ensuring robust API integrations, and building the seamless interface that connects user intent to market action.
+                    </p>
+<div class="mt-8 flex gap-2">
+<span class="px-2 py-1 border border-outline-variant/50 rounded font-data-sm text-data-sm text-on-surface-variant">Infrastructure</span>
+<span class="px-2 py-1 border border-outline-variant/50 rounded font-data-sm text-data-sm text-on-surface-variant">Frontend</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<footer class="w-full py-16 bg-surface-container-lowest border-t border-outline-variant/30 relative z-10">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter px-margin-mobile md:px-margin-desktop max-w-[1440px] mx-auto">
+<div class="col-span-1 md:col-span-2">
+<div class="font-headline-lg text-headline-lg text-secondary-fixed mb-4"><img alt="O(Alpha) Logo" class="h-12 w-auto mb-4" src="https://lh3.googleusercontent.com/aida/ADBb0uiLcVGEmFIldOXt-b8Aw8wcEKHbR2dL9OpZyqR_nRl52WinVpztI50GXzZVQeuO4-zboFLhA-5Ho6PMnvokDCTFMsjixlVK4YCDHFjdSvGVCir5NZKVGiusSGvv9NcX8Cu97Sno2kjvdwxIFvJnNmO4_UAfkgts9MACekYch70mSHYxLMTB9yVJJlgjox1LDGfkljNIkP8INxZq0VDXBSZ8tV2Mx5geHlBMe7bbMfM3Q0uff9feqwcHNK4"></div>
+<div class="font-data-sm text-data-sm text-on-surface-variant max-w-xs">
+                    © 2026 Orbital. All rights reserved.<br>
+                    Eliminating emotion from execution.
+                </div>
+</div>
+<div class="col-span-1 flex flex-col gap-4">
+<a class="font-data-sm text-data-sm text-on-surface-variant opacity-80 hover:opacity-100 hover:text-secondary-fixed transition-colors" href="#">Privacy Policy</a>
+<a class="font-data-sm text-data-sm text-on-surface-variant opacity-80 hover:opacity-100 hover:text-secondary-fixed transition-colors" href="#">Terms of Service</a>
+</div>
+<div class="col-span-1 flex flex-col gap-4">
+<a class="font-data-sm text-data-sm text-on-surface-variant opacity-80 hover:opacity-100 hover:text-secondary-fixed transition-colors" href="#">Security</a>
+<a class="font-data-sm text-data-sm text-on-surface-variant opacity-80 hover:opacity-100 hover:text-secondary-fixed transition-colors" href="#">API Documentation</a>
+</div>
+</div>
+</footer>
+
+
+</body></html>

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>O(Alpha) - Live Operations Terminal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#fff9ef",
+                        "on-tertiary-container": "#51596b",
+                        "on-secondary-fixed": "#221b00",
+                        "secondary-container": "#ffdb3c",
+                        "surface-container": "#122131",
+                        "surface-container-high": "#1c2b3c",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-fixed-variant": "#544600",
+                        "tertiary-fixed-dim": "#bec6dc",
+                        "on-surface": "#d4e4fa",
+                        "on-secondary": "#3a3000",
+                        "primary": "#c3f5ff",
+                        "surface-container-low": "#0d1c2d",
+                        "on-error": "#690005",
+                        "surface-tint": "#00daf3",
+                        "primary-fixed": "#9cf0ff",
+                        "surface": "#051424",
+                        "error-container": "#93000a",
+                        "surface-container-lowest": "#010f1f",
+                        "secondary-fixed-dim": "#e9c400",
+                        "on-tertiary-fixed-variant": "#3f4758",
+                        "error": "#ffb4ab",
+                        "background": "#051424",
+                        "surface-dim": "#051424",
+                        "inverse-surface": "#d4e4fa",
+                        "inverse-on-surface": "#233143",
+                        "tertiary-container": "#c8d0e6",
+                        "on-primary-container": "#00626e",
+                        "tertiary-fixed": "#dbe2f8",
+                        "on-surface-variant": "#bac9cc",
+                        "primary-container": "#00e5ff",
+                        "tertiary": "#e6ecff",
+                        "surface-variant": "#273647",
+                        "on-secondary-container": "#725f00",
+                        "on-primary-fixed": "#001f24",
+                        "surface-container-highest": "#273647",
+                        "on-primary-fixed-variant": "#004f58",
+                        "primary-fixed-dim": "#00daf3",
+                        "outline": "#849396",
+                        "on-tertiary-fixed": "#131c2b",
+                        "on-primary": "#00363d",
+                        "on-background": "#d4e4fa",
+                        "on-tertiary": "#283041",
+                        "surface-bright": "#2c3a4c",
+                        "secondary-fixed": "#ffe16d",
+                        "outline-variant": "#3b494c",
+                        "inverse-primary": "#006875"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "base": "8px",
+                        "margin-mobile": "16px",
+                        "grid-size": "32px",
+                        "margin-desktop": "64px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Inter"],
+                        "data-sm": ["JetBrains Mono"],
+                        "headline-lg-mobile": ["Inter"],
+                        "data-lg": ["JetBrains Mono"],
+                        "label-caps": ["Inter"],
+                        "headline-xl": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "data-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "data-lg": ["20px", { "lineHeight": "28px", "fontWeight": "500" }],
+                        "label-caps": ["11px", { "lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "700" }],
+                        "headline-xl": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-image: linear-gradient(to right, rgba(0, 229, 255, 0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(0, 229, 255, 0.05) 1px, transparent 1px);
+            background-size: 32px 32px;
+            background-position: center top;
+        }
+        .glass-card {
+            background: rgba(18, 33, 49, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .terminal-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .terminal-scroll::-webkit-scrollbar-track {
+            background: rgba(5, 20, 36, 0.5);
+        }
+        .terminal-scroll::-webkit-scrollbar-thumb {
+            background: rgba(0, 229, 255, 0.3);
+            border-radius: 4px;
+        }
+        .pulse-live {
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 229, 255, 0); }
+            100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen flex flex-col font-body-md antialiased pt-[44px]">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 flex items-center justify-between px-margin-desktop h-[44px] bg-surface-container-lowest dark:bg-surface-container-lowest border-b border-outline-variant/30">
+<div class="flex items-center gap-8">
+<div class="font-headline-lg text-headline-lg font-bold text-on-surface dark:text-on-surface">O(Alpha)</div>
+<div class="hidden md:flex items-center gap-6">
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">Onboarding</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">Strategies</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">Backtest</a>
+<a class="text-primary font-bold border-b-2 border-primary pb-1 hover:text-primary transition-colors duration-200" href="#">Terminal</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="bg-primary-container text-on-primary-container px-4 py-1.5 rounded-DEFAULT font-data-sm text-data-sm font-bold hover:bg-primary transition-colors duration-200 shadow-[0_0_15px_rgba(0,229,255,0.3)] scale-95 duration-150">New Strategy</button>
+<button class="text-on-surface hover:text-primary transition-colors duration-200 scale-95 duration-150">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">account_circle</span>
+</button>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="flex-grow w-full max-w-[1440px] mx-auto px-margin-mobile md:px-margin-desktop py-grid-size grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Header Section -->
+<header class="col-span-1 md:col-span-12 mb-4 flex justify-between items-end">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<div class="w-2 h-2 rounded-full bg-primary-container pulse-live"></div>
+<span class="font-data-sm text-data-sm text-primary-container tracking-widest uppercase">System Online</span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface">Live Market Pulse</h1>
+</div>
+<div class="hidden md:flex items-center gap-4">
+<div class="glass-card px-4 py-2 rounded-DEFAULT flex items-center gap-2">
+<span class="material-symbols-outlined text-outline-variant text-sm">schedule</span>
+<span class="font-data-sm text-data-sm text-on-surface-variant" id="clock">00:00:00 UTC</span>
+</div>
+</div>
+</header>
+<!-- Left Column: Chart Area (8 cols) -->
+<section class="col-span-1 md:col-span-8 flex flex-col gap-gutter">
+<div class="glass-card rounded-lg flex-grow min-h-[400px] flex flex-col p-4 relative overflow-hidden">
+<div class="flex justify-between items-center mb-4 border-b border-outline-variant/20 pb-4">
+<h2 class="font-data-lg text-data-lg text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container">monitoring</span>
+                        Kalman True Price Estimate
+                    </h2>
+<div class="flex gap-2">
+<span class="px-2 py-1 rounded bg-surface-container text-on-surface-variant font-data-sm text-data-sm border border-outline-variant/30">1M</span>
+<span class="px-2 py-1 rounded bg-primary-container/20 text-primary-container font-data-sm text-data-sm border border-primary-container/50">5M</span>
+<span class="px-2 py-1 rounded bg-surface-container text-on-surface-variant font-data-sm text-data-sm border border-outline-variant/30">15M</span>
+</div>
+</div>
+<!-- Chart Placeholder -->
+<div class="flex-grow relative w-full h-full">
+<!-- Faux Grid -->
+<div class="absolute inset-0 flex flex-col justify-between opacity-10 pointer-events-none">
+<div class="border-t border-primary w-full"></div>
+<div class="border-t border-primary w-full"></div>
+<div class="border-t border-primary w-full"></div>
+<div class="border-t border-primary w-full"></div>
+<div class="border-t border-primary w-full"></div>
+</div>
+<!-- Faux Data Lines -->
+<svg class="w-full h-full absolute inset-0" preserveaspectratio="none" viewbox="0 0 1000 300">
+<!-- Raw Market Price (Grey/Desaturated) -->
+<path d="M0,200 Q50,150 100,180 T200,100 T300,150 T400,80 T500,120 T600,50 T700,90 T800,40 T900,70 T1000,20" fill="none" stroke="rgba(186, 201, 204, 0.4)" stroke-dasharray="4 4" stroke-width="2"></path>
+<!-- Kalman Estimate (Glowing Cyan) -->
+<path d="M0,190 Q60,160 110,170 T210,110 T310,140 T410,90 T510,110 T610,60 T710,80 T810,50 T910,60 T1000,30" fill="none" filter="drop-shadow(0px 0px 8px rgba(0, 229, 255, 0.6))" stroke="#00e5ff" stroke-width="3"></path>
+<!-- Gradient Fill under Kalman -->
+<path d="M0,190 Q60,160 110,170 T210,110 T310,140 T410,90 T510,110 T610,60 T710,80 T810,50 T910,60 T1000,30 L1000,300 L0,300 Z" fill="url(#chart-gradient)" opacity="0.2"></path>
+<defs>
+<lineargradient id="chart-gradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#00e5ff"></stop>
+<stop offset="100%" stop-color="transparent"></stop>
+</lineargradient>
+</defs>
+</svg>
+<!-- Latest Price Marker -->
+<div class="absolute right-0 top-[10%] flex items-center">
+<div class="w-full h-px bg-primary-container/50 absolute right-0 w-[50px]"></div>
+<div class="bg-primary-container text-on-primary-container font-data-sm text-data-sm px-2 py-1 rounded ml-[50px] shadow-[0_0_10px_rgba(0,229,255,0.4)]">
+                            $42,150.88
+                        </div>
+</div>
+</div>
+</div>
+<!-- Execution Stream (Bottom section) -->
+<div class="glass-card rounded-lg h-[240px] flex flex-col overflow-hidden bg-surface-container-high/80 border-t-2 border-t-primary-container/50">
+<div class="px-4 py-2 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-highest/50">
+<h3 class="font-data-sm text-data-sm text-on-surface-variant uppercase tracking-wider flex items-center gap-2">
+<span class="material-symbols-outlined text-xs">terminal</span>
+                        Execution Stream
+                    </h3>
+<span class="w-2 h-2 rounded-full bg-secondary-container animate-pulse"></span>
+</div>
+<div class="p-4 overflow-y-auto terminal-scroll flex-grow font-data-sm text-data-sm text-outline font-medium leading-relaxed space-y-1">
+<div class="flex gap-4"><span class="text-on-surface-variant opacity-50">14:22:01.045</span><span class="text-primary-container">INFO</span><span>[KALMAN_CORE] State vector updated. Covariance trace: 0.0042</span></div>
+<div class="flex gap-4"><span class="text-on-surface-variant opacity-50">14:22:01.112</span><span class="text-secondary-container">WARN</span><span>[HMM_OVERLAY] Volatility regime shift detected. Transitioning to state: TURBULENT</span></div>
+<div class="flex gap-4"><span class="text-on-surface-variant opacity-50">14:22:01.150</span><span class="text-primary-container">INFO</span><span>[EXEC_ENGINE] Adjusting position sizing scalar to 0.65</span></div>
+<div class="flex gap-4"><span class="text-on-surface-variant opacity-50">14:22:02.001</span><span class="text-primary-container">INFO</span><span>[SIGNAL_GEN] Alpha threshold crossed. Initiating order sequence.</span></div>
+<div class="flex gap-4"><span class="text-on-surface-variant opacity-50">14:22:02.044</span><span class="text-green-400">EXEC</span><span>BUY 15.5 BTC @ 42,150.50 [TWAP_ALGO] Fill: Partial</span></div>
+<div class="flex gap-4"><span class="text-on-surface-variant opacity-50">14:22:02.890</span><span class="text-primary-container">INFO</span><span>[ROUTING] Latency check: 12ms to primary venue.</span></div>
+<div class="flex gap-4"><span class="text-on-surface-variant opacity-50">14:22:03.100</span><span class="text-green-400">EXEC</span><span>BUY 15.5 BTC @ 42,150.88 [TWAP_ALGO] Fill: Complete</span></div>
+<div class="flex gap-4"><span class="text-on-surface-variant opacity-50">14:22:03.155</span><span class="text-primary-container">INFO</span><span>[RISK_MGR] Position limits verified. Margin utilization: 12.4%</span></div>
+</div>
+</div>
+</section>
+<!-- Right Column: Portfolio Metrics (4 cols) -->
+<aside class="col-span-1 md:col-span-4 flex flex-col gap-gutter">
+<div class="glass-card rounded-lg p-6 flex flex-col gap-6 relative overflow-hidden">
+<!-- Abstract radar background decoration -->
+<div class="absolute -top-20 -right-20 w-64 h-64 border border-primary-container/10 rounded-full flex items-center justify-center pointer-events-none">
+<div class="w-48 h-48 border border-primary-container/20 rounded-full flex items-center justify-center">
+<div class="w-32 h-32 border border-primary-container/30 rounded-full"></div>
+</div>
+</div>
+<div class="border-b border-outline-variant/20 pb-2">
+<h2 class="font-data-lg text-data-lg text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container">dashboard</span>
+                        Portfolio Metrics
+                    </h2>
+</div>
+<!-- Pure white utility card equivalent in dark mode -->
+<div class="bg-surface-bright/40 border border-outline-variant/30 rounded-DEFAULT p-4 hover:border-primary-container/50 transition-colors duration-300">
+<div class="text-on-surface-variant font-data-sm text-data-sm uppercase tracking-wider mb-1">Available Cash</div>
+<div class="font-data-lg text-data-lg text-primary-container text-2xl tracking-tight">$12,450,000.00</div>
+</div>
+<div class="bg-surface-bright/40 border border-outline-variant/30 rounded-DEFAULT p-4 hover:border-primary-container/50 transition-colors duration-300">
+<div class="flex justify-between items-start mb-1">
+<div class="text-on-surface-variant font-data-sm text-data-sm uppercase tracking-wider">Open Positions</div>
+<span class="px-2 py-0.5 rounded bg-primary-container/20 text-primary-container font-data-sm text-[10px] border border-primary-container/30">8 ACTIVE</span>
+</div>
+<div class="font-data-lg text-data-lg text-on-surface text-2xl tracking-tight">$4,820,115.50</div>
+</div>
+<div class="bg-surface-bright/40 border border-outline-variant/30 rounded-DEFAULT p-4 hover:border-primary-container/50 transition-colors duration-300 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-green-500"></div>
+<div class="text-on-surface-variant font-data-sm text-data-sm uppercase tracking-wider mb-1 pl-2">Daily P&amp;L</div>
+<div class="font-data-lg text-data-lg text-green-400 text-2xl tracking-tight pl-2">+$84,210.25</div>
+<div class="font-data-sm text-data-sm text-on-surface-variant pl-2 mt-1">^ 1.8% vs. Alpha Benchmark</div>
+</div>
+<!-- System Status Minimal -->
+<div class="mt-auto pt-4 border-t border-outline-variant/20 flex flex-col gap-2">
+<div class="flex justify-between items-center font-data-sm text-data-sm">
+<span class="text-on-surface-variant">API Latency</span>
+<span class="text-primary-container">12ms</span>
+</div>
+<div class="flex justify-between items-center font-data-sm text-data-sm">
+<span class="text-on-surface-variant">Data Feed</span>
+<span class="text-primary-container">WebSocket [Stable]</span>
+</div>
+</div>
+</div>
+</aside>
+</main>
+<!-- Footer -->
+<footer class="w-full py-grid-size px-margin-desktop grid grid-cols-2 md:grid-cols-4 gap-gutter bg-secondary dark:bg-surface-container-low border-t border-outline-variant/10 mt-auto">
+<div class="col-span-2 md:col-span-1 flex flex-col gap-2">
+<span class="font-label-caps text-label-caps text-on-secondary-fixed dark:text-on-surface opacity-50">© 2024 O(Alpha) Institutional Trading. All rights reserved.</span>
+</div>
+<div class="flex flex-col gap-2">
+<a class="font-data-sm text-data-sm text-on-secondary-fixed-variant dark:text-on-surface-variant hover:underline opacity-80 hover:opacity-100" href="#">Terms of Service</a>
+<a class="font-data-sm text-data-sm text-on-secondary-fixed-variant dark:text-on-surface-variant hover:underline opacity-80 hover:opacity-100" href="#">Privacy Policy</a>
+</div>
+<div class="flex flex-col gap-2">
+<a class="font-data-sm text-data-sm text-on-secondary-fixed-variant dark:text-on-surface-variant hover:underline opacity-80 hover:opacity-100" href="#">Regulatory Disclosures</a>
+<a class="font-data-sm text-data-sm text-on-secondary-fixed-variant dark:text-on-surface-variant hover:underline opacity-80 hover:opacity-100" href="#">Documentation</a>
+</div>
+<div class="flex flex-col gap-2">
+<a class="font-data-sm text-data-sm text-on-secondary-fixed-variant dark:text-on-surface-variant hover:underline opacity-80 hover:opacity-100" href="#">API Reference</a>
+<a class="font-data-sm text-data-sm text-on-secondary-fixed-variant dark:text-on-surface-variant hover:underline opacity-80 hover:opacity-100" href="#">Support</a>
+</div>
+</footer>
+<script>
+        // Simple clock for the UI
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toISOString().substring(11, 19) + ' UTC';
+            document.getElementById('clock').textContent = timeString;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
+</body></html>

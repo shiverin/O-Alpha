@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#0e0e0e",
+                        "on-primary-fixed-variant": "#004f54",
+                        "surface-dim": "#131313",
+                        "on-surface": "#e5e2e1",
+                        "surface-container-high": "#2a2a2a",
+                        "tertiary-fixed": "#e2e2e2",
+                        "outline-variant": "#3b494b",
+                        "surface-container-highest": "#353535",
+                        "secondary-fixed-dim": "#e9c400",
+                        "tertiary-fixed-dim": "#c6c6c7",
+                        "on-error": "#690005",
+                        "error-container": "#93000a",
+                        "surface-variant": "#353535",
+                        "glow-gold": "rgba(255, 215, 0, 0.3)",
+                        "glow-cyan": "rgba(0, 240, 255, 0.4)",
+                        "primary-fixed": "#7df4ff",
+                        "secondary-container": "#ffdb3c",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "outline": "#849495",
+                        "on-tertiary-container": "#5d5f5f",
+                        "surface-tint": "#00dbe9",
+                        "on-tertiary": "#2f3131",
+                        "surface-bright": "#393939",
+                        "void-black": "#0A0A0A",
+                        "tertiary-container": "#d9d9d9",
+                        "surface": "#131313",
+                        "error": "#ffb4ab",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-container": "#725f00",
+                        "inverse-on-surface": "#313030",
+                        "primary-fixed-dim": "#00dbe9",
+                        "surface-container": "#20201f",
+                        "tertiary": "#f5f5f5",
+                        "on-background": "#e5e2e1",
+                        "on-primary": "#00363a",
+                        "on-secondary": "#3a3000",
+                        "on-secondary-fixed": "#221b00",
+                        "on-surface-variant": "#b9cacb",
+                        "on-secondary-fixed-variant": "#544600",
+                        "inverse-surface": "#e5e2e1",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "on-primary-fixed": "#002022",
+                        "surface-container-low": "#1c1b1b",
+                        "border-glass": "rgba(255, 255, 255, 0.12)",
+                        "background": "#131313",
+                        "secondary-fixed": "#ffe16d",
+                        "on-primary-container": "#006970",
+                        "primary": "#dbfcff",
+                        "surface-gray": "#1E1E1E",
+                        "inverse-primary": "#006970",
+                        "primary-container": "#00f0ff",
+                        "secondary": "#fff9ef"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "64px",
+                        "container-max": "1280px",
+                        "section-gap": "120px",
+                        "gutter": "24px",
+                        "margin-mobile": "24px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Inter"],
+                        "label-mono": ["JetBrains Mono"],
+                        "headline-xl": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-lg": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #0A0A0A;
+            color: #e5e2e1;
+            overflow-x: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glow-cyan-filter {
+            filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.4));
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #00f0ff;
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.8);
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+        }
+        .step-active {
+            color: #00f0ff;
+            border-color: #00f0ff;
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface">
+<!-- Top Navigation Anchor -->
+<header class="bg-void-black/80 backdrop-blur-xl w-full sticky top-0 z-50 border-b border-border-glass shadow-[0_0_20px_rgba(0,240,255,0.1)]">
+<div class="flex justify-between items-center px-margin-desktop h-20 max-w-container-max mx-auto">
+<div class="font-display-lg text-display-lg tracking-tighter text-primary-container">QUANTA.VOID</div>
+<nav class="hidden md:flex gap-8">
+<span class="font-label-mono text-label-mono text-on-surface-variant cursor-not-allowed opacity-50">Backtest</span>
+<span class="font-label-mono text-label-mono text-on-surface-variant cursor-not-allowed opacity-50">Terminal</span>
+<span class="font-label-mono text-label-mono text-on-surface-variant cursor-not-allowed opacity-50">Logs</span>
+<span class="font-label-mono text-label-mono text-on-surface-variant cursor-not-allowed opacity-50">Strategies</span>
+</nav>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-outline">settings</span>
+<span class="material-symbols-outlined text-outline">notifications</span>
+<div class="h-8 w-8 rounded-full border border-primary-container/30 overflow-hidden bg-surface-variant">
+<img alt="Profile" data-alt="A professional, high-contrast close-up portrait of a digital systems architect in a dark room. Subtle blue rim lighting highlights the contours of the face, creating a sophisticated and technical atmosphere. The background is a dark, out-of-focus server room with tiny pinpricks of cyan and white light. The overall mood is intelligent, calm, and focused." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDxeQ8VE_4ZNB8DiQnxmWjnWx2EU2FUQULxQFgXplOlNUJZCcxUCTyWaep2CwXUJhhagYCPcb1PeobsXiKSxQcmGmJR9cWJKgkXhLGjoHV_jj6oT23BvkFQeLrGcRPynOQ65f2LhsoDKvHpM_iuTYLvD5kMsEcQc2cqwSp48GzSr5wv13Jy4UFW6GMasl2shRkd6lFqvRUHVR_X8fo8p_imj9GdZygH7Pq86S8j1i1GhrHGVGEOQl8lw3_jA29ytrCcAWH4iGCc2DdD"/>
+</div>
+</div>
+</div>
+</header>
+<main class="max-w-container-max mx-auto px-margin-desktop py-12">
+<!-- Progress Stepper -->
+<div class="flex items-center gap-4 mb-12 overflow-x-auto pb-4 no-scrollbar">
+<div class="flex items-center gap-2 text-primary-container opacity-60">
+<span class="font-label-mono text-label-mono px-2 py-1 border border-primary-container/40 rounded">PHASE 01</span>
+<span class="font-label-mono text-label-mono">ORIGIN</span>
+</div>
+<div class="h-px w-8 bg-border-glass"></div>
+<div class="flex items-center gap-2 text-primary-container">
+<span class="font-label-mono text-label-mono px-2 py-1 border border-primary-container rounded bg-primary-container/10">PHASE 02</span>
+<span class="font-label-mono text-label-mono font-bold">QUANT ALIGNMENT</span>
+</div>
+<div class="h-px w-8 bg-border-glass"></div>
+<div class="flex items-center gap-2 text-outline opacity-40">
+<span class="font-label-mono text-label-mono px-2 py-1 border border-border-glass rounded">PHASE 03</span>
+<span class="font-label-mono text-label-mono">EXECUTION</span>
+</div>
+</div>
+<div class="mb-12">
+<h1 class="font-headline-xl text-headline-xl text-primary mb-2">Quant Alignment | Risk</h1>
+<p class="font-body-lg text-on-surface-variant max-w-2xl">Step 1: Calibrate your Risk Archetype Engine. This defines how the O(Alpha) neural core interprets volatility and signal variance.</p>
+</div>
+<!-- Main Bento Dashboard -->
+<div class="bento-grid">
+<!-- Risk Tolerance Selector -->
+<div class="col-span-12 lg:col-span-7 glass-panel p-8 flex flex-col gap-8">
+<div>
+<h2 class="font-label-mono text-label-mono text-primary-container uppercase tracking-widest mb-4">01. Risk Archetype</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<button class="archetype-card p-6 border border-border-glass rounded-xl text-left transition-all hover:bg-white/5 active:scale-95" id="btn-conservative" onclick="selectArchetype('conservative')">
+<span class="material-symbols-outlined text-outline mb-4">shield</span>
+<div class="font-headline-lg text-headline-lg mb-1">Conservative</div>
+<div class="font-label-mono text-label-mono text-outline">Priority: Capital Preservation</div>
+</button>
+<button class="archetype-card p-6 border border-primary-container rounded-xl text-left bg-primary-container/10 transition-all hover:bg-primary-container/20 active:scale-95 shadow-[0_0_20px_rgba(0,240,255,0.1)]" id="btn-moderate" onclick="selectArchetype('moderate')">
+<span class="material-symbols-outlined text-primary-container mb-4">balance</span>
+<div class="font-headline-lg text-headline-lg mb-1">Moderate</div>
+<div class="font-label-mono text-label-mono text-primary-container">Priority: Balanced Growth</div>
+</button>
+<button class="archetype-card p-6 border border-border-glass rounded-xl text-left transition-all hover:bg-white/5 active:scale-95" id="btn-aggressive" onclick="selectArchetype('aggressive')">
+<span class="material-symbols-outlined text-outline mb-4">bolt</span>
+<div class="font-headline-lg text-headline-lg mb-1">Aggressive</div>
+<div class="font-label-mono text-label-mono text-outline">Priority: Maximum Alpha</div>
+</button>
+</div>
+</div>
+<div class="h-px bg-border-glass w-full"></div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+<div>
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-label-mono text-label-mono text-primary-container uppercase">Max Drawdown Limit</h3>
+<span class="font-label-mono text-label-mono text-primary-container bg-primary-container/10 px-2 py-1 rounded" id="drawdown-val">15%</span>
+</div>
+<input max="30" min="5" oninput="updateDrawdown(this.value)" step="1" type="range" value="15"/>
+<div class="flex justify-between mt-2">
+<span class="font-label-mono text-[10px] text-outline">5% (MIN)</span>
+<span class="font-label-mono text-[10px] text-outline">30% (MAX)</span>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-label-mono text-label-mono text-primary-container uppercase">Market Noise Rejection</h3>
+<span class="font-label-mono text-label-mono text-primary-container bg-primary-container/10 px-2 py-1 rounded" id="noise-val">Medium</span>
+</div>
+<input max="3" min="1" oninput="updateNoise(this.value)" step="1" type="range" value="2"/>
+<div class="flex justify-between mt-2">
+<span class="font-label-mono text-[10px] text-outline">LOW</span>
+<span class="font-label-mono text-[10px] text-outline">HIGH</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Kalman Filter Visualization -->
+<div class="col-span-12 lg:col-span-5 glass-panel p-8 flex flex-col">
+<h2 class="font-label-mono text-label-mono text-primary-container uppercase tracking-widest mb-4">02. Noise Processing Engine</h2>
+<div class="flex-1 bg-surface-container-lowest rounded-xl relative overflow-hidden border border-border-glass mb-6 min-h-[240px]">
+<!-- Simulated Canvas for Waveforms -->
+<canvas class="absolute inset-0 w-full h-full" id="kalmanCanvas"></canvas>
+<div class="absolute top-4 left-4 flex flex-col gap-2">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-outline"></div>
+<span class="font-label-mono text-[10px] text-outline uppercase">Raw Market Data</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-primary-container shadow-[0_0_8px_rgba(0,240,255,0.8)]"></div>
+<span class="font-label-mono text-[10px] text-primary-container uppercase">Kalman Filter Output</span>
+</div>
+</div>
+</div>
+<div class="space-y-4">
+<h3 class="font-headline-lg text-headline-lg">State Estimation Matrix</h3>
+<p class="font-body-md text-on-surface-variant text-sm">Our <strong>Kalman Filter</strong> implementation dynamically removes transient price noise while maintaining high signal fidelity. It predicts future states based on a recursive loop of "Predict" and "Update" phases, ensuring your strategy isn't tripped by momentary "flash" volatility.</p>
+<div class="p-3 bg-white/5 rounded-lg border border-white/10 flex items-center gap-4">
+<span class="material-symbols-outlined text-primary-fixed-dim">info</span>
+<span class="font-label-mono text-[11px] leading-tight">Optimizing rejection thresholds reduces drawdown by up to 22% in choppy markets.</span>
+</div>
+</div>
+</div>
+<!-- Strategy Projection -->
+<div class="col-span-12 glass-panel p-8 bg-gradient-to-br from-surface-container-high/40 to-transparent">
+<div class="flex flex-col md:flex-row justify-between items-center gap-8">
+<div class="flex-1">
+<h2 class="font-label-mono text-label-mono text-primary-container uppercase mb-4">Archetype Projection</h2>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+<div>
+<div class="text-outline font-label-mono text-[10px] uppercase mb-1">Expected Annual Yield</div>
+<div class="text-headline-lg font-headline-lg text-primary" id="yield-proj">12.4% — 18.2%</div>
+</div>
+<div>
+<div class="text-outline font-label-mono text-[10px] uppercase mb-1">Volatility Coefficient</div>
+<div class="text-headline-lg font-headline-lg text-primary" id="vol-proj">0.82</div>
+</div>
+<div>
+<div class="text-outline font-label-mono text-[10px] uppercase mb-1">Recovery Factor</div>
+<div class="text-headline-lg font-headline-lg text-primary" id="rec-proj">2.4x</div>
+</div>
+<div>
+<div class="text-outline font-label-mono text-[10px] uppercase mb-1">Sharpe Projection</div>
+<div class="text-headline-lg font-headline-lg text-primary" id="sharpe-proj">3.1</div>
+</div>
+</div>
+</div>
+<button class="bg-primary-container text-on-primary-container px-12 py-4 rounded-full font-bold hover:scale-105 transition-transform shadow-[0_0_30px_rgba(0,240,255,0.3)] active:scale-95">
+                        LOCK PARAMETERS
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<footer class="bg-void-black w-full py-12 border-t border-border-glass mt-section-gap">
+<div class="max-w-container-max mx-auto px-margin-desktop flex flex-col md:flex-row justify-between items-center gap-gutter">
+<div class="font-label-mono text-label-mono text-secondary-fixed">© 2024 QUANTA_LABS. ALL RIGHTS RESERVED. ENCRYPTED_CONNECTION_SECURED.</div>
+<div class="flex gap-8">
+<a class="font-label-mono text-label-mono text-on-surface-variant hover:text-glow-gold transition-colors" href="#">Terms of Service</a>
+<a class="font-label-mono text-label-mono text-on-surface-variant hover:text-glow-gold transition-colors" href="#">Risk Disclosure</a>
+<a class="font-label-mono text-label-mono text-on-surface-variant hover:text-glow-gold transition-colors" href="#">Privacy Protocol</a>
+<a class="font-label-mono text-label-mono text-on-surface-variant hover:text-glow-gold transition-colors" href="#">Institutional Access</a>
+</div>
+</div>
+</footer>
+<script>
+        // Interactive state management
+        function updateDrawdown(val) {
+            document.getElementById('drawdown-val').innerText = val + '%';
+            updateProjections();
+        }
+
+        function updateNoise(val) {
+            const labels = ["Low", "Medium", "High"];
+            document.getElementById('noise-val').innerText = labels[val - 1];
+            noiseStrength = val * 0.5;
+            updateProjections();
+        }
+
+        function selectArchetype(type) {
+            const btns = document.querySelectorAll('.archetype-card');
+            btns.forEach(b => {
+                b.classList.remove('border-primary-container', 'bg-primary-container/10', 'shadow-[0_0_20px_rgba(0,240,255,0.1)]');
+                b.classList.add('border-border-glass');
+                const icon = b.querySelector('.material-symbols-outlined');
+                icon.classList.remove('text-primary-container');
+                icon.classList.add('text-outline');
+                const label = b.querySelector('.font-label-mono');
+                label.classList.remove('text-primary-container');
+                label.classList.add('text-outline');
+            });
+
+            const active = document.getElementById('btn-' + type);
+            active.classList.add('border-primary-container', 'bg-primary-container/10', 'shadow-[0_0_20px_rgba(0,240,255,0.1)]');
+            active.classList.remove('border-border-glass');
+            const activeIcon = active.querySelector('.material-symbols-outlined');
+            activeIcon.classList.add('text-primary-container');
+            activeIcon.classList.remove('text-outline');
+            const activeLabel = active.querySelector('.font-label-mono');
+            activeLabel.classList.add('text-primary-container');
+            activeLabel.classList.remove('text-outline');
+
+            updateProjections(type);
+        }
+
+        function updateProjections(type = 'moderate') {
+            const yieldEl = document.getElementById('yield-proj');
+            const volEl = document.getElementById('vol-proj');
+            const recEl = document.getElementById('rec-proj');
+            const sharpeEl = document.getElementById('sharpe-proj');
+
+            if (type === 'conservative') {
+                yieldEl.innerText = "4.2% — 6.8%";
+                volEl.innerText = "0.31";
+                recEl.innerText = "4.8x";
+                sharpeEl.innerText = "2.1";
+            } else if (type === 'moderate') {
+                yieldEl.innerText = "12.4% — 18.2%";
+                volEl.innerText = "0.82";
+                recEl.innerText = "2.4x";
+                sharpeEl.innerText = "3.1";
+            } else {
+                yieldEl.innerText = "38.5% — 52.1%";
+                volEl.innerText = "1.65";
+                recEl.innerText = "1.8x";
+                sharpeEl.innerText = "4.2";
+            }
+        }
+
+        // Kalman Filter Visualization Script
+        const canvas = document.getElementById('kalmanCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let points = [];
+        let smoothedPoints = [];
+        let noiseStrength = 1.0;
+
+        function resize() {
+            width = canvas.offsetWidth;
+            height = canvas.offsetHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        let time = 0;
+        function animate() {
+            time += 0.05;
+            ctx.clearRect(0, 0, width, height);
+            
+            // Generate Noise points
+            points.push({
+                x: width,
+                y: (height/2) + Math.sin(time) * 40 + (Math.random() - 0.5) * (30 * noiseStrength)
+            });
+
+            // Kalman-like smoothing logic (simplified for viz)
+            if(points.length > 1) {
+                let lastRaw = points[points.length-1].y;
+                let lastSmooth = smoothedPoints.length > 0 ? smoothedPoints[smoothedPoints.length-1].y : lastRaw;
+                let alpha = 0.1 / (noiseStrength * 0.5); // More noise = slower smoothing
+                let newSmooth = lastSmooth + alpha * (lastRaw - lastSmooth);
+                smoothedPoints.push({x: width, y: newSmooth});
+            } else {
+                smoothedPoints.push({x: width, y: points[0].y});
+            }
+
+            // Move points left
+            points.forEach(p => p.x -= 2);
+            smoothedPoints.forEach(p => p.x -= 2);
+
+            // Filter points off screen
+            points = points.filter(p => p.x > -20);
+            smoothedPoints = smoothedPoints.filter(p => p.x > -20);
+
+            // Draw Raw Data
+            ctx.beginPath();
+            ctx.strokeStyle = '#353535';
+            ctx.lineWidth = 1.5;
+            points.forEach((p, i) => {
+                if(i === 0) ctx.moveTo(p.x, p.y);
+                else ctx.lineTo(p.x, p.y);
+            });
+            ctx.stroke();
+
+            // Draw Kalman Data
+            ctx.beginPath();
+            ctx.strokeStyle = '#00f0ff';
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'rgba(0, 240, 255, 0.5)';
+            smoothedPoints.forEach((p, i) => {
+                if(i === 0) ctx.moveTo(p.x, p.y);
+                else ctx.lineTo(p.x, p.y);
+            });
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body></html>

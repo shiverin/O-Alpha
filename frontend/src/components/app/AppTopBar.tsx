@@ -132,3 +132,4 @@ export function AppTopBar({ title, onSignOut, onStartGuide }: AppTopBarProps) {
     </header>
   );
 }
+
